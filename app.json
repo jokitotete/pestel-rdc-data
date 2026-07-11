@@ -7,7 +7,9 @@
     "userInterfaceStyle": "light",
     "backgroundColor": "#f4f1ea",
     "icon": "./assets/icon.png",
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "consulting.twoid.pestelrdc"
@@ -33,6 +35,11 @@
           "backgroundColor": "#2f52e0"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "ffde5cee-bc82-465c-8a89-a4d05445e94b"
+      }
+    }
   }
 }
