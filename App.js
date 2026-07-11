@@ -9,7 +9,8 @@ import { IBMPlexMono_400Regular, IBMPlexMono_500Medium, IBMPlexMono_600SemiBold 
 
 import { C, F } from './src/theme';
 import { Icon, Rule } from './src/ui';
-import { getEdition, latestDate, editionsList } from './src/store';
+import { getEdition, latestDate, editionsList, applyRemote } from './src/store';
+import { fetchRemoteData, DATA_URL } from './src/remote';
 import Home from './src/screens/Home';
 import Axes from './src/screens/Axes';
 import MapScreen from './src/screens/Map';
@@ -37,6 +38,21 @@ export default function App() {
   const [detail, setDetail] = useState(null);
   const [sheet, setSheet] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [online, setOnline] = useState(false);   // true = données du jour récupérées en ligne
+  const [, setDataVer] = useState(0);             // bump → re-rendu après application des données en ligne
+
+  // Au démarrage : on tente de récupérer les données à jour en ligne ; sinon on garde l'embarqué.
+  useEffect(() => {
+    let alive = true;
+    fetchRemoteData().then((d) => {
+      if (alive && applyRemote(d)) {
+        setDate(latestDate());
+        setOnline(true);
+        setDataVer((v) => v + 1);
+      }
+    });
+    return () => { alive = false; };
+  }, []);
 
   if (!loaded) return <View style={{ flex: 1, backgroundColor: C.bg }} />;
   const ed = getEdition(date);
@@ -54,6 +70,12 @@ export default function App() {
             <Text style={{ fontFamily: F.displayBold, fontSize: 18, color: C.ink }}>
               RDC <Text style={{ color: C.cobalt }}>Veille</Text>
             </Text>
+            {online ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 }}>
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.ok }} />
+                <Text style={{ fontFamily: F.mono, fontSize: 9.5, color: C.inkMut }}>données à jour · en ligne</Text>
+              </View>
+            ) : null}
           </View>
           <TouchableOpacity activeOpacity={0.7} onPress={() => setSearchOpen(true)} hitSlop={8}
             style={{ width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', marginRight: 4 }}>

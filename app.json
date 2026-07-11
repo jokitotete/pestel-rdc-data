@@ -16,6 +16,7 @@
     },
     "android": {
       "package": "consulting.twoid.pestelrdc",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#2f52e0"
@@ -34,8 +35,7 @@
           "resizeMode": "contain",
           "backgroundColor": "#2f52e0"
         }
-      ],
-      "expo-status-bar"
+      ]
     ],
     "extra": {
       "eas": {

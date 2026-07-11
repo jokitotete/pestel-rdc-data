@@ -33,3 +33,20 @@ export const search = (ed, q) => {
     `${it.code} ${it.title} ${it.text} ${it.analysis || ''}`.toLowerCase().includes(t)
   );
 };
+
+// Remplace les données embarquées par celles récupérées en ligne (mutation en place → tous les
+// consommateurs voient les nouvelles données au prochain rendu). Renvoie true si appliqué.
+export function applyRemote(d) {
+  if (!d || !d.editions || !d.manifest || !d.stats) return false;
+  try {
+    Object.keys(EDITIONS).forEach((k) => delete EDITIONS[k]);
+    Object.assign(EDITIONS, d.editions);
+    MANIFEST.length = 0;
+    MANIFEST.push(...d.manifest);
+    Object.keys(STATS).forEach((k) => delete STATS[k]);
+    Object.assign(STATS, d.stats);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}

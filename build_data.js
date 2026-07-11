@@ -39,8 +39,21 @@ const geoOut = "// Provinces RDC (geojson) — GÉNÉRÉ depuis le portail par b
   "export const PROVINCES = " + JSON.stringify(geo) + ";\n";
 fs.writeFileSync(path.join(__dirname, "src", "data", "provinces.js"), geoOut);
 
+// JSON hébergeable (éditions + manifeste + stats) — pour le fetch en ligne de l'app.
+// Les provinces (geo, statiques) restent embarquées, pas besoin de les servir.
+fs.mkdirSync(path.join(__dirname, "public"), { recursive: true });
+const remote = JSON.stringify({
+  editions: W.PESTEL_DATA || {},
+  manifest: W.PESTEL_MANIFEST || [],
+  stats: W.PESTEL_STATS || {},
+  generatedAt: (W.PESTEL_MANIFEST && W.PESTEL_MANIFEST[0] && W.PESTEL_MANIFEST[0].date) || "",
+});
+fs.writeFileSync(path.join(__dirname, "public", "pestel-data.json"), remote);
+
 const kb = Math.round(Buffer.byteLength(out) / 1024);
 const gkb = Math.round(Buffer.byteLength(geoOut) / 1024);
+const rkb = Math.round(Buffer.byteLength(remote) / 1024);
 console.log("✓ src/data/pestel.js : " + kb + " KB · " + editions.length + " éditions · " +
   (W.PESTEL_STATS && W.PESTEL_STATS.themes ? W.PESTEL_STATS.themes.length : 0) + " thèmes stats");
 console.log("✓ src/data/provinces.js : " + gkb + " KB · " + geo.features.length + " provinces");
+console.log("✓ public/pestel-data.json : " + rkb + " KB (à héberger pour le fetch en ligne)");
