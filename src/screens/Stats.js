@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Text, View, ScrollView, TouchableOpacity, Linking, Dimensions } from 'react-native';
+import { Text, View, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { C, F } from '../theme';
 import { Pill, Icon } from '../ui';
 import { ChartCard } from '../charts';
 import { STATS } from '../store';
+import { safeOpenURL } from '../safeUrl';
 
 // « Statistiques & tendances » — indicateurs (KPI) + graphes, par secteur.
 export default function Stats() {
@@ -50,7 +51,8 @@ export default function Stats() {
                     <Text style={{ fontFamily: F.bodySemi, fontSize: 12, color: C.ink, marginTop: 4, lineHeight: 16 }}>{ind.label}</Text>
                     {ind.note ? <Text style={{ fontFamily: F.body, fontSize: 10.5, color: C.inkMut, marginTop: 3, lineHeight: 14 }} numberOfLines={2}>{ind.note}</Text> : null}
                     {ind.src && ind.src.u ? (
-                      <TouchableOpacity onPress={() => Linking.openURL(ind.src.u)} style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 6 }}>
+                      <TouchableOpacity onPress={() => safeOpenURL(ind.src.u)} accessibilityRole="link"
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 6 }}>
                         <Icon name="link" size={10} color={C.cobalt} />
                         <Text style={{ fontFamily: F.mono, fontSize: 9.5, color: C.cobalt }} numberOfLines={1}>{ind.src.n || 'source'}</Text>
                       </TouchableOpacity>

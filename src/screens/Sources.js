@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Text, View, ScrollView, TouchableOpacity, Linking } from 'react-native';
+import { Text, View, ScrollView, TouchableOpacity } from 'react-native';
 import { C, F, REL } from '../theme';
 import { Card, SrcDot, Pill, CodeChip, Icon } from '../ui';
+import { confirmOpenURL, hostOf } from '../safeUrl';
 
 // Traçabilité : toutes les sources de l'édition, filtrables par fiabilité A→D.
 export default function Sources({ ed, onOpen }) {
@@ -28,9 +29,12 @@ export default function Sources({ ed, onOpen }) {
                 {(s.items || []).map((code) => <CodeChip key={code} code={code} onPress={() => onOpen(code)} />)}
               </View>
               {s.url ? (
-                <TouchableOpacity activeOpacity={0.7} onPress={() => Linking.openURL(s.url)} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 8 }}>
+                <TouchableOpacity activeOpacity={0.7} onPress={() => confirmOpenURL(s.url)} accessibilityRole="link"
+                  accessibilityLabel={`Ouvrir la source ${hostOf(s.url)}`}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 8 }}>
                   <Icon name="link" size={13} color={C.cobalt} />
-                  <Text style={{ fontFamily: F.bodyMed, fontSize: 11.5, color: C.cobalt }} numberOfLines={1}>Ouvrir la source</Text>
+                  <Text style={{ fontFamily: F.bodyMed, fontSize: 11.5, color: C.cobalt }} numberOfLines={1}>Ouvrir</Text>
+                  <Text style={{ fontFamily: F.mono, fontSize: 10.5, color: C.inkMut }} numberOfLines={1}>· {hostOf(s.url) || 'lien externe'}</Text>
                 </TouchableOpacity>
               ) : null}
             </View>

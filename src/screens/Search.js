@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Text, View, ScrollView, TextInput } from 'react-native';
+import { Text, View, ScrollView, TextInput, TouchableOpacity } from 'react-native';
 import { C, F, AX, AX_ICON } from '../theme';
 import { Card, CodeChip, RelBadge, Icon } from '../ui';
 import { search } from '../store';
@@ -24,7 +24,13 @@ export default function Search({ ed, onOpen }) {
           autoCorrect={false}
           returnKeyType="search"
         />
-        {q ? <Icon name="close" size={18} color={C.inkMut} onPress={() => setQ('')} /> : null}
+        {q ? (
+          <TouchableOpacity onPress={() => setQ('')} hitSlop={12}
+            accessibilityRole="button" accessibilityLabel="Effacer la recherche"
+            style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -8 }}>
+            <Icon name="close" size={18} color={C.inkMut} />
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       {!active ? (

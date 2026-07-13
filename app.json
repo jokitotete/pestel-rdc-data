@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "RDC · Veille",
+    "name": "Ntongo · RDC",
     "slug": "pestel-rdc",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "backgroundColor": "#f4f1ea",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/ntongo/icon.png",
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -18,22 +18,23 @@
       "package": "consulting.twoid.pestelrdc",
       "versionCode": 1,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#2f52e0"
+        "foregroundImage": "./assets/ntongo/adaptive-icon.png",
+        "backgroundImage": "./assets/ntongo/adaptive-background.png",
+        "backgroundColor": "#1D3FC4"
       }
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/ntongo/favicon.png"
     },
     "plugins": [
       "expo-font",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/splash-icon.png",
+          "image": "./assets/ntongo/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#2f52e0"
+          "backgroundColor": "#0A1330"
         }
       ]
     ],

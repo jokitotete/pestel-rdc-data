@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Text, View, ScrollView } from 'react-native';
-import { C, F, AX, AX_ICON, AX_SHORT, AX_ORDER, RUBRIQUES, tint } from '../theme';
+import { Text, View, ScrollView, TouchableOpacity } from 'react-native';
+import { C, F, AX, AXT, AX_ICON, AX_SHORT, AX_ORDER, RUBRIQUES, tint } from '../theme';
 import { Card, CodeChip, RelBadge, Pill } from '../ui';
 import { SECTORS, itemInSector } from '../sectors';
+import { upcomingEvents } from '../store';
 
 // Groupe de filtres étiqueté (rangée horizontale de pastilles).
 const FilterRow = ({ label, children }) => (
@@ -15,7 +16,7 @@ const FilterRow = ({ label, children }) => (
 );
 
 // « Décryptage » — navigation par AXE PESTEL, par RUBRIQUE (Culture & Arts, Sports) ou par SECTEUR transversal.
-export default function Axes({ ed, onOpen }) {
+export default function Axes({ ed, onOpen, onOpenEvent }) {
   const [filter, setFilter] = useState({ type: 'all' }); // {type:'all'|'axis'|'sector', key}
   const sector = filter.type === 'sector' ? SECTORS.find((s) => s.key === filter.key) : null;
 
@@ -28,6 +29,7 @@ export default function Axes({ ed, onOpen }) {
   const activeLabel = filter.type === 'sector' ? (sector && sector.label)
     : filter.type === 'axis' ? AX_SHORT[filter.key] : null;
   const isRubrique = filter.type === 'axis' && RUBRIQUES.indexOf(filter.key) >= 0;
+  const isEvents = filter.type === 'axis' && filter.key === 'Ev';   // Events = agrégat 3 semaines (P3)
 
   return (
     <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
@@ -55,15 +57,17 @@ export default function Axes({ ed, onOpen }) {
         ))}
       </FilterRow>
 
-      {/* Bandeau de contexte quand un filtre est actif */}
-      {activeLabel ? (
+      {/* Bandeau de contexte quand un filtre est actif (hors Events, qui a sa propre vue) */}
+      {activeLabel && !isEvents ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, marginBottom: 14 }}>
-          <Text style={{ fontFamily: F.bodySemi, fontSize: 13, color: AX[filter.key] || C.cobalt }}>{activeLabel}</Text>
+          <Text style={{ fontFamily: F.bodySemi, fontSize: 13, color: AXT[filter.key] || C.cobalt }}>{activeLabel}</Text>
           <Text style={{ fontFamily: F.mono, fontSize: 11, color: C.inkMut }}>{total} item{total > 1 ? 's' : ''}{filter.type === 'sector' ? ' · tous axes confondus' : ''}</Text>
         </View>
       ) : null}
 
-      {total === 0 ? (
+      {isEvents ? (
+        <EventsList onOpenEvent={onOpenEvent} />
+      ) : total === 0 ? (
         <Text style={{ fontFamily: F.body, fontSize: 13, color: C.inkMut, paddingVertical: 20, textAlign: 'center', lineHeight: 19 }}>
           {activeLabel ? `Aucun item « ${activeLabel} » dans cette édition.` : 'Aucun item.'}
           {isRubrique ? '\nRubrique couverte à partir des prochaines veilles.' : ''}
@@ -81,7 +85,7 @@ export default function Axes({ ed, onOpen }) {
                 <Text style={{ fontFamily: F.mono, fontSize: 10.5, color: C.inkMut }}>{a.lens}</Text>
               </View>
               <View style={{ backgroundColor: tint(c, 0.14), borderRadius: 20, paddingHorizontal: 9, paddingVertical: 3 }}>
-                <Text style={{ fontFamily: F.monoSemi, fontSize: 11, color: c }}>{a.items.length}</Text>
+                <Text style={{ fontFamily: F.monoSemi, fontSize: 11, color: AXT[a.key] || C.ink }}>{a.items.length}</Text>
               </View>
             </View>
 
@@ -103,5 +107,49 @@ export default function Axes({ ed, onOpen }) {
         );
       })}
     </ScrollView>
+  );
+}
+
+// Events (P3, NB1) — rendez-vous à venir sur une fenêtre glissante de 3 semaines, agrégés des AGENDAS
+// RÉELS de toutes les éditions (sourcés via leur code, non fabriqués). La ligne ouvre le dossier lié.
+function EventsList({ onOpenEvent }) {
+  const events = upcomingEvents(21);
+  const Ec = AX.Ev || C.cobalt;
+  return (
+    <View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, marginBottom: 14 }}>
+        <Text style={{ fontFamily: F.bodySemi, fontSize: 13, color: AXT.Ev || C.cobalt }}>🎟️ Events</Text>
+        <Text style={{ fontFamily: F.mono, fontSize: 11, color: C.inkMut }}>rendez-vous à venir · 3 semaines</Text>
+      </View>
+      {events.length === 0 ? (
+        <Text style={{ fontFamily: F.body, fontSize: 13, color: C.inkMut, paddingVertical: 20, textAlign: 'center', lineHeight: 19 }}>
+          Aucun rendez-vous daté sur les 3 prochaines semaines.{'\n'}Rubrique alimentée par les agendas des prochaines veilles.
+        </Text>
+      ) : (
+        <Card style={{ paddingVertical: 4 }}>
+          {events.map((e, i) => (
+            <View key={i}>
+              <TouchableOpacity activeOpacity={e.code ? 0.7 : 1} onPress={() => e.code && onOpenEvent(e.code, e.edDate)}
+                accessibilityRole={e.code ? 'button' : 'text'} accessibilityLabel={e.what}
+                style={{ flexDirection: 'row', gap: 10, paddingVertical: 12, paddingHorizontal: 14, alignItems: 'flex-start' }}>
+                <View style={{ alignSelf: 'flex-start', backgroundColor: tint(Ec, 0.14), borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, marginTop: 1 }}>
+                  <Text style={{ fontFamily: F.monoSemi, fontSize: 10, color: AXT.Ev || C.ink }} numberOfLines={1}>{e.when}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontFamily: F.body, fontSize: 13, color: C.inkDim, lineHeight: 18 }}>{e.what}</Text>
+                  {e.code ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
+                      <CodeChip code={e.code} />
+                      <Text style={{ fontFamily: F.mono, fontSize: 10, color: C.inkMut }}>voir le dossier</Text>
+                    </View>
+                  ) : null}
+                </View>
+              </TouchableOpacity>
+              {i < events.length - 1 ? <View style={{ height: 1, backgroundColor: C.border2, marginHorizontal: 14 }} /> : null}
+            </View>
+          ))}
+        </Card>
+      )}
+    </View>
   );
 }

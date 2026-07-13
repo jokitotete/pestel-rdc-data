@@ -1,14 +1,26 @@
 import React from 'react';
-import { Text, View, ScrollView, TouchableOpacity, Linking } from 'react-native';
-import { C, F, AX, AX_ICON, tint, relFr, relIsOk } from '../theme';
+import { Text, View, ScrollView, TouchableOpacity } from 'react-native';
+import { C, F, AX, AXT, AX_ICON, tint, relFr, relIsOk } from '../theme';
 import { CodeChip, RelBadge, SrcDot, Icon, Rule } from '../ui';
 import { findItem, sourcesFor } from '../store';
+import { confirmOpenURL, hostOf } from '../safeUrl';
 
 // Zoom sur un item : texte intégral, analyse, contexte, chronologie, acteurs, perspectives, sources.
 export default function Detail({ ed, code, onOpen }) {
   const it = findItem(ed, code);
-  if (!it) return null;
-  const c = AX[it.axis] || C.cobalt;
+  // ROB-04 : jamais de feuille MUETTE. Un code introuvable (agenda orphelin, course de synchro) affiche
+  // un état vide EXPLICITE au lieu de `return null` (qui laissait une modale sans contenu ni message).
+  if (!it) return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+      <Text style={{ fontSize: 30, marginBottom: 10 }}>🗂️</Text>
+      <Text style={{ fontFamily: F.bodySemi, fontSize: 15, color: C.ink, textAlign: 'center', marginBottom: 4 }}>Dossier indisponible</Text>
+      <Text style={{ fontFamily: F.body, fontSize: 13, color: C.inkMut, textAlign: 'center', lineHeight: 19 }}>
+        Cet élément n'existe pas (ou plus) dans l'édition affichée. Il a pu changer lors d'une mise à jour.
+      </Text>
+    </View>
+  );
+  const c = AX[it.axis] || C.cobalt;     // graphique (bordure/tint/point)
+  const ct = AXT[it.axis] || C.ink;      // texte conforme AA
   const z = it.zoom || {};
   const srcs = sourcesFor(ed, it.sources);
 
@@ -18,7 +30,7 @@ export default function Detail({ ed, code, onOpen }) {
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
         <CodeChip code={it.code} />
         <Text style={{ fontSize: 14 }}>{AX_ICON[it.axis]}</Text>
-        <Text style={{ fontFamily: F.bodySemi, fontSize: 12.5, color: c }}>{it.axisName}</Text>
+        <Text style={{ fontFamily: F.bodySemi, fontSize: 12.5, color: ct }}>{it.axisName}</Text>
         <View style={{ flex: 1 }} />
         <RelBadge reliability={it.reliability} />
       </View>
@@ -32,7 +44,7 @@ export default function Detail({ ed, code, onOpen }) {
       {/* Analyse */}
       {it.analysis ? (
         <View style={{ backgroundColor: tint(c, 0.08), borderLeftWidth: 3, borderLeftColor: c, borderRadius: 10, padding: 14, marginTop: 16 }}>
-          <Text style={{ fontFamily: F.monoSemi, fontSize: 10.5, color: c, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 6 }}>Analyse</Text>
+          <Text style={{ fontFamily: F.monoSemi, fontSize: 10.5, color: ct, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 6 }}>Analyse</Text>
           <Text style={{ fontFamily: F.body, fontSize: 13.5, color: C.inkDim, lineHeight: 21, fontStyle: 'italic' }}>{it.analysis}</Text>
         </View>
       ) : null}
@@ -54,7 +66,7 @@ export default function Detail({ ed, code, onOpen }) {
                 {i < z.timeline.length - 1 && <View style={{ width: 1.5, flex: 1, backgroundColor: C.border, marginTop: 2 }} />}
               </View>
               <View style={{ flex: 1, paddingBottom: 4 }}>
-                <Text style={{ fontFamily: F.monoSemi, fontSize: 11, color: c, marginBottom: 2 }}>{t.d}</Text>
+                <Text style={{ fontFamily: F.monoSemi, fontSize: 11, color: ct, marginBottom: 2 }}>{t.d}</Text>
                 <Text style={{ fontFamily: F.body, fontSize: 13, color: C.inkDim, lineHeight: 19 }}>{t.e}</Text>
               </View>
             </View>
@@ -85,7 +97,9 @@ export default function Detail({ ed, code, onOpen }) {
       {/* Items liés */}
       {it.related && it.related.length ? (
         <Block title="Liés">
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {/* A11Y-04 : gap ≥ 2×hitSlop des CodeChip pour que les zones tactiles ne se chevauchent pas
+              (sinon on ouvre le mauvais item). rowGap pour l'espacement vertical entre rangées. */}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: 20, rowGap: 12 }}>
             {it.related.map((rc) => <CodeChip key={rc} code={rc} onPress={() => onOpen(rc)} />)}
           </View>
         </Block>
@@ -95,14 +109,17 @@ export default function Detail({ ed, code, onOpen }) {
       {srcs.length ? (
         <Block title={`Sources (${srcs.length})`}>
           {srcs.map((s) => (
-            <TouchableOpacity key={s.id} activeOpacity={0.7} onPress={() => s.url && Linking.openURL(s.url)}
+            <TouchableOpacity key={s.id} activeOpacity={0.7} onPress={() => s.url && confirmOpenURL(s.url)}
+              accessibilityRole="link" accessibilityLabel={s.url ? `Ouvrir la source ${hostOf(s.url)}` : s.name}
               style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start', paddingVertical: 9 }}>
               <SrcDot rel={s.reliability} />
               <View style={{ flex: 1 }}>
                 <Text style={{ fontFamily: F.body, fontSize: 12.5, color: C.inkDim, lineHeight: 18 }} numberOfLines={3}>{s.name}</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3, flexWrap: 'wrap' }}>
                   <Text style={{ fontFamily: F.mono, fontSize: 10.5, color: C.inkMut }}>{s.type} · {s.date}</Text>
+                  {/* SEC-01 : on montre le DOMAINE réel de destination, pas seulement une icône de lien. */}
                   {s.url ? <Icon name="link" size={12} color={C.cobalt} /> : null}
+                  {s.url ? <Text style={{ fontFamily: F.mono, fontSize: 10.5, color: C.cobalt }} numberOfLines={1}>{hostOf(s.url)}</Text> : null}
                 </View>
               </View>
             </TouchableOpacity>

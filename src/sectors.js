@@ -17,3 +17,12 @@ export const itemInSector = (it, sector) => {
   const hay = `${it.title} ${it.text} ${it.analysis || ''}`.toLowerCase();
   return sector.kw.some((k) => hay.indexOf(k) >= 0);
 };
+
+// Match FORT (anti faux-positif — exigence PO) : uniquement le TITRE et l'ANALYSE, pas le corps du
+// texte. Évite qu'un simple mot tangentiel dans le corps promeuve un item au rang « de votre secteur ».
+export const itemInSectorStrong = (it, sector) => {
+  const hay = `${it.title || ''} ${it.analysis || ''}`.toLowerCase();
+  return sector.kw.some((k) => hay.indexOf(k) >= 0);
+};
+
+export const sectorByKey = (key) => SECTORS.find((s) => s.key === key) || null;
