@@ -17,6 +17,12 @@ export default function MapScreen({ ed, onOpen }) {
   const selItems = sel ? activity[sel] || [] : [];
   const actives = Object.keys(activity).sort((a, b) => activity[b].length - activity[a].length);
 
+  // Transparence du dénominateur : la carte ne couvre que les actualités géolocalisées.
+  const totalItems = ed.axes.reduce((n, a) => n + a.items.length, 0);
+  const localisedCodes = new Set();
+  Object.values(activity).forEach((items) => items.forEach((it) => localisedCodes.add(it.code)));
+  const nLoc = localisedCodes.size;
+
   const fillFor = (name) => {
     if (sel === name) return C.cobalt;
     const n = (activity[name] || []).length;
@@ -26,6 +32,13 @@ export default function MapScreen({ ed, onOpen }) {
   return (
     <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
       <SectionHead title="🗺️ Carte des actualités" lens="par province · touchez pour explorer" />
+
+      {/* Dénominateur explicite : la carte ne couvre que les actualités géolocalisées. */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
+        <Icon name="map-pin" size={13} color={C.cobalt} />
+        <Text style={{ fontFamily: F.bodySemi, fontSize: 12.5, color: C.ink }}>{nLoc} localisée{nLoc > 1 ? 's' : ''} / {totalItems}</Text>
+        <Text style={{ fontFamily: F.mono, fontSize: 10, color: C.inkMut }}>{totalItems - nLoc} nationales · un item peut couvrir plusieurs provinces</Text>
+      </View>
 
       <Card style={{ padding: 12, alignItems: 'center' }}>
         <Svg width={mapW} height={mapH}>
