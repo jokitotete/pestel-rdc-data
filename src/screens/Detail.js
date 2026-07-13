@@ -62,11 +62,15 @@ export default function Detail({ ed, code, onOpen }) {
         </Block>
       ) : null}
 
-      {/* Acteurs */}
+      {/* Acteurs — rendu défensif : texte, tableau de textes, ou tableau d'objets {name, role}. */}
       {z.actors ? (
         <Block title="Acteurs">
           <Text style={{ fontFamily: F.body, fontSize: 13.5, color: C.inkDim, lineHeight: 21 }}>
-            {Array.isArray(z.actors) ? z.actors.join(' · ') : z.actors}
+            {(Array.isArray(z.actors) ? z.actors : [z.actors])
+              .map((a) => (typeof a === 'string' ? a
+                : a && a.name ? (a.role ? `${a.name} — ${a.role}` : a.name)
+                : (a && (a.text || a.acteur)) || ''))
+              .filter(Boolean).join(' · ')}
           </Text>
         </Block>
       ) : null}
