@@ -26,7 +26,7 @@ export default function MapScreen({ ed, onOpen }) {
   const fillFor = (name) => {
     if (sel === name) return C.cobalt;
     const n = (activity[name] || []).length;
-    return n ? tint(C.cobalt, 0.16 + (n / maxN) * 0.42) : '#e9e2d4';
+    return n ? tint(C.cobalt, 0.16 + (n / maxN) * 0.42) : C.mapNeutral;
   };
 
   return (
@@ -43,12 +43,12 @@ export default function MapScreen({ ed, onOpen }) {
       <Card style={{ padding: 12, alignItems: 'center' }}>
         <Svg width={mapW} height={mapH}>
           {paths.map((p) => (
-            <Path key={p.name} d={p.d} fill={fillFor(p.name)} stroke="#fffdf8" strokeWidth={0.7}
+            <Path key={p.name} d={p.d} fill={fillFor(p.name)} stroke={C.mapStroke} strokeWidth={0.7}
               onPress={() => setSel(sel === p.name ? null : p.name)} />
           ))}
         </Svg>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
-          <View style={{ width: 11, height: 11, borderRadius: 3, backgroundColor: '#e9e2d4' }} />
+          <View style={{ width: 11, height: 11, borderRadius: 3, backgroundColor: C.mapNeutral }} />
           <Text style={{ fontFamily: F.mono, fontSize: 10, color: C.inkMut }}>calme</Text>
           <View style={{ width: 26, height: 8, borderRadius: 4, backgroundColor: tint(C.cobalt, 0.45), marginLeft: 6 }} />
           <Text style={{ fontFamily: F.mono, fontSize: 10, color: C.inkMut }}>plus d'actualités →</Text>

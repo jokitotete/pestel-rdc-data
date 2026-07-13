@@ -7,7 +7,7 @@ import { Fraunces_600SemiBold, Fraunces_700Bold } from '@expo-google-fonts/fraun
 import { IBMPlexSans_400Regular, IBMPlexSans_500Medium, IBMPlexSans_600SemiBold, IBMPlexSans_700Bold } from '@expo-google-fonts/ibm-plex-sans';
 import { IBMPlexMono_400Regular, IBMPlexMono_500Medium, IBMPlexMono_600SemiBold } from '@expo-google-fonts/ibm-plex-mono';
 
-import { C, F } from './src/theme';
+import { C, F, applyTheme } from './src/theme';
 import { Icon, Rule } from './src/ui';
 import { getEdition, latestDate, editionsList, applyRemote } from './src/store';
 import { fetchRemoteData, DATA_URL } from './src/remote';
@@ -40,6 +40,9 @@ export default function App() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [online, setOnline] = useState(false);   // true = données du jour récupérées en ligne
   const [, setDataVer] = useState(0);             // bump → re-rendu après application des données en ligne
+  const [mode, setMode] = useState('light');      // thème clair (défaut) / sombre
+  const [, setThemeVer] = useState(0);
+  const toggleTheme = () => { const m = mode === 'light' ? 'dark' : 'light'; applyTheme(m); setMode(m); setThemeVer((v) => v + 1); };
 
   // Au démarrage : on tente de récupérer les données à jour en ligne ; sinon on garde l'embarqué.
   useEffect(() => {
@@ -59,7 +62,7 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="dark" />
+      <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
       <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right']}>
         {/* En-tête de marque */}
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.border2 }}>
@@ -77,6 +80,10 @@ export default function App() {
               </View>
             ) : null}
           </View>
+          <TouchableOpacity activeOpacity={0.7} onPress={toggleTheme} hitSlop={8}
+            style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name={mode === 'dark' ? 'sun' : 'moon'} size={18} color={C.inkDim} />
+          </TouchableOpacity>
           <TouchableOpacity activeOpacity={0.7} onPress={() => setSearchOpen(true)} hitSlop={8}
             style={{ width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', marginRight: 4 }}>
             <Icon name="search" size={20} color={C.inkDim} />

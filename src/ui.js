@@ -23,6 +23,7 @@ const NAV = {
   back: 'chevron-back', close: 'close', chevron: 'chevron-forward',
   calendar: 'calendar-outline', link: 'open-outline', dot: 'ellipse',
   'map-pin': 'location-outline', checkmark: 'checkmark',
+  moon: 'moon-outline', sun: 'sunny-outline',
 };
 export const Icon = ({ name, size = 22, color = C.ink, style }) => (
   <Ionicons name={NAV[name] || name} size={size} color={color} style={style} />

@@ -1,24 +1,27 @@
 // Jetons de conception — repris 1:1 du portail web PESTEL RDC (styles.css :root, thème clair).
 // Une seule source de couleurs/polices/formats : aucune valeur en dur dispersée dans les écrans.
 
-export const C = {
-  bg: '#f4f1ea',
-  bg2: '#ece6da',
-  panel: '#fffdf8',
-  panel2: '#f6f2ea',
-  elev: '#fffefb',
-  border: 'rgba(30,30,40,0.12)',
-  border2: 'rgba(30,30,40,0.07)',
-  ink: '#1a2230',       // --text
-  inkDim: '#4d5a6e',    // --text-dim
-  inkMut: '#7d8798',    // --text-mut
-  cobalt: '#2f52e0',
-  cobaltDim: 'rgba(47,82,224,0.10)',
-  gold: '#c98a12',
-  alert: '#d64046',
-  ok: '#1f9d63',
-  white: '#ffffff',
+// Deux palettes — clair (défaut, comme le portail) et sombre. `C` est MUTABLE :
+// applyTheme() y recopie la palette active, et un re-rendu (App.js) la propage à tous les
+// écrans (ils lisent C.x au rendu). Évite de convertir chaque composant à un contexte.
+export const LIGHT = {
+  bg: '#f4f1ea', bg2: '#ece6da', panel: '#fffdf8', panel2: '#f6f2ea', elev: '#fffefb',
+  border: 'rgba(30,30,40,0.12)', border2: 'rgba(30,30,40,0.07)',
+  ink: '#1a2230', inkDim: '#4d5a6e', inkMut: '#7d8798',
+  cobalt: '#2f52e0', cobaltDim: 'rgba(47,82,224,0.10)',
+  gold: '#c98a12', alert: '#d64046', ok: '#1f9d63', white: '#ffffff',
+  mapNeutral: '#e9e2d4', mapStroke: '#fffdf8',   // province « calme » / trait entre provinces
 };
+export const DARK = {
+  bg: '#0a0e15', bg2: '#0f1620', panel: '#121a26', panel2: '#0f1620', elev: '#17212f',
+  border: 'rgba(255,255,255,0.10)', border2: 'rgba(255,255,255,0.055)',
+  ink: '#e8eef6', inkDim: '#93a1b5', inkMut: '#647085',
+  cobalt: '#5c82ff', cobaltDim: 'rgba(92,130,255,0.18)',
+  gold: '#e7b74b', alert: '#ec5b60', ok: '#33c07f', white: '#ffffff',
+  mapNeutral: '#28313f', mapStroke: '#0a0e15',
+};
+export const C = { ...LIGHT };                    // palette active (mutée par applyTheme)
+export function applyTheme(mode) { Object.assign(C, mode === 'dark' ? DARK : LIGHT); return mode; }
 
 // Couleurs des 6 axes PESTEL (identiques au portail : --ax-*) + 2 rubriques hors PESTEL.
 export const AX = {
