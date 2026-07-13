@@ -20,7 +20,7 @@ export const C = {
   white: '#ffffff',
 };
 
-// Couleurs des 6 axes PESTEL (identiques au portail : --ax-*)
+// Couleurs des 6 axes PESTEL (identiques au portail : --ax-*) + 2 rubriques hors PESTEL.
 export const AX = {
   P:   '#e0484d',  // Politique / Gouvernance / Sécurité — rouge
   E:   '#c98a12',  // Économie — or (assombri pour lisibilité sur fond clair)
@@ -28,10 +28,14 @@ export const AX = {
   T:   '#2f8fe0',  // Technologique & Numérique — cyan
   Env: '#2fa571',  // Environnement — vert
   L:   '#8f6fe6',  // Légal & Réglementaire — violet
+  C:   '#b5417a',  // Culture & Arts — magenta (rubrique)
+  Sp:  '#e0762e',  // Sports — orange (rubrique)
 };
-export const AX_ICON = { P: '🏛️', E: '📈', S: '👥', T: '🖥️', Env: '🌍', L: '⚖️' };
-export const AX_SHORT = { P: 'Politique', E: 'Économie', S: 'Social', T: 'Numérique', Env: 'Environnement', L: 'Légal' };
+export const AX_ICON = { P: '🏛️', E: '📈', S: '👥', T: '🖥️', Env: '🌍', L: '⚖️', C: '🎭', Sp: '⚽' };
+export const AX_SHORT = { P: 'Politique', E: 'Économie', S: 'Social', T: 'Numérique', Env: 'Environnement', L: 'Légal', C: 'Culture & Arts', Sp: 'Sports' };
 export const AX_ORDER = ['P', 'E', 'S', 'T', 'Env', 'L'];
+// Rubriques hors grille PESTEL (beats d'actualité) — traitées comme des axes dans les données.
+export const RUBRIQUES = ['C', 'Sp'];
 
 // Fiabilité des sources (A→D), couleurs du portail (--rel-*)
 export const REL = {
