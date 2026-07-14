@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Text, View, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
-import { C, F, AX, AXT, AX_SHORT, AX_ORDER, RUBRIQUES, tint } from '../theme';
+import { C, F, AX, AXT, AX_SHORT, AX_ORDER, RUBRIQUES, tint, pick } from '../theme';
 import { Card, SectionHead, Pill, Icon, Rule, AxisGlyph, SectorGlyph, NewsCard, PageHeader, SourceLine } from '../ui';
 import { allItems, upcomingEvents, primarySource, findItem } from '../store';
 import { SECTORS, itemInSector } from '../sectors';
@@ -27,7 +27,7 @@ function ToTreatSection({ feed }) {
       <SectionHead title="À traiter" icon="triage" lens="capté aujourd’hui · à décrypter" />
       <Card style={{ paddingVertical: 4 }}>
         {items.map((f, i, arr) => {
-          const ct = AXT[f.axis] || C.inkDim;
+          const ct = pick(AXT, f.axis, C.inkDim);   // RS3 : prototype-safe (f.axis vient du feed NON FIABLE)
           return (
             <View key={i}>
               <TouchableOpacity activeOpacity={0.7} onPress={() => confirmOpenURL(f.url)}

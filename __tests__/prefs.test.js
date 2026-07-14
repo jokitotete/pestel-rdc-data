@@ -1,7 +1,8 @@
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
-import { loadSector, saveSector, sanitizeFavs, MAX_FAVS } from '../src/prefs';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { loadSector, saveSector, sanitizeFavs, MAX_FAVS, loadPrefs, savePrefs } from '../src/prefs';
 
 describe('prefs — persistance du secteur (Lentille)', () => {
   it('save puis load restaure le secteur choisi', async () => {
@@ -44,5 +45,27 @@ describe('prefs.sanitizeFavs — frontière de stockage (fail-closed)', () => {
     expect(sanitizeFavs([ok({ id: 'a' }), ok({ id: 'a' })]).length).toBe(1);
     const many = Array.from({ length: MAX_FAVS + 50 }, (_, i) => ok({ id: 'k' + i }));
     expect(sanitizeFavs(many).length).toBe(MAX_FAVS);
+  });
+
+  it("RS3 : l'axis est réduit à une liste blanche (jamais une clé de prototype)", () => {
+    expect(sanitizeFavs([ok({ axis: 'constructor' })])[0].axis).toBe('?');
+    expect(sanitizeFavs([ok({ axis: '__proto__' })])[0].axis).toBe('?');
+    expect(sanitizeFavs([ok({ axis: 'Zzz' })])[0].axis).toBe('?');   // string inconnue → '?'
+    expect(sanitizeFavs([ok({ axis: 'P' })])[0].axis).toBe('P');     // axe réel conservé
+    expect(sanitizeFavs([ok({ axis: 'Env' })])[0].axis).toBe('Env');
+  });
+});
+
+// RS3 : savePrefs sérialise les écritures via un cache RAM (source de vérité) → deux patches de clés
+// DIFFÉRENTES non attendus ne se perdent plus (l'ancien read-modify-write disque en écrasait un).
+describe('prefs.savePrefs — écritures sérialisées, pas de lost-update', () => {
+  beforeEach(async () => { await AsyncStorage.clear(); await loadPrefs(); });
+  it('conserve les DEUX clés quand deux savePrefs concurrents visent des clés distinctes', async () => {
+    const p1 = savePrefs({ mode: 'dark' });
+    const p2 = savePrefs({ notifOn: true });
+    await Promise.all([p1, p2]);
+    const p = await loadPrefs();
+    expect(p.mode).toBe('dark');
+    expect(p.notifOn).toBe(true);
   });
 });

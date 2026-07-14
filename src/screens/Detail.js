@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, View, ScrollView, TouchableOpacity, Share } from 'react-native';
-import { C, F, AX, AXT, tint, relFr, relIsOk } from '../theme';
+import { C, F, AX, AXT, tint, pick, relFr, relIsOk } from '../theme';
 import { RelBadge, SrcDot, Icon, Rule, AxisGlyph } from '../ui';
 import { findItem, sourcesFor, primarySource } from '../store';
 import { confirmOpenURL, hostOf, isSafeUrl } from '../safeUrl';
@@ -19,8 +19,8 @@ export default function Detail({ ed, code, onOpen, isFav, onToggleFav }) {
       </Text>
     </View>
   );
-  const c = AX[it.axis] || C.cobalt;     // graphique (bordure/tint/point)
-  const ct = AXT[it.axis] || C.ink;      // texte conforme AA
+  const c = pick(AX, it.axis, C.cobalt);   // graphique (bordure/tint/point) — RS3 : prototype-safe
+  const ct = pick(AXT, it.axis, C.ink);    // texte conforme AA — RS3 : prototype-safe
   const z = it.zoom || {};
   const srcs = sourcesFor(ed, it.sources);
   const psrc = primarySource(ed, it);
@@ -81,8 +81,8 @@ export default function Detail({ ed, code, onOpen, isFav, onToggleFav }) {
         </Block>
       ) : null}
 
-      {/* Chronologie */}
-      {z.timeline && z.timeline.length ? (
+      {/* Chronologie — RS3 : Array.isArray (le seul `.length` laissait passer une CHAÎNE, puis .map plantait) */}
+      {Array.isArray(z.timeline) && z.timeline.length ? (
         <Block title="Chronologie">
           {z.timeline.map((t, i) => (
             <View key={i} style={{ flexDirection: 'row', gap: 12, marginBottom: 10 }}>

@@ -10,7 +10,7 @@ import { IBMPlexMono_400Regular, IBMPlexMono_500Medium, IBMPlexMono_600SemiBold 
 
 import { C, F, applyTheme, tint } from './src/theme';
 import { Icon, shadow } from './src/ui';
-import { getEdition, latestDate, editionsList, applyRemote, getFeed, getTriage } from './src/store';
+import { getEdition, findItem, latestDate, editionsList, applyRemote, getFeed, getTriage } from './src/store';
 import { fetchRemoteData } from './src/remote';
 import { confirmOpenURL, isSafeUrl } from './src/safeUrl';
 import { loadPrefs, savePrefs, MAX_FAVS } from './src/prefs';
@@ -83,11 +83,15 @@ export default function App() {
     });
   }, []);
   const openFav = useCallback((fav) => {
+    // RS3 : vérifier que l'ITEM (pas seulement l'édition) résout encore. Une re-publication intra-day peut
+    // garder l'édition mais renommer/retirer le code → Detail afficherait « Dossier indisponible » SANS
+    // proposer la source pourtant connue. On ne va sur Detail que si l'item existe ; sinon repli source.
     const e = getEdition(fav.edDate);
-    if (e) { setDetailEd(e); setDetail(fav.code); return; }
-    // Édition sortie de la fenêtre glissante : pas de cul-de-sac. Ouvrir la source d'origine si https sûre.
+    const it = e && findItem(e, fav.code);
+    if (it) { setDetailEd(e); setDetail(fav.code); return; }
+    // Édition OU item disparu (fenêtre glissante / re-publication) : pas de cul-de-sac. Source si https sûre.
     if (fav.source && fav.source.url && isSafeUrl(fav.source.url)) { confirmOpenURL(fav.source.url); return; }
-    Alert.alert('Article indisponible', "L'édition de cet article n'est plus chargée et aucune source externe n'est disponible.");
+    Alert.alert('Article indisponible', "Cet article n'est plus chargé et aucune source externe n'est disponible.");
   }, []);
   const dismissNewEdition = useCallback((d) => { setLastSeen(d); savePrefs({ lastSeen: d }); }, []);
   const toggleNotif = useCallback(async () => {
@@ -131,11 +135,21 @@ export default function App() {
     return () => { clearInterval(iv); if (sub && sub.remove) sub.remove(); };
   }, [refresh]);
 
+  // RS3 (blocker) : si l'édition SÉLECTIONNÉE disparaît d'EDITIONS (une synchro avance la fenêtre glissante
+  // pendant qu'on consulte une édition ancienne), `date` pointe dans le vide → getEdition(date)=null →
+  // déréférencement `ed.label` = écran blanc irrécupérable. On re-cale l'état sur la dernière édition
+  // disponible. Le fallback au rendu (ci-dessous) protège la frame courante ; cet effet rétablit la cohérence
+  // (badge fraîcheur, sélecteur). Garde stricte → pas de boucle : latestDate() résout, donc no-op ensuite.
+  useEffect(() => {
+    if (!getEdition(date)) { followLatestRef.current = true; setDate(latestDate()); }
+  });
+
   if (!loaded) return null;   // polices en cours : le splash natif reste affiché (preventAutoHide)
-  const ed = getEdition(date);
+  const ed = getEdition(date) || getEdition(latestDate());   // RS3 : jamais null au rendu (cf. effet de re-calage)
   const dEd = detailEd || ed;   // l'item du détail peut venir d'une autre édition (Event)
 
   return (
+    <ErrorBoundary>
     <SafeAreaProvider>
       <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
       <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right']}>
@@ -195,7 +209,8 @@ export default function App() {
         <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right', 'bottom']}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.border2 }}>
             <Text style={{ fontFamily: F.mono, fontSize: 11.5, color: C.inkMut }}>{dEd.label}</Text>
-            <TouchableOpacity onPress={closeDetail} hitSlop={10} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <TouchableOpacity onPress={closeDetail} hitSlop={14} accessibilityRole="button" accessibilityLabel="Fermer"
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44, justifyContent: 'center' }}>
               <Text style={{ fontFamily: F.bodySemi, fontSize: 13, color: C.cobalt }}>Fermer</Text>
               <Icon name="close" size={18} color={C.cobalt} />
             </TouchableOpacity>
@@ -209,7 +224,8 @@ export default function App() {
         <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right', 'bottom']}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.border2 }}>
             <Text style={{ fontFamily: F.display, fontSize: 16, color: C.ink }}>Recherche</Text>
-            <TouchableOpacity onPress={() => setSearchOpen(false)} hitSlop={10} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <TouchableOpacity onPress={() => setSearchOpen(false)} hitSlop={14} accessibilityRole="button" accessibilityLabel="Fermer"
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44, justifyContent: 'center' }}>
               <Text style={{ fontFamily: F.bodySemi, fontSize: 13, color: C.cobalt }}>Fermer</Text>
               <Icon name="close" size={18} color={C.cobalt} />
             </TouchableOpacity>
@@ -224,7 +240,34 @@ export default function App() {
       {/* Écran d'accueil « bande annonce » — logo + slogan + drapeau, ≥ 3 s, par-dessus tout au lancement */}
       {!welcomeDone && <Welcome onLayout={onWelcomeLayout} onDone={() => setWelcomeDone(true)} />}
     </SafeAreaProvider>
+    </ErrorBoundary>
   );
+}
+
+// RS3 : filet de sécurité racine. Un throw pendant le rendu (donnée distante hors-contrat, cas limite non
+// prévu) devenait un ÉCRAN BLANC irrécupérable (aucun ErrorBoundary n'existait). Ici : état dégradé lisible
+// + « Réessayer » (re-tente le rendu). Aucune télémétrie — rien ne quitte l'appareil (posture cybersécurité).
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { err: null }; }
+  static getDerivedStateFromError(err) { return { err }; }
+  componentDidCatch() { /* pas de report réseau : aucune donnée ne sort de l'appareil */ }
+  render() {
+    if (!this.state.err) return this.props.children;
+    return (
+      <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+        <Icon name="warning" size={34} color={C.gold} style={{ marginBottom: 12 }} />
+        <Text style={{ fontFamily: F.displayBold, fontSize: 20, color: C.ink, marginBottom: 8, textAlign: 'center' }}>Une erreur est survenue</Text>
+        <Text style={{ fontFamily: F.body, fontSize: 13.5, color: C.inkMut, textAlign: 'center', lineHeight: 20, marginBottom: 22 }}>
+          L'affichage a rencontré un problème. Réessayez ; si cela persiste, rouvrez l'application.
+        </Text>
+        <TouchableOpacity onPress={() => this.setState({ err: null })} activeOpacity={0.85}
+          accessibilityRole="button" accessibilityLabel="Réessayer"
+          style={{ backgroundColor: C.actionFill, borderRadius: 22, paddingHorizontal: 24, minHeight: 44, justifyContent: 'center' }}>
+          <Text style={{ fontFamily: F.bodySemi, fontSize: 14, color: C.onAction }}>Réessayer</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 }
 
 // « Le Réveil Ntongo » — bandeau « nouvelle édition » : signale la nouveauté depuis la dernière visite
@@ -234,7 +277,8 @@ function NewEditionBanner({ ed, onDismiss }) {
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 9, backgroundColor: tint(C.cobalt, 0.1), borderBottomWidth: 1, borderBottomColor: tint(C.cobalt, 0.28) }}>
       <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: C.cobalt }} />
       <Text style={{ flex: 1, fontFamily: F.bodyMed, fontSize: 12, color: C.ink }}>Nouvelle édition du {ed.label}</Text>
-      <TouchableOpacity onPress={onDismiss} hitSlop={10} accessibilityRole="button" accessibilityLabel="Marquer comme vue">
+      <TouchableOpacity onPress={onDismiss} hitSlop={14} accessibilityRole="button" accessibilityLabel="Marquer comme vue"
+        style={{ minHeight: 32, justifyContent: 'center', paddingLeft: 6 }}>
         <Icon name="close" size={16} color={C.inkMut} />
       </TouchableOpacity>
     </View>
@@ -347,6 +391,8 @@ function EditionSheet({ open, date, onClose, onPick }) {
               const on = e.date === date;
               return (
                 <TouchableOpacity key={e.date} onPress={() => onPick(e.date)}
+                  accessibilityRole="button" accessibilityState={{ selected: on }}
+                  accessibilityLabel={on ? `${e.label}, édition affichée` : e.label}
                   style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 15 }}>
                   <Text style={{ fontFamily: on ? F.bodySemi : F.body, fontSize: 15, color: on ? C.cobalt : C.ink }}>{e.label}</Text>
                   {on ? <Icon name="checkmark" size={18} color={C.cobalt} /> : null}

@@ -3,7 +3,7 @@ import { Text, View, TouchableOpacity } from 'react-native';
 import Svg, { Rect, Circle, Line, Polyline, G } from 'react-native-svg';
 import { C, F, AX } from './theme';
 import { Icon } from './ui';
-import { safeOpenURL } from './safeUrl';
+import { confirmOpenURL } from './safeUrl';
 
 // NB : on n'utilise PAS <Text> de react-native-svg (invisible avec police custom).
 // Toutes les étiquettes sont des <Text> React Native superposés en absolu.
@@ -165,7 +165,7 @@ export function ChartCard({ trend, width }) {
       {trend.type === 'line' && <LineChart labels={trend.labels} series={trend.series} width={inner} />}
       {trend.type === 'donut' && <DonutChart data={trend.data} centerV={trend.centerV} centerL={trend.centerL} />}
       {trend.src && trend.src.u ? (
-        <TouchableOpacity onPress={() => safeOpenURL(trend.src.u)} accessibilityRole="link" style={{ flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-end', marginTop: 10 }}>
+        <TouchableOpacity onPress={() => confirmOpenURL(trend.src.u)} accessibilityRole="link" style={{ flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-end', marginTop: 10 }}>
           <Icon name="link" size={11} color={C.cobalt} />
           <Text style={{ fontFamily: F.mono, fontSize: 10, color: C.cobalt }}>{trend.src.n || 'source'}</Text>
         </TouchableOpacity>

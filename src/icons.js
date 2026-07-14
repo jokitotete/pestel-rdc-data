@@ -1,6 +1,6 @@
 import React from 'react';
 import { SvgXml } from 'react-native-svg';
-import { C, AX, AXT } from './theme';
+import { C, AX, AXT, pick } from './theme';
 
 // JEU D'ICÔNES UNIQUE (SVG vectoriel, 24-grid, trait ~1.7). Trois familles cohérentes :
 //  • SÉMANTIQUES (axes/rubriques/secteurs) = DUOTONE : silhouette teintée `__F__` (fill-opacity) + trait AA.
@@ -38,8 +38,6 @@ const ICONS = {
   'map-on': `<svg viewBox="0 0 24 24"><path d="M9 4 L3 6.4 V20 L9 17.6 L15 20 L21 17.6 V4 L15 6.4 Z" fill="currentColor" ${S} stroke-width="1.6" stroke-linejoin="round"/></svg>`,
   stats: `<svg viewBox="0 0 24 24" fill="none"><path d="M4 20 H20" ${S} stroke-width="1.7" stroke-linecap="round"/><rect x="5" y="11.5" width="3.4" height="6.5" rx="0.8" ${S} stroke-width="1.6"/><rect x="10.3" y="7.5" width="3.4" height="10.5" rx="0.8" ${S} stroke-width="1.6"/><rect x="15.6" y="4" width="3.4" height="14" rx="0.8" ${S} stroke-width="1.6"/></svg>`,
   'stats-on': `<svg viewBox="0 0 24 24" fill="none"><path d="M4 20 H20" ${S} stroke-width="1.7" stroke-linecap="round"/><rect x="5" y="11.5" width="3.4" height="6.5" rx="0.8" fill="currentColor"/><rect x="10.3" y="7.5" width="3.4" height="10.5" rx="0.8" fill="currentColor"/><rect x="15.6" y="4" width="3.4" height="14" rx="0.8" fill="currentColor"/></svg>`,
-  sources: `<svg viewBox="0 0 24 24" fill="none"><path d="M12 6.2 C10 4.6 6 4.6 4 5.6 V18.4 C6 17.4 10 17.4 12 19 C14 17.4 18 17.4 20 18.4 V5.6 C18 4.6 14 4.6 12 6.2 Z" ${S} stroke-width="1.6" stroke-linejoin="round"/><path d="M12 6.2 V19" ${S} stroke-width="1.5"/></svg>`,
-  'sources-on': `<svg viewBox="0 0 24 24"><path d="M12 6.2 C10 4.6 6 4.6 4 5.6 V18.4 C6 17.4 10 17.4 12 19 C14 17.4 18 17.4 20 18.4 V5.6 C18 4.6 14 4.6 12 6.2 Z" fill="currentColor" ${S} stroke-width="1.6" stroke-linejoin="round"/></svg>`,
   triage: `<svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5 L7 5 H17 L19 12.5 V18 H5 Z" ${S} stroke-width="1.6" stroke-linejoin="round"/><path d="M5 12.5 H8.6 L10 15 H14 L15.4 12.5 H19" ${S} stroke-width="1.6" stroke-linejoin="round"/></svg>`,
   'triage-on': `<svg viewBox="0 0 24 24"><path d="M5 12.5 L7 5 H17 L19 12.5 V18 H5 Z" fill="currentColor" ${S} stroke-width="1.6" stroke-linejoin="round"/></svg>`,
   // ── UI monoline ──
@@ -62,8 +60,8 @@ const ICONS = {
 
 // Glyphe générique — `color` = trait (currentColor), `fill` = teinte de remplissage (`__F__`, défaut = color).
 export const Glyph = React.memo(function Glyph({ name, size = 22, color = C.ink, fill, style }) {
-  const raw = ICONS[name];
-  if (!raw) return null;
+  const raw = pick(ICONS, name, null);   // RS3 : prototype-safe — `ICONS['constructor']` renverrait la
+  if (!raw) return null;                 // fonction Object, puis raw.indexOf(...) planterait
   const xml = raw.indexOf('__F__') >= 0 ? raw.replace(/__F__/g, fill || color) : raw;
   return <SvgXml xml={xml} width={size} height={size} color={color} style={style} />;
 });
@@ -71,16 +69,16 @@ export const Glyph = React.memo(function Glyph({ name, size = 22, color = C.ink,
 // Icône d'AXE/RUBRIQUE (duotone AA) : trait = jeton texte AA (AXT), remplissage = teinte vive (AX).
 // État actif (sur fond cobalt) : blanc plein.
 export function AxisGlyph({ axis, size = 18, active = false }) {
-  if (!ICONS[axis]) return null;
-  const stroke = active ? '#ffffff' : (AXT[axis] || C.ink);
-  const fill = active ? '#ffffff' : (AX[axis] || C.cobalt);
+  if (!pick(ICONS, axis, null)) return null;   // RS3 : prototype-safe (axis vient de donnée NON FIABLE)
+  const stroke = active ? '#ffffff' : pick(AXT, axis, C.ink);
+  const fill = active ? '#ffffff' : pick(AX, axis, C.cobalt);
   return <Glyph name={axis} size={size} color={stroke} fill={fill} />;
 }
 
 // Icône de SECTEUR transversal : NEUTRE au repos (trait + aplat ink) pour se distinguer des axes colorés
 // ET réserver le cobalt au SIGNAL D'ACTION (pastille active). État actif (sur fond cobalt) : blanc plein.
 export function SectorGlyph({ sectorKey, size = 18, active = false }) {
-  if (!ICONS[sectorKey]) return null;
+  if (!pick(ICONS, sectorKey, null)) return null;   // RS3 : prototype-safe
   const tone = active ? '#ffffff' : C.inkDim;
   return <Glyph name={sectorKey} size={size} color={tone} fill={tone} />;
 }

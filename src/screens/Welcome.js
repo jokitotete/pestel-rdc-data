@@ -4,8 +4,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { F, SLOGAN } from '../theme';
 import { Glyph } from '../ui';
 
-// Durée minimale garantie de l'écran d'accueil (« bande annonce ») — 9 s pour donner l'envie.
-const MIN_MS = 9000;
+// Durée minimale garantie de l'écran d'accueil (« bande annonce »). RS3 : ramenée de 9 s à 4 s — 9 s à CHAQUE
+// lancement (l'écran revient toujours) lisait « appli figée » ; 4 s reste au-dessus du plancher RS1 « ≥ 3 s »
+// et l'écran est de toute façon SKIPPABLE au tap (affordance visible ci-dessous).
+const MIN_MS = 4000;
 
 // Accroche FIXE (baseline produit) — affichée EN PERMANENCE sous le slogan, avec la boussole. Plus de
 // rotation quotidienne : une seule promesse, stable.
@@ -70,6 +72,8 @@ export default function Welcome({ onDone, onLayout }) {
         <View style={styles.barTrack}>
           <Animated.View style={[styles.barFill, { width: bar.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }]} />
         </View>
+        {/* RS3 : affordance VISIBLE que l'écran est skippable (sinon la barre se lit comme « chargement, attendre »). */}
+        <Text style={styles.skipHint}>Toucher pour passer</Text>
         <Text style={styles.foot}>2iD Consulting</Text>
       </LinearGradient>
       </Pressable>
@@ -86,7 +90,8 @@ const styles = StyleSheet.create({
   slogan: { fontFamily: F.body, fontSize: 28, color: '#CFDDF0', marginTop: 14, textAlign: 'center', lineHeight: 36, paddingHorizontal: 20 },
   accrocheRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 18, paddingHorizontal: 16 },
   accrocheTxt: { fontFamily: F.mono, fontSize: 24, color: '#9FB4DA', textAlign: 'center', lineHeight: 32, flexShrink: 1 },
-  barTrack: { position: 'absolute', bottom: 60, alignSelf: 'center', width: 150, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.15)', overflow: 'hidden' },
+  barTrack: { position: 'absolute', bottom: 78, alignSelf: 'center', width: 150, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.15)', overflow: 'hidden' },
+  skipHint: { position: 'absolute', bottom: 58, left: 0, right: 0, textAlign: 'center', fontFamily: F.mono, fontSize: 11, color: 'rgba(255,255,255,0.5)', letterSpacing: 0.6 },
   barFill: { height: 3, borderRadius: 2, backgroundColor: '#F4B740' },
   foot: { position: 'absolute', bottom: 34, left: 0, right: 0, textAlign: 'center', fontFamily: F.mono, fontSize: 12, color: '#6E82AA', letterSpacing: 0.4 },
 });

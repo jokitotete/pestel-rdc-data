@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isSafeUrl } from './safeUrl';
+import { AX_ORDER, RUBRIQUES } from './theme';
 
 // Préférences persistées (best-effort). Aujourd'hui : la LENTILLE sectorielle (P1) — le secteur
 // choisi survit aux relances (exigence Product Owner : état persistant, corrigible, jamais deviné).
@@ -31,6 +32,10 @@ const KEY_PREFS = 'ntongo.prefs.v1';
 // on force les types string, on ne garde l'URL source que si https sûre, on déduplique par id, on PLAFONNE.
 export const MAX_FAVS = 200;
 const isObj = (o) => o && typeof o === 'object' && !Array.isArray(o);
+// RS3 (défense en profondeur) : l'axis ne peut être qu'une clé d'axe/rubrique CONNUE (ou '?') — cela
+// empêche de STOCKER une clé héritée du prototype (`constructor`/`toString`…) qui, même si pick() la rend
+// inoffensive au rendu, n'a rien à faire dans un favori. Liste blanche alignée sur AX_ORDER ∪ RUBRIQUES.
+const ALLOWED_AXES = new Set([...AX_ORDER, ...RUBRIQUES, '?']);
 export function sanitizeFavs(a) {
   if (!Array.isArray(a)) return [];
   const out = [], seen = new Set();
@@ -45,7 +50,7 @@ export function sanitizeFavs(a) {
     } : null;
     out.push({
       id: f.id, edDate: f.edDate, code: f.code,
-      axis: typeof f.axis === 'string' ? f.axis : '?',
+      axis: ALLOWED_AXES.has(f.axis) ? f.axis : '?',   // liste blanche (jamais une clé de prototype)
       axisName: typeof f.axisName === 'string' ? f.axisName : '',
       title: typeof f.title === 'string' ? f.title : '',
       text: typeof f.text === 'string' ? f.text : '',
@@ -57,25 +62,33 @@ export function sanitizeFavs(a) {
   return out;
 }
 
+// RS3 : le CACHE RAM est la source de vérité de la fusion (jamais le disque). Évite le lost-update de
+// deux savePrefs de clés différentes (favori vs thème) entrelacés dans la fenêtre getItem→setItem.
+let _cache = null;
+let _writeChain = Promise.resolve();
+
 export async function loadPrefs() {
   try {
     const raw = await AsyncStorage.getItem(KEY_PREFS);
     const parsed = raw ? JSON.parse(raw) : null;
     const p = isObj(parsed) ? parsed : {};   // un blob non-objet (tampering) → défauts sûrs
-    return { ...p, favs: sanitizeFavs(p.favs) };   // favs TOUJOURS assainis + plafonnés à la relecture
+    _cache = { ...p, favs: sanitizeFavs(p.favs) };   // favs TOUJOURS assainis + plafonnés à la relecture
+    return _cache;
   } catch (e) {
-    return {};   // dégradation sûre : pas de persistance → valeurs par défaut
+    _cache = _cache || {};   // dégradation sûre : pas de persistance → valeurs par défaut
+    return _cache;
   }
 }
 
-// Fusion (patch) : ne réécrit que les clés fournies, préserve le reste.
-export async function savePrefs(patch) {
-  try {
-    const cur = await loadPrefs();
-    const next = { ...cur, ...(patch || {}) };
-    await AsyncStorage.setItem(KEY_PREFS, JSON.stringify(next));
-    return next;
-  } catch (e) {
-    return null;
-  }
+// Fusion (patch) : ne réécrit que les clés fournies, préserve le reste. Écritures SÉRIALISÉES (chaîne de
+// promesses FIFO) : chaque fusion part du dernier _cache (mis à jour par la précédente dans la chaîne),
+// donc jamais de perte de mise à jour croisée ; hydratation paresseuse si loadPrefs n'a pas encore tourné.
+export function savePrefs(patch) {
+  _writeChain = _writeChain.then(async () => {
+    if (_cache === null) await loadPrefs();
+    _cache = { ...(_cache || {}), ...(patch || {}) };
+    try { await AsyncStorage.setItem(KEY_PREFS, JSON.stringify(_cache)); } catch (e) { /* best-effort */ }
+    return _cache;
+  });
+  return _writeChain;
 }

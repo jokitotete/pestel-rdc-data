@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Text, View, ScrollView, TouchableOpacity } from 'react-native';
-import { C, F, AX, AXT, AX_SHORT, AX_ORDER, RUBRIQUES, tint } from '../theme';
+import { C, F, AX, AXT, AX_SHORT, AX_ORDER, RUBRIQUES, tint, pick } from '../theme';
 import { Card, RelBadge, Pill, AxisGlyph, PageHeader, SourceLine, Icon } from '../ui';
 import { SECTORS, itemInSector } from '../sectors';
 import { upcomingEvents, primarySource } from '../store';
@@ -64,7 +64,7 @@ export default function Axes({ ed, onOpen, triage = [], onOpenEvent }) {
       {/* Bandeau de contexte quand un filtre est actif (hors Events, qui a sa propre vue) */}
       {activeLabel && !isEvents ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, marginBottom: 14 }}>
-          <Text style={{ fontFamily: F.bodySemi, fontSize: 13, color: filter.type === 'divers' ? C.ink : (AXT[filter.key] || C.cobalt) }}>{activeLabel}</Text>
+          <Text style={{ fontFamily: F.bodySemi, fontSize: 13, color: filter.type === 'divers' ? C.ink : pick(AXT, filter.key, C.cobalt) }}>{activeLabel}</Text>
           {filter.type === 'sector' ? <Text style={{ fontFamily: F.mono, fontSize: 11, color: C.inkMut }}>tous axes confondus</Text>
             : filter.type === 'divers' ? <Text style={{ fontFamily: F.mono, fontSize: 11, color: C.inkMut }}>capté automatiquement, hors classement</Text> : null}
         </View>
@@ -80,7 +80,7 @@ export default function Axes({ ed, onOpen, triage = [], onOpenEvent }) {
           {isRubrique ? '\nRubrique couverte à partir des prochaines veilles.' : ''}
         </Text>
       ) : axes.map((a) => {
-        const c = AX[a.key] || C.cobalt;
+        const c = pick(AX, a.key, C.cobalt);   // RS3 : prototype-safe (a.key vient de l'édition NON FIABLE)
         return (
           <View key={a.key} style={{ marginBottom: 22 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 }}>
@@ -92,7 +92,7 @@ export default function Axes({ ed, onOpen, triage = [], onOpenEvent }) {
                 <Text style={{ fontFamily: F.mono, fontSize: 10.5, color: C.inkMut }}>{a.lens}</Text>
               </View>
               <View style={{ backgroundColor: tint(c, 0.14), borderRadius: 20, paddingHorizontal: 9, paddingVertical: 3 }}>
-                <Text style={{ fontFamily: F.monoSemi, fontSize: 11, color: AXT[a.key] || C.ink }}>{a.items.length}</Text>
+                <Text style={{ fontFamily: F.monoSemi, fontSize: 11, color: pick(AXT, a.key, C.ink) }}>{a.items.length}</Text>
               </View>
             </View>
 

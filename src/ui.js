@@ -2,7 +2,7 @@ import React from 'react';
 import { Text, View, TouchableOpacity, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Glyph, AxisGlyph, SectorGlyph } from './icons';
-import { C, F, AX, AXT, REL, RELT, TOUCH, tint, relFr, relIsOk, HERO_GRAD } from './theme';
+import { C, F, AX, AXT, REL, RELT, TOUCH, tint, pick, relFr, relIsOk, HERO_GRAD } from './theme';
 export { Glyph, AxisGlyph, SectorGlyph } from './icons';
 
 // En-tête de PAGE unifié — bandeau cobalt (dégradé de marque) présent sur TOUS les écrans (cohérence).
@@ -50,29 +50,6 @@ export const Card = ({ children, style, onPress, accent }) => {
   return onPress ? <TouchableOpacity activeOpacity={0.85} onPress={onPress}>{inner}</TouchableOpacity> : inner;
 };
 
-// Pastille de code d'item "P-1", teintée par la couleur de son axe.
-// c = couleur d'axe GRAPHIQUE (fond/bordure) ; ct = couleur de TEXTE conforme AA (jeton AXT).
-export const CodeChip = ({ code, onPress }) => {
-  const ax = (code || '').split('-')[0];
-  const c = AX[ax] || C.cobalt;
-  const ct = AXT[ax] || C.ink;
-  const el = (
-    <View style={{ alignSelf: 'flex-start', backgroundColor: tint(c, 0.14), borderColor: tint(c, 0.4), borderWidth: 1, borderRadius: 7, paddingHorizontal: 7, paddingVertical: 2 }}>
-      <Text style={{ fontFamily: F.monoSemi, fontSize: 11, color: ct, letterSpacing: 0.3 }}>{code}</Text>
-    </View>
-  );
-  if (!onPress) return el;
-  // Zone tactile étendue vers TOUCH.min sans changer le dessin (~19 px), MAIS plafonnée à 10 px de slop
-  // pour que deux chips espacés de columnGap:20 (grille « Liés ») ne se CHEVAUCHENT pas (A11Y-04).
-  const hs = Math.min(10, Math.max(0, Math.round((TOUCH.min - 19) / 2)));
-  return (
-    <TouchableOpacity activeOpacity={0.7} onPress={onPress} hitSlop={{ top: hs, bottom: hs, left: hs, right: hs }}
-      accessibilityRole="button" accessibilityLabel={`Ouvrir l'item ${code}`}>
-      {el}
-    </TouchableOpacity>
-  );
-};
-
 // Badge de fiabilité de l'item (établi / à confirmer). Point = graphique ; texte = jeton AA.
 export const RelBadge = ({ reliability }) => {
   const ok = relIsOk(reliability);
@@ -88,8 +65,8 @@ export const RelBadge = ({ reliability }) => {
 
 // Pastille lettre de fiabilité d'une source (A/B/C/D). Fond teinté (graphique) ; lettre = jeton AA.
 export const SrcDot = ({ rel }) => {
-  const r = REL[rel] || REL.C;
-  const rt = RELT[rel] || C.ink;
+  const r = pick(REL, rel, REL.C);       // RS3 : prototype-safe — `REL['constructor']` renverrait une fonction
+  const rt = pick(RELT, rel, C.ink);     // (truthy) et `|| REL.C` ne se replierait pas → tint(fonction) planterait
   return (
     <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: tint(r.c, 0.16), alignItems: 'center', justifyContent: 'center' }}>
       <Text style={{ fontFamily: F.monoSemi, fontSize: 11, color: rt }}>{rel}</Text>
@@ -101,7 +78,7 @@ export const SrcDot = ({ rel }) => {
 export const AxisTag = ({ axis, label }) => (
   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
     <AxisGlyph axis={axis} size={15} />
-    <Text style={{ fontFamily: F.bodySemi, fontSize: 12, color: AXT[axis] || C.ink }}>{label}</Text>
+    <Text style={{ fontFamily: F.bodySemi, fontSize: 12, color: pick(AXT, axis, C.ink) }}>{label}</Text>
   </View>
 );
 
@@ -118,7 +95,7 @@ export const SectionHead = ({ title, lens, icon }) => (
 
 // Pastille ronde d'axe (« avatar » de carte) — glyphe duotone dans un cercle teinté de la couleur d'axe.
 export const AxisAvatar = ({ axis, size = 38 }) => {
-  const c = AX[axis] || C.cobalt;
+  const c = pick(AX, axis, C.cobalt);   // RS3 : prototype-safe (cf. pick/theme.js)
   return (
     <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: tint(c, 0.16), borderWidth: 1, borderColor: tint(c, 0.38), alignItems: 'center', justifyContent: 'center' }}>
       <AxisGlyph axis={axis} size={Math.round(size * 0.56)} />
@@ -129,10 +106,15 @@ export const AxisAvatar = ({ axis, size = 38 }) => {
 // Ligne de SOURCE — app d'agrégation : on cite systématiquement d'où vient l'info (« {nom} · {hôte} »),
 // en bas à gauche. Icône lien + texte neutre (jeton AA inkMut). Remplace les codes internes sur les cartes.
 export const SourceLine = ({ source, style }) => {
-  if (!source || (!source.name && !source.host)) return null;
-  const host = source.host || '', name = source.name || '';
-  const nn = name.replace(/[^a-z0-9]/gi, '').toLowerCase(), hh = host.replace(/[^a-z0-9]/gi, '').toLowerCase();
-  // Évite la redondance « Actualite.cd · actualite.cd » : n'affiche « nom · hôte » que s'ils diffèrent vraiment.
+  // RS3 : name/host viennent de la donnée distante NON FIABLE (feed) — coercition STRICTE en string. Un
+  // nombre/objet ferait planter `.replace` (crash plein écran de la Une), et on n'affiche jamais « [object Object] ».
+  const name = source && typeof source.name === 'string' ? source.name : '';
+  const host = source && typeof source.host === 'string' ? source.host : '';
+  if (!name && !host) return null;
+  // Dédup nom/hôte : replier les DIACRITIQUES (NFD) AVANT de retirer les non-alphanum — sinon « Actualité »
+  // → « actualitcd » ≠ hôte « actualitecd » et la redondance « Actualité.cd · actualite.cd » réapparaît.
+  const norm = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/gi, '').toLowerCase();
+  const nn = norm(name), hh = norm(host);
   const label = (name && host && nn && !hh.startsWith(nn) && !nn.startsWith(hh)) ? `${name} · ${host}` : (host || name);
   if (!label) return null;
   return (
@@ -147,8 +129,8 @@ export const SourceLine = ({ source, style }) => {
 // `rank` (« 01 ») = priorité éditoriale des titres à la une. Plus de code interne (P-1…) : la carte cite la
 // SOURCE (site) en bas à gauche. PAS de fraîcheur par carte (P2 : fraîcheur = niveau édition, en-tête global).
 export const NewsCard = ({ axis, rank, title, text, reliability, cta, source, onStar, starred, onPress, titleLines = 3 }) => {
-  const c = AX[axis] || C.cobalt;
-  const ct = AXT[axis] || C.cobalt;
+  const c = pick(AX, axis, C.cobalt);    // RS3 : prototype-safe (axis vient de donnée distante NON FIABLE)
+  const ct = pick(AXT, axis, C.cobalt);
   return (
     <TouchableOpacity activeOpacity={0.85} onPress={onPress}
       accessibilityRole="button" accessibilityLabel={title}
@@ -184,7 +166,7 @@ export const NewsCard = ({ axis, rank, title, text, reliability, cta, source, on
 };
 
 // Chip de filtre générique (état actif/inactif). Cible tactile pilotée par le jeton TOUCH.min (A11Y-03) :
-// minHeight 44 + centrage, au lieu de ~29 px, pour un pouce en mouvement — cohérent avec CodeChip.
+// minHeight 44 + centrage, au lieu de ~29 px, pour un pouce en mouvement (jeton TOUCH.min).
 export const Pill = ({ label, active, onPress, axis, sectorKey, icon }) => {
   // Évolution « chip » : repos = pastille pleine claire (pas un simple contour gris) ; actif = SURFACE D'ACTION
   // (jeton actionFill, blanc AA 6,17:1 clair ET sombre) + légère élévation + libellé semibold.

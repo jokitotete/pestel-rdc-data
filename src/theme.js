@@ -109,9 +109,20 @@ export const F = {
   monoSemi: 'IBMPlexMono_600SemiBold',
 };
 
+// Lookup de jeton PROTOTYPE-SAFE (RS3) : `MAP[clé]` via bracket résout AUSSI les propriétés HÉRITÉES
+// (`constructor`, `__proto__`, `toString`, `hasOwnProperty`…) — toutes truthy — donc `MAP[clé] || fallback`
+// NE se replie PAS et une valeur non-couleur (fonction/objet) file vers tint()/le rendu = crash (TypeError).
+// `pick` n'accepte QUE les clés PROPRES (même garde que getEdition), sinon le fallback. À utiliser pour tout
+// lookup de jeton (AX/AXT/REL/RELT/AX_SHORT) par clé issue de la donnée distante NON FIABLE.
+export const pick = (map, key, fallback) =>
+  (typeof key === 'string' && Object.prototype.hasOwnProperty.call(map, key)) ? map[key] : fallback;
+
 // Teinte douce d'une couleur d'axe pour les fonds (≈ color-mix 14% sur panel).
+// Défense en profondeur (RS3) : un hex non-string (lookup empoisonné qui aurait échappé à pick) retombe
+// sur cobalt au lieu de lever `hex.replace is not a function` — jamais de crash de rendu sur une couleur.
 export const tint = (hex, a = 0.14) => {
-  const n = hex.replace('#', '');
+  const h = (typeof hex === 'string' && hex.charAt(0) === '#') ? hex : C.cobalt;
+  const n = h.replace('#', '');
   const r = parseInt(n.slice(0, 2), 16), g = parseInt(n.slice(2, 4), 16), b = parseInt(n.slice(4, 6), 16);
   return `rgba(${r},${g},${b},${a})`;
 };

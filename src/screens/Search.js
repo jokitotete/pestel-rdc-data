@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Text, View, ScrollView, TextInput, TouchableOpacity } from 'react-native';
-import { C, F, AX, AXT } from '../theme';
+import { C, F, AX, AXT, pick } from '../theme';
 import { Card, RelBadge, Icon, AxisGlyph, SourceLine } from '../ui';
 import { search, primarySource } from '../store';
 
@@ -54,12 +54,12 @@ export default function Search({ ed, onOpen }) {
             </View>
           ) : null}
           {results.map((it) => {
-            const c = AX[it.axis] || C.cobalt;
+            const c = pick(AX, it.axis, C.cobalt);   // RS3 : prototype-safe (it.axis vient de l'édition NON FIABLE)
             return (
               <Card key={it.code} accent={c} onPress={() => onOpen(it.code)} style={{ padding: 14, marginBottom: 9 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                   <AxisGlyph axis={it.axis} size={14} />
-                  <Text style={{ fontFamily: F.bodySemi, fontSize: 11.5, color: AXT[it.axis] || C.ink }}>{it.axisName}</Text>
+                  <Text style={{ fontFamily: F.bodySemi, fontSize: 11.5, color: pick(AXT, it.axis, C.ink) }}>{it.axisName}</Text>
                   <View style={{ flex: 1 }} />
                   <RelBadge reliability={it.reliability} />
                   <Icon name="chevron" size={15} color={C.inkMut} style={{ marginLeft: 4 }} />
