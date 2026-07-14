@@ -29,6 +29,16 @@ const fmtNum = (v) => {
   if (Math.abs(n) >= 1000) return Math.round(n).toLocaleString('fr-FR');
   return String(v).replace('.', ',');
 };
+// Format COMPACT pour les graduations de l'axe Y (tient dans la marge gauche) : arrondi selon l'ordre de
+// grandeur (≥100 → entier « 352 » ; 1–100 → 1 décimale « 13,5 » ; <1 → 2 décimales).
+const fmtAxis = (v) => {
+  const a = Math.abs(Number(v));
+  if (!isFinite(a)) return '';
+  if (a >= 10000) return Math.round(Number(v) / 1000) + 'k';
+  if (a >= 100) return String(Math.round(Number(v)));
+  if (a >= 1) return String(Math.round(Number(v) * 10) / 10).replace('.', ',');
+  return String(Math.round(Number(v) * 100) / 100).replace('.', ',');
+};
 
 // Petite étiquette absolue (centrée sur un x).
 const Lbl = ({ x, y, w = 60, children, style }) => (
@@ -71,7 +81,7 @@ function BarChart({ data, unit = '', width, height = 150 }) {
 
 // ---- Courbes (multi-séries) ----
 function LineChart({ labels, series, width, height = 160 }) {
-  const pad = { l: 40, r: 12, t: 16, b: 26 };   // marge gauche élargie pour les VALEURS de l'axe Y (ordonnées)
+  const pad = { l: 46, r: 12, t: 16, b: 26 };   // marge gauche élargie pour les VALEURS de l'axe Y (ordonnées)
   series = Array.isArray(series) ? series.filter((s) => s && Array.isArray(s.values)) : [];   // RS3.3 : défensif
   labels = Array.isArray(labels) ? labels : [];
   if (!series.length || !labels.length) return null;
@@ -104,7 +114,7 @@ function LineChart({ labels, series, width, height = 160 }) {
       {[0, 0.5, 1].map((t, i) => (
         <Text key={`y${i}`} numberOfLines={1}
           style={[TYPE.caption, { position: 'absolute', left: 0, top: gridY(t) - 7, width: pad.l - 6, textAlign: 'right', color: C.inkMut }]}>
-          {fmtNum(max - t * span)}
+          {fmtAxis(max - t * span)}
         </Text>
       ))}
       {labels.map((l, i) => (
