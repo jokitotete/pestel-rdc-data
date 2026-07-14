@@ -1,5 +1,7 @@
-// Jetons de conception — repris 1:1 du portail web PESTEL RDC (styles.css :root, thème clair).
-// Une seule source de couleurs/polices/formats : aucune valeur en dur dispersée dans les écrans.
+// Jetons de conception — SEULE SOURCE de couleurs / polices / espacements / typographie / rayons / motion.
+// RS1 (Design System agnostique) : aucune valeur en dur dispersée dans les écrans — tout référence un jeton
+// sémantique ci-dessous (échelles SP/TYPE/RADIUS/DUR/EASE/ELEV/HIT), verrouillé par __tests__/tokens.guard.
+import { Platform, Easing } from 'react-native';
 
 // Deux palettes — clair (défaut, comme le portail) et sombre. `C` est MUTABLE :
 // applyTheme() y recopie la palette active, et un re-rendu (App.js) la propage à tous les
@@ -18,6 +20,10 @@ export const LIGHT = {
   gold: '#c08411', goldText: '#895e0c',                   // gold = point graphique ; goldText = texte AA
   alert: '#d64046', ok: '#1f9d63', okText: '#177449', white: '#ffffff',
   mapNeutral: '#e9e2d4', mapStroke: '#fffdf8',   // province « calme » / trait entre provinces
+  // RS1-02 : couleurs résiduelles tokenisées (plus aucun hex/rgba hors de ce fichier).
+  onHero: '#ffffff', onHeroDim: 'rgba(255,255,255,0.75)',   // texte sur bandeau/splash cobalt (blanc ≥8:1)
+  scrim: 'rgba(20,25,40,0.35)',                             // voile modale (EditionSheet)
+  shadow: '#1a2740',                                        // couleur d'ombre (ELEV) — jadis en dur dans ui.js
 };
 export const DARK = {
   bg: '#0a0e15', bg2: '#0f1620', panel: '#121a26', panel2: '#0f1620', elev: '#17212f',
@@ -30,6 +36,8 @@ export const DARK = {
   gold: '#e7b74b', goldText: '#e7b74b',                   // sur fond sombre l'or vif passe déjà (9,4:1)
   alert: '#ec5b60', ok: '#33c07f', okText: '#33c07f', white: '#ffffff',
   mapNeutral: '#28313f', mapStroke: '#0a0e15',
+  onHero: '#ffffff', onHeroDim: 'rgba(255,255,255,0.75)',   // le bandeau HERO_GRAD est fixe (sombre) → blanc dans les 2 thèmes
+  scrim: 'rgba(0,0,0,0.5)', shadow: '#000000',
 };
 export const C = { ...LIGHT };                    // palette active (mutée par applyTheme)
 
@@ -74,6 +82,15 @@ export const SLOGAN = 'La RDC qui vous concerne, chaque jour.';
 // couleur d'action de l'app. Blanc sur l'extrémité la plus claire #1E40C6 = ~8:1 (AA, texte petit compris).
 export const HERO_GRAD = ['#12205E', '#1E40C6'];
 
+// RS1-02 : palette de la surface de MARQUE FIXE de l'écran d'accueil (Welcome) — indépendante du thème
+// (toujours nuit → cobalt). Regroupée ici pour que Welcome ne porte aucune couleur en dur.
+export const SPLASH = {
+  grad: ['#070C1C', '#0F1E52', '#1D3FC4'],   // dégradé nuit→cobalt
+  gold: '#F4B740',                            // accent or (· RDC, barre de progression)
+  textHi: '#FFFFFF', textMid: '#CFDDF0', textLow: '#9FB4DA',   // wordmark / slogan / accroche
+  hint: 'rgba(255,255,255,0.5)', foot: '#6E82AA',
+};
+
 // Lot A — jetons de TEXTE d'axe (AA ≥ 4,5:1) : les couleurs AX vives (ci-dessus) servent le GRAPHIQUE
 // (pastille, bordure, tint) ; peindre du texte < 24 px avec AX brut échoue l'AA. `AXT` porte donc la
 // variante texte, conforme sur les fonds réels (tint clair assombri / vif sur fond sombre).
@@ -107,6 +124,45 @@ export const F = {
   mono: 'IBMPlexMono_400Regular',
   monoMed: 'IBMPlexMono_500Medium',
   monoSemi: 'IBMPlexMono_600SemiBold',
+};
+
+// ── ÉCHELLE D'ESPACEMENT (RS1-01, DS agnostique) — base 4/8. Un vocabulaire spatial unique ; plus de
+// littéraux d'espacement dans les écrans. `gutter` (18) = gouttière d'écran, source unique du full-bleed.
+export const SP = { none: 0, hair: 2, xs: 4, sm: 8, md: 12, lg: 16, gutter: 18, xl: 20, xxl: 24, xxxl: 32, huge: 40, giant: 48 };
+
+// ── RAYONS — familles cohérentes (barre d'accent → xs ; tag → sm ; bloc → md ; carte → lg ; chip/feuille →
+// chip ; dock → dock ; cercle → half(size) ; pilule pleine → pill).
+export const RADIUS = { xs: 4, sm: 6, md: 10, lg: 16, chip: 22, dock: 24, pill: 999, half: (s) => s / 2 };
+
+// ── MOTION — durées (ms) + courbes. Réutilisées par ScreenFade / Welcome / micro-interactions.
+export const DUR = { instant: 0, fast: 120, base: 230, slow: 320, splashIn: 480, splashLogo: 520 };
+export const EASE = { standard: Easing.out(Easing.cubic), inOut: Easing.inOut(Easing.ease) };
+
+// ── CIBLES TACTILES (hitSlop) — dérivées de TOUCH.min. Plus aucun hitSlop littéral.
+export const HIT = { sm: 8, md: 10, lg: 14 };
+
+// ── ÉLÉVATION — ombres tokenisées (référencent C.shadow, plus de hex en dur dans ui.js). Statique : la
+// couleur d'ombre ne change pas assez entre thèmes pour justifier un recalcul (ombre quasi invisible en sombre).
+export const ELEV = {
+  sm: Platform.select({ ios: { shadowColor: C.shadow, shadowOpacity: 0.08, shadowRadius: 12, shadowOffset: { width: 0, height: 5 } }, android: { elevation: 2 } }),
+  md: Platform.select({ ios: { shadowColor: C.shadow, shadowOpacity: 0.14, shadowRadius: 24, shadowOffset: { width: 0, height: 12 } }, android: { elevation: 6 } }),
+};
+
+// ── ÉCHELLE TYPOGRAPHIQUE (RS1-04) — RÔLES sémantiques {famille, taille, interligne, approche} SANS couleur
+// (la couleur reste un jeton C.* séparé, pour garantir l'AA par paire rôle×couleur). Un texte = un rôle + une
+// couleur : `style={[TYPE.body, { color: C.inkDim }]}`. ≤11 rôles couvrent 100 % des textes ; demi-points repliés.
+export const TYPE = {
+  display:   { fontFamily: F.displayBold, fontSize: 25,   lineHeight: 30, letterSpacing: 0.2 },   // titre de bandeau (PageHeader)
+  title:     { fontFamily: F.display,     fontSize: 21,   lineHeight: 26, letterSpacing: 0.2 },   // titre de section
+  serifLead: { fontFamily: F.display,     fontSize: 18,   lineHeight: 26, letterSpacing: 0 },     // titre d'article (Detail)
+  heading:   { fontFamily: F.bodyBold,    fontSize: 16,   lineHeight: 22, letterSpacing: 0 },     // titre de carte « à la une » (rank)
+  body:      { fontFamily: F.body,        fontSize: 15,   lineHeight: 23, letterSpacing: 0 },     // corps long (Detail)
+  bodySm:    { fontFamily: F.body,        fontSize: 13.5, lineHeight: 19.5, letterSpacing: 0 },   // corps de carte / listes
+  label:     { fontFamily: F.bodySemi,    fontSize: 12.5, lineHeight: 16, letterSpacing: 0 },     // libellés, pills, chips
+  caption:   { fontFamily: F.mono,        fontSize: 11,   lineHeight: 15, letterSpacing: 0 },     // méta, source, dates
+  overline:  { fontFamily: F.mono,        fontSize: 10.5, lineHeight: 14, letterSpacing: 1.0 },   // eyebrows / kickers (majuscules)
+  mono:      { fontFamily: F.monoSemi,    fontSize: 11,   lineHeight: 15, letterSpacing: 0 },     // valeurs mono accentuées
+  data:      { fontFamily: F.displayBold, fontSize: 21,   lineHeight: 24, letterSpacing: 0 },     // chiffres KPI
 };
 
 // Lookup de jeton PROTOTYPE-SAFE (RS3) : `MAP[clé]` via bracket résout AUSSI les propriétés HÉRITÉES
