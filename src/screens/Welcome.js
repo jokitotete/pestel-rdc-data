@@ -2,15 +2,13 @@ import React, { useEffect, useRef } from 'react';
 import { Text, View, Image, Animated, Easing, StyleSheet, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { F, SLOGAN } from '../theme';
-import { Glyph } from '../ui';
 
 // Durée minimale garantie de l'écran d'accueil (« bande annonce »). RS3 : ramenée de 9 s à 4 s — 9 s à CHAQUE
 // lancement (l'écran revient toujours) lisait « appli figée » ; 4 s reste au-dessus du plancher RS1 « ≥ 3 s »
 // et l'écran est de toute façon SKIPPABLE au tap (affordance visible ci-dessous).
 const MIN_MS = 4000;
 
-// Accroche FIXE (baseline produit) — affichée EN PERMANENCE sous le slogan, avec la boussole. Plus de
-// rotation quotidienne : une seule promesse, stable.
+// Accroche FIXE (baseline produit) — affichée EN PERMANENCE sous le slogan. Une seule promesse, stable.
 const ACCROCHE = 'Comprendre pour mieux décider.';
 
 // Écran d'accueil animé. `onLayout` sert à masquer le splash natif une fois monté (transition sans flash).
@@ -59,13 +57,8 @@ export default function Welcome({ onDone, onLayout }) {
           <Animated.View style={{ opacity: textOp, transform: [{ translateY: textTy }], alignItems: 'center' }}>
             <Text style={styles.wordmark}>Ntongo <Text style={{ color: '#F4B740' }}>· RDC</Text></Text>
             <Text style={styles.slogan}>{SLOGAN}</Text>
-            <View style={styles.accrocheRow}>
-              {/* Boussole PERMANENTE (orientation = la promesse Ntongo) — jamais d'emoji ni de loupe/balance,
-                  quel que soit le jour. Seul le TEXTE de l'accroche tourne. */}
-              <Glyph name="compass" size={34} color="#F4B740" />
-              <Text style={styles.accrocheTxt}>{ACCROCHE}</Text>
-            </View>
-            <Text style={styles.flag}>🇨🇩</Text>
+            {/* QW 14/07 : drapeau 🇨🇩 et boussole retirés — accueil épuré, seuls slogan + accroche portent la promesse. */}
+            <Text style={styles.accrocheTxt}>{ACCROCHE}</Text>
           </Animated.View>
         </View>
         {/* Barre de progression or (bas de l'écran) */}
@@ -84,12 +77,11 @@ export default function Welcome({ onDone, onLayout }) {
 const styles = StyleSheet.create({
   fill: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 48 },
   center: { alignItems: 'center' },
-  flag: { fontSize: 82, marginTop: 26 },
   logo: { width: 104, height: 104, borderRadius: 26, marginBottom: 22 },
   wordmark: { fontFamily: F.displayBold, fontSize: 30, color: '#FFFFFF', letterSpacing: 0.3 },
-  slogan: { fontFamily: F.body, fontSize: 28, color: '#CFDDF0', marginTop: 14, textAlign: 'center', lineHeight: 36, paddingHorizontal: 20 },
-  accrocheRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 18, paddingHorizontal: 16 },
-  accrocheTxt: { fontFamily: F.mono, fontSize: 24, color: '#9FB4DA', textAlign: 'center', lineHeight: 32, flexShrink: 1 },
+  // QW : slogan et accroche réduits très légèrement (28→26 / 24→22).
+  slogan: { fontFamily: F.body, fontSize: 26, color: '#CFDDF0', marginTop: 14, textAlign: 'center', lineHeight: 34, paddingHorizontal: 20 },
+  accrocheTxt: { fontFamily: F.mono, fontSize: 22, color: '#9FB4DA', textAlign: 'center', lineHeight: 30, marginTop: 18, paddingHorizontal: 16 },
   barTrack: { position: 'absolute', bottom: 78, alignSelf: 'center', width: 150, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.15)', overflow: 'hidden' },
   skipHint: { position: 'absolute', bottom: 58, left: 0, right: 0, textAlign: 'center', fontFamily: F.mono, fontSize: 11, color: 'rgba(255,255,255,0.5)', letterSpacing: 0.6 },
   barFill: { height: 3, borderRadius: 2, backgroundColor: '#F4B740' },
