@@ -126,9 +126,14 @@ export const F = {
   monoSemi: 'IBMPlexMono_600SemiBold',
 };
 
-// ── ÉCHELLE D'ESPACEMENT (RS1-01, DS agnostique) — base 4/8. Un vocabulaire spatial unique ; plus de
-// littéraux d'espacement dans les écrans. `gutter` (18) = gouttière d'écran, source unique du full-bleed.
-export const SP = { none: 0, hair: 2, xs: 4, sm: 8, md: 12, lg: 16, gutter: 18, xl: 20, xxl: 24, xxxl: 32, huge: 40, giant: 48 };
+// ── ÉCHELLE D'ESPACEMENT (RS1-01, DS agnostique) — base 4 avec demi-pas dans le registre fin (2px) pour
+// tokeniser SANS déplacer le pixel (arbitrage Lead Tech : migration à rendu identique d'abord ; un resserrement
+// vers une grille 4pt stricte reste possible ensuite, la garde vérifie l'usage de JETONS, pas les valeurs).
+// `gutter` (18) = gouttière d'écran, source unique du full-bleed du PageHeader.
+export const SP = {
+  none: 0, hair: 2, xs: 4, xs2: 6, sm: 8, sm2: 10, md: 12, md2: 14, lg: 16, gutter: 18,
+  xl: 20, xl2: 22, xxl: 24, xxxl: 32, huge: 40, giant: 48,
+};
 
 // ── RAYONS — familles cohérentes (barre d'accent → xs ; tag → sm ; bloc → md ; carte → lg ; chip/feuille →
 // chip ; dock → dock ; cercle → half(size) ; pilule pleine → pill).
@@ -156,6 +161,7 @@ export const TYPE = {
   title:     { fontFamily: F.display,     fontSize: 21,   lineHeight: 26, letterSpacing: 0.2 },   // titre de section
   serifLead: { fontFamily: F.display,     fontSize: 18,   lineHeight: 26, letterSpacing: 0 },     // titre d'article (Detail)
   heading:   { fontFamily: F.bodyBold,    fontSize: 16,   lineHeight: 22, letterSpacing: 0 },     // titre de carte « à la une » (rank)
+  cardTitle: { fontFamily: F.bodySemi,    fontSize: 14.5, lineHeight: 20, letterSpacing: 0 },     // titre de carte (sans rank), items de liste
   body:      { fontFamily: F.body,        fontSize: 15,   lineHeight: 23, letterSpacing: 0 },     // corps long (Detail)
   bodySm:    { fontFamily: F.body,        fontSize: 13.5, lineHeight: 19.5, letterSpacing: 0 },   // corps de carte / listes
   label:     { fontFamily: F.bodySemi,    fontSize: 12.5, lineHeight: 16, letterSpacing: 0 },     // libellés, pills, chips
