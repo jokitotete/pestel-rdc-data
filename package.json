@@ -6,8 +6,8 @@
   "scripts": {
     "start": "expo start",
     "tunnel": "expo start --tunnel",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "data": "node build_data.js",
     "test": "jest"
   },
@@ -25,8 +25,6 @@
     "expo-linear-gradient": "~56.0.4",
     "expo-splash-screen": "~56.0.12",
     "expo-status-bar": "~56.0.4",
-    "jest": "~29.7.0",
-    "jest-expo": "~56.0.5",
     "react": "19.2.3",
     "react-native": "0.85.3",
     "react-native-safe-area-context": "~5.7.0",
@@ -34,6 +32,9 @@
   },
   "devDependencies": {
     "@react-native/jest-preset": "^0.85.3",
+    "jest": "~29.7.0",
+    "jest-expo": "~56.0.5",
+    "react-refresh": "^0.18.0",
     "sharp": "^0.35.3"
   },
   "jest": {

@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { Text, View, ScrollView, TextInput, TouchableOpacity } from 'react-native';
-import { C, F, AX, AX_ICON } from '../theme';
-import { Card, CodeChip, RelBadge, Icon } from '../ui';
-import { search } from '../store';
+import { C, F, AX, AXT } from '../theme';
+import { Card, RelBadge, Icon, AxisGlyph, SourceLine } from '../ui';
+import { search, primarySource } from '../store';
 
 // Recherche transversale dans tous les items de l'édition.
 export default function Search({ ed, onOpen }) {
@@ -35,7 +35,7 @@ export default function Search({ ed, onOpen }) {
 
       {!active ? (
         <View style={{ alignItems: 'center', paddingTop: 60 }}>
-          <Text style={{ fontSize: 34, marginBottom: 10 }}>🔎</Text>
+          <Icon name="search" size={34} color={C.inkMut} style={{ marginBottom: 10 }} />
           <Text style={{ fontFamily: F.body, fontSize: 13.5, color: C.inkMut, textAlign: 'center', lineHeight: 20 }}>
             Tapez au moins 2 lettres pour chercher{'\n'}dans les {ed.axes.reduce((n, a) => n + a.items.length, 0)} items de l'édition.
           </Text>
@@ -50,13 +50,13 @@ export default function Search({ ed, onOpen }) {
             return (
               <Card key={it.code} accent={c} onPress={() => onOpen(it.code)} style={{ padding: 14, marginBottom: 9 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                  <CodeChip code={it.code} />
-                  <Text style={{ fontSize: 12 }}>{AX_ICON[it.axis]}</Text>
-                  <Text style={{ fontFamily: F.bodySemi, fontSize: 11.5, color: c }}>{it.axisName}</Text>
+                  <AxisGlyph axis={it.axis} size={14} />
+                  <Text style={{ fontFamily: F.bodySemi, fontSize: 11.5, color: AXT[it.axis] || C.ink }}>{it.axisName}</Text>
                   <View style={{ flex: 1 }} />
                   <RelBadge reliability={it.reliability} />
                 </View>
-                <Text style={{ fontFamily: F.bodySemi, fontSize: 14, color: C.ink, lineHeight: 20 }} numberOfLines={2}>{it.title}</Text>
+                <Text style={{ fontFamily: F.bodySemi, fontSize: 14, color: C.ink, lineHeight: 20, marginBottom: 6 }} numberOfLines={2}>{it.title}</Text>
+                <SourceLine source={primarySource(ed, it)} />
               </Card>
             );
           })}

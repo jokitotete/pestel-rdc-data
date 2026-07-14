@@ -14,14 +14,19 @@ if (!fs.existsSync(dataDir)) {
 
 // Fil « À traiter » (collecte étage 1) — OPTIONNEL. On lit le feed.json produit par pestel-collector
 // (publish.js). Absent = pas de section « À traiter », l'app fonctionne comme avant.
+function readItems(file) {
+  try {
+    if (fs.existsSync(file)) {
+      const f = JSON.parse(fs.readFileSync(file, "utf8"));
+      return Array.isArray(f) ? f : (Array.isArray(f.items) ? f.items : []);
+    }
+  } catch (e) { console.warn(file + " illisible, ignoré : " + e.message); }
+  return [];
+}
 const FEED_JSON = process.env.FEED_JSON || "C:/dev/pestel-collector/collecte/feed.json";
-let FEED = [];
-try {
-  if (fs.existsSync(FEED_JSON)) {
-    const f = JSON.parse(fs.readFileSync(FEED_JSON, "utf8"));
-    FEED = Array.isArray(f) ? f : (Array.isArray(f.items) ? f.items : []);
-  }
-} catch (e) { console.warn("feed.json illisible, ignoré : " + e.message); FEED = []; }
+const TRIAGE_JSON = process.env.TRIAGE_JSON || "C:/dev/pestel-collector/collecte/triage.json";
+const FEED = readItems(FEED_JSON);        // « À traiter » (classées, sélectionnées)
+const TRIAGE = readItems(TRIAGE_JSON);    // « À trier » (captées, NON classées)
 
 // Shim navigateur : les fichiers du portail s'auto-enregistrent dans window.PESTEL_*
 global.window = {};
@@ -40,7 +45,8 @@ const out =
   "export const EDITIONS = " + JSON.stringify(W.PESTEL_DATA || {}) + ";\n\n" +
   "export const MANIFEST = " + JSON.stringify(W.PESTEL_MANIFEST || []) + ";\n\n" +
   "export const STATS = " + JSON.stringify(W.PESTEL_STATS || {}) + ";\n\n" +
-  "export const FEED = " + JSON.stringify(FEED) + ";\n";
+  "export const FEED = " + JSON.stringify(FEED) + ";\n\n" +
+  "export const TRIAGE = " + JSON.stringify(TRIAGE) + ";\n";
 
 fs.mkdirSync(path.join(__dirname, "src", "data"), { recursive: true });
 fs.writeFileSync(path.join(__dirname, "src", "data", "pestel.js"), out);
@@ -59,6 +65,7 @@ const remote = JSON.stringify({
   manifest: W.PESTEL_MANIFEST || [],
   stats: W.PESTEL_STATS || {},
   feed: FEED,
+  triage: TRIAGE,
   generatedAt: (W.PESTEL_MANIFEST && W.PESTEL_MANIFEST[0] && W.PESTEL_MANIFEST[0].date) || "",
 });
 fs.writeFileSync(path.join(__dirname, "public", "pestel-data.json"), remote);
@@ -70,4 +77,4 @@ console.log("✓ src/data/pestel.js : " + kb + " KB · " + editions.length + " �
   (W.PESTEL_STATS && W.PESTEL_STATS.themes ? W.PESTEL_STATS.themes.length : 0) + " thèmes stats");
 console.log("✓ src/data/provinces.js : " + gkb + " KB · " + geo.features.length + " provinces");
 console.log("✓ public/pestel-data.json : " + rkb + " KB (à héberger pour le fetch en ligne)");
-console.log("✓ fil « À traiter » : " + FEED.length + " info(s) captée(s)" + (FEED.length ? "" : " (feed.json absent → section masquée)"));
+console.log("✓ fil « À traiter » : " + FEED.length + " classée(s) · « À trier » : " + TRIAGE.length + " non classée(s)");

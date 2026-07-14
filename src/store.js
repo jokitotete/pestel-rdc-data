@@ -3,12 +3,16 @@ import { EDITIONS, MANIFEST, STATS } from './data/pestel';
 import * as DATA from './data/pestel';
 import { validateData, safeAssign } from './acl';
 import { itemInSectorStrong, sectorByKey } from './sectors';
+import { hostOf } from './safeUrl';
 
-// Fil « À traiter » (collecte étage 1). Défensif : fonctionne que data/pestel.js exporte FEED ou non
-// (avant/après régénération par build_data.js). Mutable → remplacé en place par applyRemote.
-export const FEED = [];
+// Fils de collecte (étage 1). Défensifs : fonctionnent que data/pestel.js exporte FEED/TRIAGE ou non
+// (avant/après régénération par build_data.js). Mutables → remplacés en place par applyRemote.
+export const FEED = [];      // « À traiter » : captées CLASSÉES et sélectionnées
+export const TRIAGE = [];    // « À trier » : captées NON classées (axe « ? »)
 if (Array.isArray(DATA.FEED)) DATA.FEED.forEach((x) => FEED.push(x));
+if (Array.isArray(DATA.TRIAGE)) DATA.TRIAGE.forEach((x) => TRIAGE.push(x));
 export const getFeed = () => FEED;
+export const getTriage = () => TRIAGE;
 
 export { EDITIONS, MANIFEST, STATS };
 
@@ -33,6 +37,17 @@ export const findItem = (ed, code) => {
 // Résout des ids de sources en objets source.
 export const sourcesFor = (ed, ids) =>
   (ids || []).map((id) => ed.sources.find((s) => s.id === id)).filter(Boolean);
+
+// Source PRINCIPALE d'un item, pour l'afficher sur la carte (« {name} · {host} »). App d'agrégation :
+// on cite systématiquement d'où vient l'info. Renvoie {name, host, url} ou null si aucune source résolue.
+export const primarySource = (ed, it) => {
+  const ids = it && it.sources;
+  const s = (ids && ids.length && ed && ed.sources) ? ed.sources.find((x) => x.id === ids[0]) : null;
+  if (!s) return null;
+  const outlet = (s.name || '').split(/\s[—–-]\s|«/)[0].trim();   // « Actualite.cd — « … » » → « Actualite.cd »
+  const host = s.url ? hostOf(s.url).replace(/^www\./, '') : '';
+  return { name: outlet, host, url: s.url || null };
+};
 
 // Lentille sectorielle (P1) — items de l'édition correspondant FORTEMENT au secteur (titre/analyse).
 export const sectorItems = (ed, sectorKey) => {
@@ -109,9 +124,10 @@ export function applyRemote(d) {
     MANIFEST.push(...d.manifest);
     Object.keys(STATS).forEach((k) => delete STATS[k]);
     safeAssign(STATS, d.stats);
-    // Fil « À traiter » : remplacé en place (validé « tableau d'objets » par l'ACL ; peut être absent).
-    FEED.length = 0;
-    if (Array.isArray(d.feed)) d.feed.forEach((x) => FEED.push(x));
+    // Fils « À traiter » / « À trier » : l'en-ligne n'écrase QUE ce qu'il DÉCLARE. Clé absente (ancien
+    // format en ligne sans feed/triage) → on GARDE l'embarqué. Clé présente → autoritaire (même vide).
+    if ('feed' in d) { FEED.length = 0; if (Array.isArray(d.feed)) d.feed.forEach((x) => FEED.push(x)); }
+    if ('triage' in d) { TRIAGE.length = 0; if (Array.isArray(d.triage)) d.triage.forEach((x) => TRIAGE.push(x)); }
     return true;
   } catch (e) {
     return false;

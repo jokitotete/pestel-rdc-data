@@ -2,8 +2,9 @@ import React, { useState, useMemo } from 'react';
 import { Text, View, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { C, F, tint } from '../theme';
-import { Card, CodeChip, RelBadge, Icon, SectionHead } from '../ui';
+import { Card, RelBadge, Icon, PageHeader, SourceLine } from '../ui';
 import { projectPaths, mapAspect, activityByProvince } from '../geo';
+import { primarySource } from '../store';
 
 // « Carte des actualités » — 26 provinces, coloriées par activité, sélection tactile.
 export default function MapScreen({ ed, onOpen }) {
@@ -31,7 +32,7 @@ export default function MapScreen({ ed, onOpen }) {
 
   return (
     <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-      <SectionHead title="🗺️ Carte des actualités" lens="par province · touchez pour explorer" />
+      <PageHeader eyebrow="Cartographie" title="Carte" subtitle="par province · touchez pour explorer" />
 
       {/* Dénominateur explicite : la carte ne couvre que les actualités géolocalisées. */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
@@ -65,11 +66,11 @@ export default function MapScreen({ ed, onOpen }) {
           </View>
           {selItems.length ? selItems.map((it) => (
             <Card key={it.code} accent={C.cobalt} onPress={() => onOpen(it.code)} style={{ padding: 14, marginBottom: 9 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                <CodeChip code={it.code} />
+              <Text style={{ fontFamily: F.bodySemi, fontSize: 14, color: C.ink, lineHeight: 20, marginBottom: 6 }} numberOfLines={3}>{it.title}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                <SourceLine source={primarySource(ed, it)} style={{ flex: 1 }} />
                 <RelBadge reliability={it.reliability} />
               </View>
-              <Text style={{ fontFamily: F.bodySemi, fontSize: 14, color: C.ink, lineHeight: 20 }} numberOfLines={3}>{it.title}</Text>
             </Card>
           )) : (
             <Text style={{ fontFamily: F.body, fontSize: 13, color: C.inkMut, paddingVertical: 12 }}>

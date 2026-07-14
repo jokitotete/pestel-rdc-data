@@ -9,17 +9,17 @@ import { IBMPlexSans_400Regular, IBMPlexSans_500Medium, IBMPlexSans_600SemiBold,
 import { IBMPlexMono_400Regular, IBMPlexMono_500Medium, IBMPlexMono_600SemiBold } from '@expo-google-fonts/ibm-plex-mono';
 
 import { C, F, applyTheme, tint } from './src/theme';
-import { Icon, Rule } from './src/ui';
-import { getEdition, latestDate, editionsList, applyRemote, getFeed } from './src/store';
-import { fetchRemoteData, DATA_URL } from './src/remote';
-import { loadSector, saveSector } from './src/prefs';
-import { SECTORS } from './src/sectors';
+import { Icon, shadow } from './src/ui';
+import { getEdition, latestDate, editionsList, applyRemote, getFeed, getTriage } from './src/store';
+import { fetchRemoteData } from './src/remote';
+import { loadPrefs, savePrefs } from './src/prefs';
+import { scheduleDailyBriefing, cancelDailyBriefing } from './src/notify';
 import Home from './src/screens/Home';
 import Axes from './src/screens/Axes';
 import MapScreen from './src/screens/Map';
 import Stats from './src/screens/Stats';
 import Search from './src/screens/Search';
-import Sources from './src/screens/Sources';
+import Favoris from './src/screens/Favoris';
 import Detail from './src/screens/Detail';
 import Welcome from './src/screens/Welcome';
 
@@ -31,7 +31,7 @@ const TABS = [
   { key: 'axes', label: 'Axes', icon: 'axes' },
   { key: 'map', label: 'Carte', icon: 'map' },
   { key: 'stats', label: 'Données', icon: 'stats' },
-  { key: 'sources', label: 'Sources', icon: 'sources' },
+  { key: 'favoris', label: 'Favoris', icon: 'star' },
 ];
 
 export default function App() {
@@ -61,11 +61,36 @@ export default function App() {
   const [mode, setMode] = useState('light');      // thème clair (défaut) / sombre
   const [, setThemeVer] = useState(0);
   const toggleTheme = () => { const m = mode === 'light' ? 'dark' : 'light'; applyTheme(m); setMode(m); setThemeVer((v) => v + 1); };
-  const [sector, setSector] = useState(null);     // Lentille sectorielle (P1) — persistante, corrigible
-  const [sectorSheet, setSectorSheet] = useState(false);
   const [welcomeDone, setWelcomeDone] = useState(false);   // écran d'accueil « bande annonce » (≥ 3 s) vu ?
   const onWelcomeLayout = useCallback(() => { SplashScreen.hideAsync().catch(() => {}); }, []);  // masque le splash natif
-  const pickSector = (k) => { setSector(k); saveSector(k); setSectorSheet(false); };
+  // « Le Réveil Ntongo » (PO) — bandeau « nouvelle édition » (nouveauté au niveau ÉDITION, honnête sans
+  // collectedAt) + opt-in notification quotidienne. Aucun compte : tout est local (AsyncStorage + notif locale).
+  const [lastSeen, setLastSeen] = useState(null);       // dernière édition VUE par l'utilisateur
+  const [notifOn, setNotifOn] = useState(false);        // opt-in briefing matinal (notif locale)
+  // FAVORIS — articles « étoilés », persistants (SNAPSHOT complet) : restent visibles quel que soit le jour
+  // tant que l'étoile est sélectionnée, indépendamment de l'édition affichée. Clé = `${edDate}:${code}`.
+  const [favs, setFavs] = useState([]);
+  const isFav = useCallback((id) => favs.some((f) => f.id === id), [favs]);
+  const toggleFav = useCallback((snap) => {
+    if (!snap || !snap.id) return;
+    setFavs((prev) => {
+      const next = prev.some((f) => f.id === snap.id) ? prev.filter((f) => f.id !== snap.id) : [snap, ...prev];
+      savePrefs({ favs: next });
+      return next;
+    });
+  }, []);
+  const openFav = useCallback((fav) => {
+    const e = getEdition(fav.edDate);
+    if (!e) { Alert.alert('Article indisponible', "L'édition de cet article n'est plus chargée."); return; }
+    setDetailEd(e); setDetail(fav.code);
+  }, []);
+  const dismissNewEdition = useCallback((d) => { setLastSeen(d); savePrefs({ lastSeen: d }); }, []);
+  const toggleNotif = useCallback(async () => {
+    if (notifOn) { await cancelDailyBriefing(); setNotifOn(false); savePrefs({ notifOn: false }); return; }
+    const ok = await scheduleDailyBriefing();
+    setNotifOn(ok); savePrefs({ notifOn: ok });
+    if (!ok) Alert.alert('Notifications indisponibles', "Autorisez les notifications (ou reconstruisez l'app) pour recevoir le briefing du matin.");
+  }, [notifOn]);
 
   // Rafraîchissement + CONTRÔLE RÉGULIER du hors-ligne (NB3) : au montage, à intervalle régulier, et
   // à chaque retour au premier plan. Le repli sur l'embarqué est SIGNALÉ (bandeau + badge), jamais muet.
@@ -86,7 +111,12 @@ export default function App() {
   }, []);
   useEffect(() => {
     refresh();
-    loadSector().then((k) => setSector(k));
+    loadPrefs().then((p) => {                                                  // hydrate dernière édition vue + opt-in notif
+      if (p.lastSeen) setLastSeen(p.lastSeen);
+      else { const d = latestDate(); setLastSeen(d); savePrefs({ lastSeen: d }); }   // 1er lancement = référence, pas d'alerte
+      if (p.notifOn) setNotifOn(true);
+      if (Array.isArray(p.favs)) setFavs(p.favs);
+    });
     const iv = setInterval(refresh, 5 * 60 * 1000);                            // re-contrôle toutes les 5 min
     // Retour au premier plan : re-contrôle, mais debouncé (≥ 30 s) pour ne pas mitrailler la source.
     const sub = AppState.addEventListener('change', (s) => {
@@ -112,6 +142,11 @@ export default function App() {
             </Text>
             <FreshnessTag net={net} ed={ed} />
           </View>
+          <TouchableOpacity activeOpacity={0.7} onPress={toggleNotif} hitSlop={8}
+            accessibilityRole="button" accessibilityLabel={notifOn ? 'Briefing du matin activé' : 'Activer le briefing du matin'}
+            style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name={notifOn ? 'bell-on' : 'bell'} size={19} color={notifOn ? C.cobalt : C.inkDim} />
+          </TouchableOpacity>
           <TouchableOpacity activeOpacity={0.7} onPress={toggleTheme} hitSlop={8}
             style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }}>
             <Icon name={mode === 'dark' ? 'sun' : 'moon'} size={18} color={C.inkDim} />
@@ -120,7 +155,7 @@ export default function App() {
             style={{ width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', marginRight: 4 }}>
             <Icon name="search" size={20} color={C.inkDim} />
           </TouchableOpacity>
-          <TouchableOpacity activeOpacity={0.8} onPress={() => setSheet(true)}
+          <TouchableOpacity activeOpacity={0.8} onPress={() => setSheet(true)} hitSlop={{ top: 7, bottom: 7, left: 4, right: 4 }}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.panel, borderWidth: 1, borderColor: C.border, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7 }}>
             <Icon name="calendar" size={14} color={C.cobalt} />
             <Text style={{ fontFamily: F.bodySemi, fontSize: 12.5, color: C.ink }}>{ed.label}</Text>
@@ -130,20 +165,24 @@ export default function App() {
         {/* Fraîcheur des données — bandeau persistant quand on tourne hors ligne (P2, anti-ARCA) */}
         {net === 'offline' ? <OfflineBanner ed={ed} /> : null}
 
+        {/* « Le Réveil Ntongo » — bandeau « nouvelle édition » (nouveauté depuis la dernière visite) */}
+        {tab === 'home' && net !== 'offline' && lastSeen && date === latestDate() && lastSeen !== date
+          ? <NewEditionBanner ed={ed} onDismiss={() => dismissNewEdition(date)} /> : null}
+
         {/* Écran actif (fondu + léger glissement à chaque changement d'onglet) */}
         <ScreenFade tabKey={tab}>
-          {tab === 'home' && <Home ed={ed} onOpen={setDetail} sector={sector} onChangeSector={() => setSectorSheet(true)} feed={date === latestDate() ? getFeed() : []} />}
-          {tab === 'axes' && <Axes ed={ed} onOpen={setDetail} onOpenEvent={openEvent} />}
+          {tab === 'home' && <Home ed={ed} onOpen={setDetail} feed={date === latestDate() ? getFeed() : []} triage={date === latestDate() ? getTriage() : []} onOpenEvent={openEvent} />}
+          {tab === 'axes' && <Axes ed={ed} onOpen={setDetail} triage={date === latestDate() ? getTriage() : []} onOpenEvent={openEvent} />}
           {tab === 'map' && <MapScreen ed={ed} onOpen={setDetail} />}
           {tab === 'stats' && <Stats />}
-          {tab === 'sources' && <Sources ed={ed} onOpen={setDetail} />}
+          {tab === 'favoris' && <Favoris favs={favs} onOpen={openFav} onToggleFav={toggleFav} />}
         </ScreenFade>
 
         <TabBar tab={tab} setTab={setTab} />
       </SafeAreaView>
 
       {/* Modale de détail (zoom sur un item — dans son édition d'origine dEd) */}
-      <Modal visible={!!detail} animationType="slide" onRequestClose={closeDetail} presentationStyle="pageSheet">
+      <Modal visible={!!detail} animationType="slide" onRequestClose={closeDetail}>
         <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right', 'bottom']}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.border2 }}>
             <Text style={{ fontFamily: F.mono, fontSize: 11.5, color: C.inkMut }}>{dEd.label}</Text>
@@ -152,12 +191,12 @@ export default function App() {
               <Icon name="close" size={18} color={C.cobalt} />
             </TouchableOpacity>
           </View>
-          {detail ? <Detail ed={dEd} code={detail} onOpen={setDetail} /> : null}
+          {detail ? <Detail ed={dEd} code={detail} onOpen={setDetail} isFav={isFav} onToggleFav={toggleFav} /> : null}
         </SafeAreaView>
       </Modal>
 
       {/* Recherche (ouverte par la loupe de l'en-tête) */}
-      <Modal visible={searchOpen} animationType="slide" onRequestClose={() => setSearchOpen(false)} presentationStyle="pageSheet">
+      <Modal visible={searchOpen} animationType="slide" onRequestClose={() => setSearchOpen(false)}>
         <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right', 'bottom']}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.border2 }}>
             <Text style={{ fontFamily: F.display, fontSize: 16, color: C.ink }}>Recherche</Text>
@@ -173,45 +212,23 @@ export default function App() {
       {/* Sélecteur d'édition */}
       <EditionSheet open={sheet} date={date} onClose={() => setSheet(false)} onPick={(d) => { chooseDate(d); setSheet(false); setDetail(null); }} />
 
-      {/* Sélecteur de secteur (Lentille P1) */}
-      <SectorSheet open={sectorSheet} sector={sector} onClose={() => setSectorSheet(false)} onPick={pickSector} />
-
       {/* Écran d'accueil « bande annonce » — logo + slogan + drapeau, ≥ 3 s, par-dessus tout au lancement */}
       {!welcomeDone && <Welcome onLayout={onWelcomeLayout} onDone={() => setWelcomeDone(true)} />}
     </SafeAreaProvider>
   );
 }
 
-// Choix du secteur de la Lentille (P1) — national (aucun) ou un secteur transversal. Persistant.
-function SectorSheet({ open, sector, onClose, onPick }) {
-  const insets = useSafeAreaInsets();
-  const opts = [{ key: null, label: 'National — tout le pays', icon: '🇨🇩' }, ...SECTORS.map((s) => ({ key: s.key, label: s.label, icon: s.icon }))];
+// « Le Réveil Ntongo » — bandeau « nouvelle édition » : signale la nouveauté depuis la dernière visite
+// (niveau ÉDITION, honnête). Point + libellé (WCAG 1.4.1), fermable (contrôle explicite).
+function NewEditionBanner({ ed, onDismiss }) {
   return (
-    <Modal visible={open} animationType="slide" transparent onRequestClose={onClose}>
-      <TouchableOpacity activeOpacity={1} onPress={onClose} style={{ flex: 1, backgroundColor: 'rgba(20,25,40,0.35)', justifyContent: 'flex-end' }}>
-        <TouchableOpacity activeOpacity={1} style={{ backgroundColor: C.bg, borderTopLeftRadius: 22, borderTopRightRadius: 22, paddingTop: 10, paddingBottom: 10 + insets.bottom, maxHeight: '70%' }}>
-          <View style={{ alignItems: 'center', paddingVertical: 6 }}>
-            <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: C.border }} />
-          </View>
-          <Text style={{ fontFamily: F.display, fontSize: 18, color: C.ink, paddingHorizontal: 20, paddingVertical: 8 }}>Votre secteur</Text>
-          <Text style={{ fontFamily: F.body, fontSize: 12.5, color: C.inkMut, paddingHorizontal: 20, marginBottom: 6 }}>Remonte votre secteur sur « À la une ». Modifiable à tout moment.</Text>
-          <ScrollView>
-            {opts.map((o) => {
-              const on = o.key === sector;
-              return (
-                <TouchableOpacity key={o.key || 'national'} onPress={() => onPick(o.key)}
-                  accessibilityRole="button" accessibilityLabel={o.label}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, paddingVertical: 14 }}>
-                  <Text style={{ fontSize: 18 }}>{o.icon}</Text>
-                  <Text style={{ fontFamily: on ? F.bodySemi : F.body, fontSize: 15, color: on ? C.cobalt : C.ink, flex: 1 }}>{o.label}</Text>
-                  {on ? <Icon name="checkmark" size={18} color={C.cobalt} /> : null}
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </TouchableOpacity>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 9, backgroundColor: tint(C.cobalt, 0.1), borderBottomWidth: 1, borderBottomColor: tint(C.cobalt, 0.28) }}>
+      <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: C.cobalt }} />
+      <Text style={{ flex: 1, fontFamily: F.bodyMed, fontSize: 12, color: C.ink }}>Nouvelle édition du {ed.label}</Text>
+      <TouchableOpacity onPress={onDismiss} hitSlop={10} accessibilityRole="button" accessibilityLabel="Marquer comme vue">
+        <Icon name="close" size={16} color={C.inkMut} />
       </TouchableOpacity>
-    </Modal>
+    </View>
   );
 }
 
@@ -260,19 +277,31 @@ function OfflineBanner({ ed }) {
 
 function TabBar({ tab, setTab }) {
   const insets = useSafeAreaInsets();
+  // DOCK FLOTTANT « aube cobalt » (atelier design UI·UX·Product) : carte posée (marge + rayon 24 + ombre helper),
+  // fond C.panel dans les DEUX thèmes (AA : inkMut inactif échoue sur elev en sombre). UN SEUL signal d'actif fort
+  // = pastille PLEINE actionFill + icône -on blanche (usage littéral du jeton, blanc 6,17:1 AA). Cobalt = action.
+  // Sélection TRIPLE-encodée (WCAG 1.4.1) : pastille pleine + icône -on + libellé bodySemi. Cibles ≥ 48 px, pouce.
   return (
-    <View accessibilityRole="tablist" style={{ flexDirection: 'row', borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.panel, paddingTop: 8, paddingBottom: 8 + insets.bottom }}>
-      {TABS.map((t) => {
-        const on = tab === t.key;
-        return (
-          <TouchableOpacity key={t.key} activeOpacity={0.7} onPress={() => setTab(t.key)}
-            accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={t.label}
-            style={{ flex: 1, alignItems: 'center', gap: 3 }}>
-            <Icon name={on ? `${t.icon}-on` : t.icon} size={22} color={on ? C.cobalt : C.inkMut} />
-            <Text style={{ fontFamily: on ? F.bodySemi : F.body, fontSize: 10.5, color: on ? C.cobalt : C.inkMut }}>{t.label}</Text>
-          </TouchableOpacity>
-        );
-      })}
+    <View style={{ paddingHorizontal: 12, paddingBottom: Math.max(insets.bottom, 8) + 4, backgroundColor: 'transparent' }}>
+      <View accessibilityRole="tablist"
+        style={[{ flexDirection: 'row', backgroundColor: C.panel, borderRadius: 24, borderWidth: 1, borderColor: C.border2, paddingTop: 10, paddingBottom: 10, paddingHorizontal: 8 }, shadow]}>
+        {TABS.map((t, i) => {
+          const on = tab === t.key;
+          return (
+            <TouchableOpacity key={t.key} activeOpacity={0.7} onPress={() => setTab(t.key)}
+              accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={`${t.label}, onglet ${i + 1} sur ${TABS.length}`}
+              style={{ flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+              <View style={{ height: 32, minWidth: 56, paddingHorizontal: 14, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? C.actionFill : 'transparent' }}>
+                <Icon name={on ? `${t.icon}-on` : t.icon} size={24} color={on ? C.onAction : C.inkMut} />
+              </View>
+              <Text numberOfLines={1} allowFontScaling maxFontSizeMultiplier={1.3}
+                style={{ fontFamily: on ? F.bodySemi : F.body, fontSize: 11, letterSpacing: 0.2, color: on ? C.cobalt : C.inkMut }}>
+                {t.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
     </View>
   );
 }

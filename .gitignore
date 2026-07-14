@@ -4,3 +4,6 @@ dist/
 web-build/
 *.log
 .DS_Store
+
+# APK builds (artefacts)
+*.apk

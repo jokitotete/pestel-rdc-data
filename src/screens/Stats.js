@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Text, View, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { C, F } from '../theme';
-import { Pill, Icon } from '../ui';
+import { Pill, Icon, PageHeader } from '../ui';
 import { ChartCard } from '../charts';
 import { STATS } from '../store';
 import { safeOpenURL } from '../safeUrl';
@@ -17,15 +17,16 @@ export default function Stats() {
 
   return (
     <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+      <PageHeader eyebrow="Tendances" title="Données" subtitle="les chiffres qui comptent" />
       {STATS.updated ? (
-        <Text style={{ fontFamily: F.mono, fontSize: 11, color: C.inkMut, marginBottom: 14 }}>Sources primaires · maj {STATS.updated}</Text>
+        <Text style={{ fontFamily: F.mono, fontSize: 11, color: C.inkMut, marginBottom: 14 }}>sources primaires · maj {STATS.updated}</Text>
       ) : null}
 
       {/* Filtre secteurs */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 18, marginHorizontal: -18 }} contentContainerStyle={{ paddingHorizontal: 18, gap: 8 }}>
         <Pill label="Tous" active={theme === 'all'} onPress={() => setTheme('all')} />
         {STATS.themes.map((t) => (
-          <Pill key={t.key} label={`${t.icon} ${t.label}`} active={theme === t.key} onPress={() => setTheme(t.key)} />
+          <Pill key={t.key} label={t.label} active={theme === t.key} onPress={() => setTheme(t.key)} />
         ))}
       </ScrollView>
 
@@ -35,7 +36,7 @@ export default function Stats() {
           <View key={t.key} style={{ marginBottom: 26 }}>
             {/* En-tête secteur */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <Text style={{ fontSize: 18 }}>{t.icon}</Text>
+              <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: C.inkMut }} />
               <Text style={{ fontFamily: F.display, fontSize: 18, color: C.ink }}>{t.label}</Text>
             </View>
 

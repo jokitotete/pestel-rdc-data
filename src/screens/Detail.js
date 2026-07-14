@@ -1,18 +1,18 @@
 import React from 'react';
-import { Text, View, ScrollView, TouchableOpacity } from 'react-native';
-import { C, F, AX, AXT, AX_ICON, tint, relFr, relIsOk } from '../theme';
-import { CodeChip, RelBadge, SrcDot, Icon, Rule } from '../ui';
-import { findItem, sourcesFor } from '../store';
-import { confirmOpenURL, hostOf } from '../safeUrl';
+import { Text, View, ScrollView, TouchableOpacity, Share } from 'react-native';
+import { C, F, AX, AXT, tint, relFr, relIsOk } from '../theme';
+import { RelBadge, SrcDot, Icon, Rule, AxisGlyph } from '../ui';
+import { findItem, sourcesFor, primarySource } from '../store';
+import { confirmOpenURL, hostOf, isSafeUrl } from '../safeUrl';
 
 // Zoom sur un item : texte intégral, analyse, contexte, chronologie, acteurs, perspectives, sources.
-export default function Detail({ ed, code, onOpen }) {
+export default function Detail({ ed, code, onOpen, isFav, onToggleFav }) {
   const it = findItem(ed, code);
   // ROB-04 : jamais de feuille MUETTE. Un code introuvable (agenda orphelin, course de synchro) affiche
   // un état vide EXPLICITE au lieu de `return null` (qui laissait une modale sans contenu ni message).
   if (!it) return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
-      <Text style={{ fontSize: 30, marginBottom: 10 }}>🗂️</Text>
+      <Icon name="triage" size={30} color={C.inkMut} style={{ marginBottom: 10 }} />
       <Text style={{ fontFamily: F.bodySemi, fontSize: 15, color: C.ink, textAlign: 'center', marginBottom: 4 }}>Dossier indisponible</Text>
       <Text style={{ fontFamily: F.body, fontSize: 13, color: C.inkMut, textAlign: 'center', lineHeight: 19 }}>
         Cet élément n'existe pas (ou plus) dans l'édition affichée. Il a pu changer lors d'une mise à jour.
@@ -23,36 +23,61 @@ export default function Detail({ ed, code, onOpen }) {
   const ct = AXT[it.axis] || C.ink;      // texte conforme AA
   const z = it.zoom || {};
   const srcs = sourcesFor(ed, it.sources);
+  const psrc = primarySource(ed, it);
+
+  // Partager (P2 PO) — feuille de partage système : titre + source + URL (uniquement si https sûre, SEC) +
+  // signature. Aucune donnée perso ; hors-ligne OK (intent système).
+  const onShare = () => {
+    const url = psrc && psrc.url && isSafeUrl(psrc.url) ? psrc.url : null;
+    const msg = [it.title, psrc && psrc.name ? `— ${psrc.name}` : null, url, 'via Ntongo · RDC'].filter(Boolean).join('\n');
+    Share.share({ message: msg, title: it.title }).catch(() => {});
+  };
+
+  // FAVORIS — snapshot complet (autonome de l'édition) : reste affichable quel que soit le jour.
+  const favId = `${ed.date}:${it.code}`;
+  const starred = isFav ? isFav(favId) : false;
+  const toggleStar = () => onToggleFav && onToggleFav({
+    id: favId, edDate: ed.date, code: it.code, axis: it.axis, axisName: it.axisName,
+    title: it.title, text: it.text, reliability: it.reliability, source: psrc,
+  });
 
   return (
     <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 48 }} showsVerticalScrollIndicator={false}>
       {/* En-tête */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-        <CodeChip code={it.code} />
-        <Text style={{ fontSize: 14 }}>{AX_ICON[it.axis]}</Text>
+        <AxisGlyph axis={it.axis} size={16} />
         <Text style={{ fontFamily: F.bodySemi, fontSize: 12.5, color: ct }}>{it.axisName}</Text>
         <View style={{ flex: 1 }} />
         <RelBadge reliability={it.reliability} />
+        <TouchableOpacity onPress={toggleStar} hitSlop={10} accessibilityRole="button"
+          accessibilityState={{ selected: starred }} accessibilityLabel={starred ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+          style={{ minHeight: 32, justifyContent: 'center', paddingLeft: 4 }}>
+          <Icon name={starred ? 'star-on' : 'star'} size={19} color={starred ? C.gold : C.inkDim} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onShare} hitSlop={10} accessibilityRole="button" accessibilityLabel="Partager cet article"
+          style={{ minHeight: 32, justifyContent: 'center', paddingLeft: 4 }}>
+          <Icon name="share" size={18} color={C.cobalt} />
+        </TouchableOpacity>
       </View>
 
       <Text style={{ fontFamily: F.display, fontSize: 22, color: C.ink, lineHeight: 29, marginBottom: 14 }}>
         {it.title}
       </Text>
 
-      <Text style={{ fontFamily: F.body, fontSize: 14.5, color: C.inkDim, lineHeight: 23 }}>{it.text}</Text>
+      <Text style={{ fontFamily: F.body, fontSize: 15.5, color: C.inkDim, lineHeight: 25 }}>{it.text}</Text>
 
       {/* Analyse */}
       {it.analysis ? (
         <View style={{ backgroundColor: tint(c, 0.08), borderLeftWidth: 3, borderLeftColor: c, borderRadius: 10, padding: 14, marginTop: 16 }}>
           <Text style={{ fontFamily: F.monoSemi, fontSize: 10.5, color: ct, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 6 }}>Analyse</Text>
-          <Text style={{ fontFamily: F.body, fontSize: 13.5, color: C.inkDim, lineHeight: 21, fontStyle: 'italic' }}>{it.analysis}</Text>
+          <Text style={{ fontFamily: F.body, fontSize: 14.5, color: C.inkDim, lineHeight: 22, fontStyle: 'italic' }}>{it.analysis}</Text>
         </View>
       ) : null}
 
       {/* Contexte */}
       {z.context ? (
         <Block title="Contexte">
-          <Text style={{ fontFamily: F.body, fontSize: 13.5, color: C.inkDim, lineHeight: 21 }}>{z.context}</Text>
+          <Text style={{ fontFamily: F.body, fontSize: 14.5, color: C.inkDim, lineHeight: 22 }}>{z.context}</Text>
         </Block>
       ) : null}
 
@@ -67,7 +92,7 @@ export default function Detail({ ed, code, onOpen }) {
               </View>
               <View style={{ flex: 1, paddingBottom: 4 }}>
                 <Text style={{ fontFamily: F.monoSemi, fontSize: 11, color: ct, marginBottom: 2 }}>{t.d}</Text>
-                <Text style={{ fontFamily: F.body, fontSize: 13, color: C.inkDim, lineHeight: 19 }}>{t.e}</Text>
+                <Text style={{ fontFamily: F.body, fontSize: 14, color: C.inkDim, lineHeight: 20 }}>{t.e}</Text>
               </View>
             </View>
           ))}
@@ -77,7 +102,7 @@ export default function Detail({ ed, code, onOpen }) {
       {/* Acteurs — rendu défensif : texte, tableau de textes, ou tableau d'objets {name, role}. */}
       {z.actors ? (
         <Block title="Acteurs">
-          <Text style={{ fontFamily: F.body, fontSize: 13.5, color: C.inkDim, lineHeight: 21 }}>
+          <Text style={{ fontFamily: F.body, fontSize: 14.5, color: C.inkDim, lineHeight: 22 }}>
             {(Array.isArray(z.actors) ? z.actors : [z.actors])
               .map((a) => (typeof a === 'string' ? a
                 : a && a.name ? (a.role ? `${a.name} — ${a.role}` : a.name)
@@ -90,18 +115,7 @@ export default function Detail({ ed, code, onOpen }) {
       {/* Perspectives */}
       {z.outlook ? (
         <Block title="Perspectives">
-          <Text style={{ fontFamily: F.body, fontSize: 13.5, color: C.inkDim, lineHeight: 21 }}>{z.outlook}</Text>
-        </Block>
-      ) : null}
-
-      {/* Items liés */}
-      {it.related && it.related.length ? (
-        <Block title="Liés">
-          {/* A11Y-04 : gap ≥ 2×hitSlop des CodeChip pour que les zones tactiles ne se chevauchent pas
-              (sinon on ouvre le mauvais item). rowGap pour l'espacement vertical entre rangées. */}
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: 20, rowGap: 12 }}>
-            {it.related.map((rc) => <CodeChip key={rc} code={rc} onPress={() => onOpen(rc)} />)}
-          </View>
+          <Text style={{ fontFamily: F.body, fontSize: 14.5, color: C.inkDim, lineHeight: 22 }}>{z.outlook}</Text>
         </Block>
       ) : null}
 

@@ -1,5 +1,5 @@
 import { validateData } from '../src/acl';
-import { applyRemote, getFeed } from '../src/store';
+import { applyRemote, getFeed, getTriage } from '../src/store';
 
 // Payload minimal valide ; `extra` permet d'injecter un feed.
 const base = (extra = {}) => ({
@@ -30,8 +30,27 @@ describe('feed « À traiter » — applyRemote peuple getFeed()', () => {
     expect(getFeed().length).toBe(1);
     expect(getFeed()[0].title).toContain('63 500');
   });
-  it('un payload sans feed vide le fil (pas de résidu)', () => {
-    applyRemote(base());
+  it('clé feed ABSENTE → fil conservé ; feed: [] → fil vidé', () => {
+    applyRemote(base({ feed: [{ title: 'x', url: 'https://a.cd/x' }] }));
+    applyRemote(base());                 // pas de clé feed → l'embarqué est conservé
+    expect(getFeed().length).toBe(1);
+    applyRemote(base({ feed: [] }));      // clé présente vide → vidé
     expect(getFeed().length).toBe(0);
+  });
+});
+
+describe('triage « À trier » — ACL + applyRemote (captées non classées)', () => {
+  it('accepte/rejette la clé triage comme feed', () => {
+    expect(validateData(base({ triage: [{ title: 'x', url: 'https://a.cd/x' }] }))).toBe(true);
+    expect(validateData(base({ triage: [] }))).toBe(true);
+    for (const bad of ['x', 42, [1], ['s']]) expect(validateData(base({ triage: bad }))).toBe(false);
+  });
+  it('applyRemote : clé triage absente → conservé ; triage: [] → vidé', () => {
+    applyRemote(base({ triage: [{ title: 'Antennes wifi Mai-Ndombe', url: 'https://acp.cd/x' }] }));
+    expect(getTriage().length).toBe(1);
+    applyRemote(base());                  // clé absente → conservé
+    expect(getTriage().length).toBe(1);
+    applyRemote(base({ triage: [] }));     // clé présente vide → vidé
+    expect(getTriage().length).toBe(0);
   });
 });

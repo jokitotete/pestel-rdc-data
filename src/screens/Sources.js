@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Text, View, ScrollView, TouchableOpacity } from 'react-native';
 import { C, F, REL } from '../theme';
-import { Card, SrcDot, Pill, CodeChip, Icon } from '../ui';
+import { Card, SrcDot, Pill, CodeChip, Icon, PageHeader } from '../ui';
 import { confirmOpenURL, hostOf } from '../safeUrl';
 
 // Traçabilité : toutes les sources de l'édition, filtrables par fiabilité A→D.
@@ -11,10 +11,11 @@ export default function Sources({ ed, onOpen }) {
 
   return (
     <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+      <PageHeader eyebrow="Traçabilité" title="Sources" subtitle="d’où vient l’information · fiabilité A→D" />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 18, marginHorizontal: -18 }} contentContainerStyle={{ paddingHorizontal: 18, gap: 8 }}>
         <Pill label={`Toutes (${ed.sources.length})`} active={rel === 'all'} onPress={() => setRel('all')} />
         {['A', 'B', 'C', 'D'].map((r) => (
-          <Pill key={r} label={REL[r].label} active={rel === r} color={REL[r].c} onPress={() => setRel(r)} />
+          <Pill key={r} label={REL[r].label} active={rel === r} onPress={() => setRel(r)} />
         ))}
       </ScrollView>
 

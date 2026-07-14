@@ -20,3 +20,27 @@ export async function saveSector(key) {
     /* best-effort : l'app reste fonctionnelle sans persistance */
   }
 }
+
+// Préférences génériques (blob JSON fusionné) — « Le Réveil Ntongo » : { lastSeen, notifOn }.
+const KEY_PREFS = 'ntongo.prefs.v1';
+
+export async function loadPrefs() {
+  try {
+    const raw = await AsyncStorage.getItem(KEY_PREFS);
+    return raw ? (JSON.parse(raw) || {}) : {};
+  } catch (e) {
+    return {};   // dégradation sûre : pas de persistance → valeurs par défaut
+  }
+}
+
+// Fusion (patch) : ne réécrit que les clés fournies, préserve le reste.
+export async function savePrefs(patch) {
+  try {
+    const cur = await loadPrefs();
+    const next = { ...cur, ...(patch || {}) };
+    await AsyncStorage.setItem(KEY_PREFS, JSON.stringify(next));
+    return next;
+  } catch (e) {
+    return null;
+  }
+}

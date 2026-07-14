@@ -42,6 +42,9 @@ export function validateData(raw) {
   if ('feed' in raw) {
     if (!Array.isArray(raw.feed) || !raw.feed.every(isObj)) return false;
   }
+  if ('triage' in raw) {
+    if (!Array.isArray(raw.triage) || !raw.triage.every(isObj)) return false;
+  }
   return true;
 }
 
