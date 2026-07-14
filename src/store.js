@@ -83,15 +83,16 @@ export const upcomingEvents = (windowDays = 21, cap = 12) => {
   const hi = ref + windowDays * 864e5;
   const seen = new Set();
   const out = [];
-  // Éditions de la plus RÉCENTE à la plus ancienne : pour une même DATE d'événement, la description
-  // la plus fraîche gagne (dédup par date → un rendez-vous par date). On garde `edDate` : les codes
-  // ne sont PAS uniques d'une édition à l'autre, donc l'item doit être ouvert dans SON édition source.
+  // Éditions de la plus RÉCENTE à la plus ancienne : pour un MÊME événement (même date ET même code/libellé),
+  // la description la plus fraîche gagne (dédup par date+identité). RS1 : NE PAS dédupliquer par la seule date
+  // (sinon deux rendez-vous distincts le même jour → le second disparaît). On garde `edDate` : les codes ne
+  // sont PAS uniques d'une édition à l'autre, donc l'item doit être ouvert dans SON édition source.
   for (const d of Object.keys(EDITIONS).sort().reverse()) {
     const ed = EDITIONS[d];
     for (const a of (ed && Array.isArray(ed.agenda) ? ed.agenda : [])) {
       const t = parseWhen(a.when);
       if (t == null || t < lo || t > hi) continue;
-      const key = String(t);
+      const key = t + '|' + (a.code || (a.what || '').trim().toLowerCase());
       if (seen.has(key)) continue;
       seen.add(key);
       // Intégrité référentielle : un `code` qui ne résout PAS vers un item de SON édition est NEUTRALISÉ

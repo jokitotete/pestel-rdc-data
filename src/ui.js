@@ -146,7 +146,7 @@ export const SourceLine = ({ source, style }) => {
 // Carte d'actualité « langage vivant » — accent arrondi (couleur d'axe) + pastille d'axe + titre + SOURCE.
 // `rank` (« 01 ») = priorité éditoriale des titres à la une. Plus de code interne (P-1…) : la carte cite la
 // SOURCE (site) en bas à gauche. PAS de fraîcheur par carte (P2 : fraîcheur = niveau édition, en-tête global).
-export const NewsCard = ({ axis, rank, title, text, reliability, cta, source, onPress, titleLines = 3 }) => {
+export const NewsCard = ({ axis, rank, title, text, reliability, cta, source, onStar, starred, onPress, titleLines = 3 }) => {
   const c = AX[axis] || C.cobalt;
   const ct = AXT[axis] || C.cobalt;
   return (
@@ -160,6 +160,12 @@ export const NewsCard = ({ axis, rank, title, text, reliability, cta, source, on
           {rank ? <Text style={{ fontFamily: F.displayBold, fontSize: 20, color: ct }}>{rank}</Text> : null}
           <View style={{ flex: 1 }} />
           {reliability ? <RelBadge reliability={reliability} /> : null}
+          {onStar ? (
+            <TouchableOpacity onPress={onStar} hitSlop={10} accessibilityRole="button" accessibilityState={{ selected: !!starred }}
+              accessibilityLabel={starred ? 'Retirer des favoris' : 'Ajouter aux favoris'} style={{ minHeight: 32, justifyContent: 'center', paddingLeft: 8 }}>
+              <Glyph name={starred ? 'star-on' : 'star'} size={18} color={starred ? C.gold : C.inkMut} />
+            </TouchableOpacity>
+          ) : null}
         </View>
         <Text style={{ fontFamily: rank ? F.bodyBold : F.bodySemi, fontSize: rank ? 16 : 14.5, color: C.ink, lineHeight: rank ? 22 : 20, marginBottom: text ? 6 : 0 }} numberOfLines={titleLines}>{title}</Text>
         {text ? <Text style={{ fontFamily: F.body, fontSize: 13.5, color: C.inkDim, lineHeight: 19.5 }} numberOfLines={rank ? 4 : 2}>{text}</Text> : null}

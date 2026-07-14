@@ -17,7 +17,7 @@ const FilterRow = ({ label, children }) => (
 // « Favoris » — les articles ÉTOILÉS, PERSISTANTS : restent visibles quel que soit le jour tant que l'étoile
 // est sélectionnée (snapshots autonomes de l'édition). Filtrables par Axes / Rubriques / Secteurs, comme
 // les autres écrans. On retire un favori en rouvrant l'article (l'étoile s'y bascule).
-export default function Favoris({ favs = [], onOpen }) {
+export default function Favoris({ favs = [], onOpen, onToggleFav }) {
   const [filter, setFilter] = useState({ type: 'all' });
   const sector = filter.type === 'sector' ? SECTORS.find((s) => s.key === filter.key) : null;
 
@@ -62,7 +62,7 @@ export default function Favoris({ favs = [], onOpen }) {
 
           {list.length ? list.map((f) => (
             <NewsCard key={f.id} axis={f.axis} title={f.title} text={f.text} reliability={f.reliability}
-              source={f.source} onPress={() => onOpen(f)} titleLines={3} />
+              source={f.source} onStar={() => onToggleFav && onToggleFav(f)} starred onPress={() => onOpen(f)} titleLines={3} />
           )) : (
             <Text style={{ fontFamily: F.body, fontSize: 13, color: C.inkMut, paddingVertical: 20, textAlign: 'center', lineHeight: 19 }}>
               Aucun favori dans ce filtre.

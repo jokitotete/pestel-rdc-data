@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, View, TouchableOpacity } from 'react-native';
 import { C, F, tint } from '../theme';
-import { Card, Icon, Rule } from '../ui';
+import { Card, Icon, Rule, SourceLine } from '../ui';
 import { confirmOpenURL, hostOf, isSafeUrl } from '../safeUrl';
 
 // « Divers » — infos CAPTÉES automatiquement mais NON classées (axe « ? »), hors classement PESTEL.
@@ -36,10 +36,7 @@ export function DiversList({ items = [] }) {
               ) : null}
             </View>
             <Text style={{ fontFamily: F.bodySemi, fontSize: 13.5, color: C.ink, lineHeight: 19 }} numberOfLines={2}>{f.title}</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3 }}>
-              <Icon name="link" size={11} color={C.cobalt} />
-              <Text style={{ fontFamily: F.mono, fontSize: 10.5, color: C.inkMut }} numberOfLines={1}>{f.source || hostOf(f.url)} · {hostOf(f.url)}</Text>
-            </View>
+            <SourceLine source={{ name: f.source, host: hostOf(f.url) }} style={{ marginTop: 3 }} />
           </TouchableOpacity>
           {i < arr.length - 1 && <Rule style={{ marginHorizontal: 14 }} />}
         </View>

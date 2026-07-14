@@ -12,6 +12,7 @@ import { C, F, applyTheme, tint } from './src/theme';
 import { Icon, shadow } from './src/ui';
 import { getEdition, latestDate, editionsList, applyRemote, getFeed, getTriage } from './src/store';
 import { fetchRemoteData } from './src/remote';
+import { confirmOpenURL, isSafeUrl } from './src/safeUrl';
 import { loadPrefs, savePrefs } from './src/prefs';
 import { scheduleDailyBriefing, cancelDailyBriefing } from './src/notify';
 import Home from './src/screens/Home';
@@ -60,7 +61,7 @@ export default function App() {
   const [, setDataVer] = useState(0);             // bump → re-rendu après application des données en ligne
   const [mode, setMode] = useState('light');      // thème clair (défaut) / sombre
   const [, setThemeVer] = useState(0);
-  const toggleTheme = () => { const m = mode === 'light' ? 'dark' : 'light'; applyTheme(m); setMode(m); setThemeVer((v) => v + 1); };
+  const toggleTheme = () => { const m = mode === 'light' ? 'dark' : 'light'; applyTheme(m); setMode(m); setThemeVer((v) => v + 1); savePrefs({ mode: m }); };
   const [welcomeDone, setWelcomeDone] = useState(false);   // écran d'accueil « bande annonce » (≥ 3 s) vu ?
   const onWelcomeLayout = useCallback(() => { SplashScreen.hideAsync().catch(() => {}); }, []);  // masque le splash natif
   // « Le Réveil Ntongo » (PO) — bandeau « nouvelle édition » (nouveauté au niveau ÉDITION, honnête sans
@@ -81,8 +82,10 @@ export default function App() {
   }, []);
   const openFav = useCallback((fav) => {
     const e = getEdition(fav.edDate);
-    if (!e) { Alert.alert('Article indisponible', "L'édition de cet article n'est plus chargée."); return; }
-    setDetailEd(e); setDetail(fav.code);
+    if (e) { setDetailEd(e); setDetail(fav.code); return; }
+    // Édition sortie de la fenêtre glissante : pas de cul-de-sac. Ouvrir la source d'origine si https sûre.
+    if (fav.source && fav.source.url && isSafeUrl(fav.source.url)) { confirmOpenURL(fav.source.url); return; }
+    Alert.alert('Article indisponible', "L'édition de cet article n'est plus chargée et aucune source externe n'est disponible.");
   }, []);
   const dismissNewEdition = useCallback((d) => { setLastSeen(d); savePrefs({ lastSeen: d }); }, []);
   const toggleNotif = useCallback(async () => {
@@ -116,6 +119,7 @@ export default function App() {
       else { const d = latestDate(); setLastSeen(d); savePrefs({ lastSeen: d }); }   // 1er lancement = référence, pas d'alerte
       if (p.notifOn) setNotifOn(true);
       if (Array.isArray(p.favs)) setFavs(p.favs);
+      if (p.mode === 'dark' || p.mode === 'light') { applyTheme(p.mode); setMode(p.mode); }   // thème persistant (RS1)
     });
     const iv = setInterval(refresh, 5 * 60 * 1000);                            // re-contrôle toutes les 5 min
     // Retour au premier plan : re-contrôle, mais debouncé (≥ 30 s) pour ne pas mitrailler la source.
@@ -140,7 +144,7 @@ export default function App() {
             <Text style={{ fontFamily: F.displayBold, fontSize: 18, color: C.ink }}>
               Ntongo <Text style={{ color: C.cobalt }}>· RDC</Text>
             </Text>
-            <FreshnessTag net={net} ed={ed} />
+            <FreshnessTag net={net} ed={ed} isLatest={date === latestDate()} />
           </View>
           <TouchableOpacity activeOpacity={0.7} onPress={toggleNotif} hitSlop={8}
             accessibilityRole="button" accessibilityLabel={notifOn ? 'Briefing du matin activé' : 'Activer le briefing du matin'}
@@ -148,14 +152,17 @@ export default function App() {
             <Icon name={notifOn ? 'bell-on' : 'bell'} size={19} color={notifOn ? C.cobalt : C.inkDim} />
           </TouchableOpacity>
           <TouchableOpacity activeOpacity={0.7} onPress={toggleTheme} hitSlop={8}
+            accessibilityRole="button" accessibilityLabel={mode === 'dark' ? 'Passer en thème clair' : 'Passer en thème sombre'}
             style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }}>
             <Icon name={mode === 'dark' ? 'sun' : 'moon'} size={18} color={C.inkDim} />
           </TouchableOpacity>
           <TouchableOpacity activeOpacity={0.7} onPress={() => setSearchOpen(true)} hitSlop={8}
+            accessibilityRole="button" accessibilityLabel="Rechercher"
             style={{ width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', marginRight: 4 }}>
             <Icon name="search" size={20} color={C.inkDim} />
           </TouchableOpacity>
           <TouchableOpacity activeOpacity={0.8} onPress={() => setSheet(true)} hitSlop={{ top: 7, bottom: 7, left: 4, right: 4 }}
+            accessibilityRole="button" accessibilityLabel={`Changer d'édition, actuellement ${ed.label}`}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.panel, borderWidth: 1, borderColor: C.border, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7 }}>
             <Icon name="calendar" size={14} color={C.cobalt} />
             <Text style={{ fontFamily: F.bodySemi, fontSize: 12.5, color: C.ink }}>{ed.label}</Text>
@@ -163,7 +170,7 @@ export default function App() {
         </View>
 
         {/* Fraîcheur des données — bandeau persistant quand on tourne hors ligne (P2, anti-ARCA) */}
-        {net === 'offline' ? <OfflineBanner ed={ed} /> : null}
+        {net === 'offline' ? <OfflineBanner ed={ed} onRetry={refresh} /> : null}
 
         {/* « Le Réveil Ntongo » — bandeau « nouvelle édition » (nouveauté depuis la dernière visite) */}
         {tab === 'home' && net !== 'offline' && lastSeen && date === latestDate() && lastSeen !== date
@@ -171,7 +178,7 @@ export default function App() {
 
         {/* Écran actif (fondu + léger glissement à chaque changement d'onglet) */}
         <ScreenFade tabKey={tab}>
-          {tab === 'home' && <Home ed={ed} onOpen={setDetail} feed={date === latestDate() ? getFeed() : []} triage={date === latestDate() ? getTriage() : []} onOpenEvent={openEvent} />}
+          {tab === 'home' && <Home ed={ed} onOpen={setDetail} feed={date === latestDate() ? getFeed() : []} triage={date === latestDate() ? getTriage() : []} onOpenEvent={openEvent} onRefresh={refresh} refreshing={net === 'loading'} />}
           {tab === 'axes' && <Axes ed={ed} onOpen={setDetail} triage={date === latestDate() ? getTriage() : []} onOpenEvent={openEvent} />}
           {tab === 'map' && <MapScreen ed={ed} onOpen={setDetail} />}
           {tab === 'stats' && <Stats />}
@@ -247,7 +254,16 @@ function ScreenFade({ tabKey, children }) {
 }
 
 // Badge de fraîcheur des données (tri-état) — info doublée point + libellé (jamais la seule couleur, WCAG 1.4.1).
-function FreshnessTag({ net, ed }) {
+function FreshnessTag({ net, ed, isLatest }) {
+  // RS1 : sur une édition ANTÉRIEURE, ne pas prétendre « à jour · en ligne » → état ARCHIVE honnête.
+  if (isLatest === false) {
+    return (
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 }}>
+        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.inkMut }} />
+        <Text style={{ fontFamily: F.mono, fontSize: 11, color: C.inkMut }} numberOfLines={1}>archive · édition du {ed.label}</Text>
+      </View>
+    );
+  }
   // A11Y-01 : point = jeton GRAPHIQUE (≥3:1), texte = jeton TEXTE conforme AA (≥4,5:1). Jamais peindre
   // un libellé < 24 px avec C.ok/C.gold bruts (2,84–3,07:1 sur fond réel). Taille portée à 11 px.
   const S = {
@@ -264,13 +280,20 @@ function FreshnessTag({ net, ed }) {
 }
 
 // Bandeau hors-ligne persistant (non masquable tant que la synchro n'a pas réussi) — tue le repli silencieux « ARCA ».
-function OfflineBanner({ ed }) {
+// RS1 : bouton « Réessayer » (contrôle explicite) pour relancer la synchro manuellement.
+function OfflineBanner({ ed, onRetry }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 9, backgroundColor: tint(C.gold, 0.15), borderBottomWidth: 1, borderBottomColor: tint(C.gold, 0.35) }}>
       <Icon name="warning" size={15} color={C.gold} />
       <Text style={{ flex: 1, fontFamily: F.bodyMed, fontSize: 11.5, color: C.ink, lineHeight: 15 }}>
         Données embarquées du {ed.label} · dernière synchronisation impossible.
       </Text>
+      {onRetry ? (
+        <TouchableOpacity onPress={onRetry} hitSlop={8} accessibilityRole="button" accessibilityLabel="Réessayer la synchronisation"
+          style={{ minHeight: 32, justifyContent: 'center', paddingHorizontal: 4 }}>
+          <Text style={{ fontFamily: F.bodySemi, fontSize: 12, color: C.cobalt }}>Réessayer</Text>
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 }

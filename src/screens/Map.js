@@ -62,7 +62,7 @@ export default function MapScreen({ ed, onOpen }) {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
             <Icon name="map-pin" size={16} color={C.cobalt} />
             <Text style={{ fontFamily: F.display, fontSize: 18, color: C.ink, flex: 1 }}>{sel}</Text>
-            <TouchableOpacity onPress={() => setSel(null)} hitSlop={8}><Icon name="close" size={18} color={C.inkMut} /></TouchableOpacity>
+            <TouchableOpacity onPress={() => setSel(null)} hitSlop={14} accessibilityRole="button" accessibilityLabel="Fermer la province"><Icon name="close" size={18} color={C.inkMut} /></TouchableOpacity>
           </View>
           {selItems.length ? selItems.map((it) => (
             <Card key={it.code} accent={C.cobalt} onPress={() => onOpen(it.code)} style={{ padding: 14, marginBottom: 9 }}>
@@ -70,6 +70,7 @@ export default function MapScreen({ ed, onOpen }) {
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                 <SourceLine source={primarySource(ed, it)} style={{ flex: 1 }} />
                 <RelBadge reliability={it.reliability} />
+                <Icon name="chevron" size={15} color={C.inkMut} />
               </View>
             </Card>
           )) : (

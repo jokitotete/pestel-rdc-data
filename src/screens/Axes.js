@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Text, View, ScrollView, TouchableOpacity } from 'react-native';
 import { C, F, AX, AXT, AX_SHORT, AX_ORDER, RUBRIQUES, tint } from '../theme';
-import { Card, RelBadge, Pill, AxisGlyph, PageHeader, SourceLine } from '../ui';
+import { Card, RelBadge, Pill, AxisGlyph, PageHeader, SourceLine, Icon } from '../ui';
 import { SECTORS, itemInSector } from '../sectors';
 import { upcomingEvents, primarySource } from '../store';
 import { DiversList } from './Triage';
@@ -107,6 +107,7 @@ export default function Axes({ ed, onOpen, triage = [], onOpenEvent }) {
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, gap: 8 }}>
                   <SourceLine source={primarySource(ed, it)} style={{ flex: 1 }} />
                   <RelBadge reliability={it.reliability} />
+                  <Icon name="chevron" size={15} color={C.inkMut} />
                 </View>
               </Card>
             ))}

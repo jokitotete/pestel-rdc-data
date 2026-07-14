@@ -16,11 +16,14 @@ describe('store.parseWhen — fuzz', () => {
 
 describe('store.upcomingEvents — Event → BON dossier', () => {
   const ev = upcomingEvents(21);
-  it('renvoie une liste triée et dédupliquée par date', () => {
+  it('renvoie une liste triée et dédupliquée par IDENTITÉ (date + code/libellé)', () => {
     expect(Array.isArray(ev)).toBe(true);
     const ts = ev.map((e) => e._t);
     expect(ts).toEqual([...ts].sort((a, b) => a - b));   // trié croissant
-    expect(new Set(ts).size).toBe(ts.length);            // une seule entrée par date
+    // RS1 : dédup par IDENTITÉ (date + code/libellé), PAS par la seule date — deux rendez-vous distincts
+    // le même jour doivent coexister ; un même répété entre éditions n'apparaît qu'une fois.
+    const keys = ev.map((e) => e._t + '|' + (e.code || (e.what || '').trim().toLowerCase()));
+    expect(new Set(keys).size).toBe(keys.length);
   });
   it('chaque événement porte son édition source et ouvre un item RÉEL', () => {
     for (const e of ev) {

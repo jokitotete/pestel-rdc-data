@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Text, View, ScrollView, TouchableOpacity } from 'react-native';
+import { Text, View, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { C, F, AX, AXT, AX_SHORT, AX_ORDER, RUBRIQUES, tint } from '../theme';
-import { Card, SectionHead, Pill, Icon, Rule, AxisGlyph, SectorGlyph, NewsCard, PageHeader } from '../ui';
+import { Card, SectionHead, Pill, Icon, Rule, AxisGlyph, SectorGlyph, NewsCard, PageHeader, SourceLine } from '../ui';
 import { allItems, upcomingEvents, primarySource, findItem } from '../store';
 import { SECTORS, itemInSector } from '../sectors';
 import { confirmOpenURL, hostOf, isSafeUrl } from '../safeUrl';
@@ -42,10 +42,7 @@ function ToTreatSection({ feed }) {
                   </View>
                 </View>
                 <Text style={{ fontFamily: F.bodySemi, fontSize: 13.5, color: C.ink, lineHeight: 19 }} numberOfLines={2}>{f.title}</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3 }}>
-                  <Icon name="link" size={11} color={C.cobalt} />
-                  <Text style={{ fontFamily: F.mono, fontSize: 10.5, color: C.inkMut }} numberOfLines={1}>{f.source || hostOf(f.url)} · {hostOf(f.url)}</Text>
-                </View>
+                <SourceLine source={{ name: f.source, host: hostOf(f.url) }} style={{ marginTop: 3 }} />
               </TouchableOpacity>
               {i < arr.length - 1 && <Rule style={{ marginHorizontal: 14 }} />}
             </View>
@@ -118,7 +115,7 @@ function EventsView({ onOpenEvent }) {
 
 // « À la une » — filtres IDENTIQUES à « Axes » : 3 groupes (Axes PESTEL · Rubriques · Secteurs transversaux).
 // Sans filtre (« Tous ») : l'essentiel national + le fil « À traiter » + l'agenda.
-export default function Home({ ed, onOpen, feed = [], triage = [], onOpenEvent }) {
+export default function Home({ ed, onOpen, feed = [], triage = [], onOpenEvent, onRefresh, refreshing }) {
   const [filter, setFilter] = useState({ type: 'all' });   // {type:'all'|'axis'|'sector'|'divers', key}
   const sector = filter.type === 'sector' ? SECTORS.find((s) => s.key === filter.key) : null;
 
@@ -143,7 +140,8 @@ export default function Home({ ed, onOpen, feed = [], triage = [], onOpenEvent }
         : { eyebrow: 'Aujourd’hui', title: 'À la une', subtitle: 'les faits qui comptent aujourd’hui' };
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+    <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 40 }} showsVerticalScrollIndicator={false}
+      refreshControl={onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={C.cobalt} colors={[C.cobalt]} /> : undefined}>
       <PageHeader eyebrow={header.eyebrow} title={header.title} subtitle={header.subtitle}
         glyph={header.sector && sector ? <SectorGlyph sectorKey={sector.key} size={16} active /> : undefined} />
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Text, View, Image, Animated, Easing, StyleSheet } from 'react-native';
+import { Text, View, Image, Animated, Easing, StyleSheet, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { F, SLOGAN } from '../theme';
 import { Glyph } from '../ui';
@@ -20,6 +20,13 @@ export default function Welcome({ onDone, onLayout }) {
   const textTy = useRef(new Animated.Value(10)).current;
   const bar = useRef(new Animated.Value(0)).current;      // barre de progression (0 → 1) sur ~3 s
   const fade = useRef(new Animated.Value(1)).current;      // fondu de sortie de tout l'écran
+  const doneRef = useRef(false);
+  // RS1 : splash SKIPPABLE (contrôle explicite) — un tap lance le fondu de sortie tout de suite, sans attendre les 9 s.
+  const skip = () => {
+    if (doneRef.current) return;
+    doneRef.current = true;
+    Animated.timing(fade, { toValue: 0, duration: 320, useNativeDriver: true }).start(() => onDone && onDone());
+  };
 
   useEffect(() => {
     Animated.sequence([
@@ -35,14 +42,13 @@ export default function Welcome({ onDone, onLayout }) {
     // Barre de progression synchronisée sur la durée minimale (rythme « bande annonce »).
     Animated.timing(bar, { toValue: 1, duration: MIN_MS - 500, easing: Easing.inOut(Easing.ease), useNativeDriver: false }).start();
 
-    const t = setTimeout(() => {
-      Animated.timing(fade, { toValue: 0, duration: 380, useNativeDriver: true }).start(() => onDone && onDone());
-    }, MIN_MS);
+    const t = setTimeout(skip, MIN_MS);
     return () => clearTimeout(t);
   }, []);
 
   return (
     <Animated.View onLayout={onLayout} style={[StyleSheet.absoluteFill, { opacity: fade, zIndex: 999 }]}>
+      <Pressable onPress={skip} style={{ flex: 1 }} accessibilityRole="button" accessibilityLabel="Passer l'écran d'accueil, entrer dans l'application">
       <LinearGradient colors={['#070C1C', '#0F1E52', '#1D3FC4']} start={{ x: 0.1, y: 0 }} end={{ x: 0.9, y: 1 }} style={styles.fill}>
         <View style={styles.center}>
           <Animated.View style={{ opacity: logoOp, transform: [{ scale: logoSc }] }}>
@@ -66,6 +72,7 @@ export default function Welcome({ onDone, onLayout }) {
         </View>
         <Text style={styles.foot}>2iD Consulting</Text>
       </LinearGradient>
+      </Pressable>
     </Animated.View>
   );
 }

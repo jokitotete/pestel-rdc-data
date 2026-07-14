@@ -45,6 +45,14 @@ export default function Search({ ed, onOpen }) {
           <Text style={{ fontFamily: F.mono, fontSize: 11.5, color: C.inkMut, marginBottom: 12 }}>
             {results.length} résultat{results.length > 1 ? 's' : ''}
           </Text>
+          {results.length === 0 ? (
+            <View style={{ alignItems: 'center', paddingTop: 40 }}>
+              <Icon name="search" size={30} color={C.inkMut} style={{ marginBottom: 10 }} />
+              <Text style={{ fontFamily: F.body, fontSize: 13.5, color: C.inkMut, textAlign: 'center', lineHeight: 20 }}>
+                Aucun résultat pour « {q} ».{'\n'}Essayez d'autres mots-clés.
+              </Text>
+            </View>
+          ) : null}
           {results.map((it) => {
             const c = AX[it.axis] || C.cobalt;
             return (
@@ -54,6 +62,7 @@ export default function Search({ ed, onOpen }) {
                   <Text style={{ fontFamily: F.bodySemi, fontSize: 11.5, color: AXT[it.axis] || C.ink }}>{it.axisName}</Text>
                   <View style={{ flex: 1 }} />
                   <RelBadge reliability={it.reliability} />
+                  <Icon name="chevron" size={15} color={C.inkMut} style={{ marginLeft: 4 }} />
                 </View>
                 <Text style={{ fontFamily: F.bodySemi, fontSize: 14, color: C.ink, lineHeight: 20, marginBottom: 6 }} numberOfLines={2}>{it.title}</Text>
                 <SourceLine source={primarySource(ed, it)} />
