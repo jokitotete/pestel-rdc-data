@@ -31,6 +31,25 @@ describe('safeUrl — allowlist de schémas', () => {
     for (const u of ['http://x', 'javascript:alert(1)', null, 42, '  ', 'https://']) expect(hostOf(u)).toBe('');
   });
 
+  // RS_Sec (campagne 2026-07-14) : le userinfo (user:pass@host) est un vecteur d'hameçonnage —
+  // `https://actualite.cd@evil.com` affiche la marque mais contacte evil.com. Non-régression figée ici.
+  it('isSafeUrl REJETTE le userinfo dans l’autorité (anti-hameçonnage)', () => {
+    for (const u of [
+      'https://actualite.cd@evil.com/login',
+      'https://user:pass@evil.com',
+      'https://reuters.com@10.0.0.1/x',
+      '  https://marque.cd@attacker.example/  ',
+    ]) expect(isSafeUrl(u)).toBe(false);
+    // un « @ » APRÈS le premier / (dans le chemin/la requête) reste légitime
+    expect(isSafeUrl('https://actualite.cd/u/@handle')).toBe(true);
+    expect(isSafeUrl('https://actualite.cd/x?to=a@b.cd')).toBe(true);
+  });
+
+  it('hostOf montre la VRAIE destination malgré un userinfo (défense en profondeur)', () => {
+    expect(hostOf('https://actualite.cd@evil.com/login')).toBe('evil.com');
+    expect(hostOf('https://user:pass@evil.com:8443/x')).toBe('evil.com:8443');   // userinfo retiré, port conservé
+  });
+
   it("safeOpenURL n'ouvre JAMAIS un schéma hostile (fail-closed)", async () => {
     const { Linking } = require('react-native');
     Linking.openURL = jest.fn(() => Promise.resolve());

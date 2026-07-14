@@ -9,7 +9,12 @@ const HTTPS_RE = /^https:\/\/[^\s]+$/i;
 
 export function isSafeUrl(url) {
   if (typeof url !== 'string') return false;
-  return HTTPS_RE.test(url.trim());   // .trim() neutralise les préfixes d'espaces/tabulations
+  const u = url.trim();   // .trim() neutralise les préfixes d'espaces/tabulations
+  if (!HTTPS_RE.test(u)) return false;
+  // RS_Sec : REJET du userinfo (user:pass@host) dans l'AUTORITÉ — jamais légitime pour une source, et
+  // vecteur d'hameçonnage (https://actualite.cd@evil.com affiche la marque mais ouvre evil.com).
+  const authority = u.slice(8).split(/[/?#]/)[0];   // partie après "https://", avant le 1er /?#
+  return authority.indexOf('@') < 0;
 }
 
 export async function safeOpenURL(url) {
@@ -26,8 +31,14 @@ export async function safeOpenURL(url) {
 // le libellé « source A » peut mentir, mais l'hôte, lui, révèle la vraie destination. '' si illisible.
 export function hostOf(url) {
   if (typeof url !== 'string') return '';
-  const m = /^https:\/\/([^/?#\s]+)/i.exec(url.trim());
-  return m ? m[1].toLowerCase() : '';
+  const m = url.trim().match(/^https:\/\/([^/?#\s]+)/i);
+  if (!m) return '';
+  // RS_Sec : retirer un éventuel userinfo (user:pass@) → on affiche la VRAIE destination, jamais
+  // « marque.cd@evil.com ». On CONSERVE le port (:8443) : il fait partie de l'autorité réellement
+  // contactée (transparence) et le retirer casserait les hôtes IPv6 (`[::1]:8443`). Défense en
+  // profondeur : isSafeUrl bloque déjà le userinfo en amont, mais hostOf est aussi appelé sur des
+  // URLs de feed NON filtrées (SourceLine), d'où le strip indépendant ici.
+  return m[1].split('@').pop().toLowerCase();
 }
 
 // Ouverture d'un lien EXTERNE avec CONTRÔLE EXPLICITE (SEC-01) : on montre le domaine cible et on

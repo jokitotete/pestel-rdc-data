@@ -13,7 +13,7 @@ import { Icon, shadow } from './src/ui';
 import { getEdition, latestDate, editionsList, applyRemote, getFeed, getTriage } from './src/store';
 import { fetchRemoteData } from './src/remote';
 import { confirmOpenURL, isSafeUrl } from './src/safeUrl';
-import { loadPrefs, savePrefs } from './src/prefs';
+import { loadPrefs, savePrefs, MAX_FAVS } from './src/prefs';
 import { scheduleDailyBriefing, cancelDailyBriefing } from './src/notify';
 import Home from './src/screens/Home';
 import Axes from './src/screens/Axes';
@@ -75,7 +75,9 @@ export default function App() {
   const toggleFav = useCallback((snap) => {
     if (!snap || !snap.id) return;
     setFavs((prev) => {
-      const next = prev.some((f) => f.id === snap.id) ? prev.filter((f) => f.id !== snap.id) : [snap, ...prev];
+      const next = prev.some((f) => f.id === snap.id)
+        ? prev.filter((f) => f.id !== snap.id)
+        : [snap, ...prev].slice(0, MAX_FAVS);   // RS_Sec : plafond identique à la relecture (borne le blob persisté)
       savePrefs({ favs: next });
       return next;
     });

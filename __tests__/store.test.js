@@ -36,6 +36,21 @@ describe('store.upcomingEvents — Event → BON dossier', () => {
   });
 });
 
+// RS_Sec (campagne 2026-07-14) : getEdition ne doit JAMAIS résoudre une clé héritée du prototype
+// (__proto__/constructor/toString) — sinon un edDate falsifié d'un favori relu ferait planter le rendu.
+describe('store.getEdition — anti prototype-pollution (lecture)', () => {
+  it('retourne null pour les clés du prototype et les non-string', () => {
+    for (const k of ['__proto__', 'constructor', 'toString', 'hasOwnProperty', null, undefined, 42, {}]) {
+      expect(getEdition(k)).toBeNull();
+    }
+  });
+  it('résout normalement une édition réelle', () => {
+    const d = latestDate();
+    expect(getEdition(d)).toBeTruthy();
+    expect(getEdition(d).date || d).toBeTruthy();
+  });
+});
+
 describe('store.sectorItems — Lentille (match fort)', () => {
   const ed = getEdition(latestDate());
   it('gère les cas limites sans crash', () => {

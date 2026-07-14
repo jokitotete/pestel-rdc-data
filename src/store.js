@@ -19,7 +19,12 @@ export { EDITIONS, MANIFEST, STATS };
 // Liste des éditions, la plus récente en premier (ordre du manifeste).
 export const editionsList = () => MANIFEST.map((m) => ({ date: m.date, label: m.label }));
 export const latestDate = () => (MANIFEST[0] ? MANIFEST[0].date : Object.keys(EDITIONS).sort().pop());
-export const getEdition = (date) => EDITIONS[date];
+// RS_Sec : lookup par clé APPARTENANT à l'objet (hasOwnProperty). Une clé héritée du prototype
+// (`__proto__`, `constructor`, `toString`…) — provenant p.ex. d'un snapshot favori relu et falsifié —
+// ne doit JAMAIS résoudre vers un objet du prototype (sinon `ed.axes.flatMap` plante). Hors édition
+// connue → null (les appelants gèrent déjà l'absence d'édition : openFav, EventsList, Detail).
+export const getEdition = (date) =>
+  (typeof date === 'string' && Object.prototype.hasOwnProperty.call(EDITIONS, date)) ? EDITIONS[date] : null;
 
 // Aplatit tous les items en leur rattachant leur axe.
 export const allItems = (ed) =>
