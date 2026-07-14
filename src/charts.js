@@ -8,17 +8,21 @@ import { confirmOpenURL } from './safeUrl';
 // NB : on n'utilise PAS <Text> de react-native-svg (invisible avec police custom).
 // Toutes les étiquettes sont des <Text> React Native superposés en absolu.
 
-const TOKENS = {
+// RS1-08 : résolution PARESSEUSE des couleurs de thème. AX.* est statique (rampe graphique, identique
+// clair/sombre) mais C.cobalt/alert/gold/ok sont MUTÉS par applyTheme → les capturer dans un const de module
+// (évalué à l'import, AVANT applyTheme) figeait le cobalt CLAIR sur panel sombre (~1,7:1). On lit C.* AU RUNTIME.
+const tokenTable = () => ({
   '--ax-P': AX.P, '--ax-E': AX.E, '--ax-S': AX.S, '--ax-T': AX.T, '--ax-Env': AX.Env, '--ax-L': AX.L,
   '--alert': C.alert, '--gold': C.gold, '--cobalt': C.cobalt, '--ok': C.ok,
-};
-export const resolveColor = (col, fallback = C.cobalt) => {
-  if (!col) return fallback;
-  const m = /var\(\s*(--[\w-]+)\s*\)/.exec(col);
-  if (m) return TOKENS[m[1]] || fallback;
+});
+export const resolveColor = (col, fallback) => {
+  const fb = fallback || C.cobalt;
+  if (!col) return fb;
+  const m = String(col).match(/var\(\s*(--[\w-]+)\s*\)/);
+  if (m) return tokenTable()[m[1]] || fb;
   return col;
 };
-const PALETTE = [C.cobalt, AX.T, AX.E, AX.Env, AX.S, AX.L, C.alert, AX.P];
+const palette = () => [C.cobalt, AX.T, AX.E, AX.Env, AX.S, AX.L, C.alert, AX.P];
 const fmtNum = (v) => {
   const n = Number(v);
   if (!isFinite(n)) return String(v);
@@ -84,7 +88,7 @@ function LineChart({ labels, series, width, height = 160 }) {
           <Line key={i} x1={pad.l} y1={pad.t + t * (height - pad.t - pad.b)} x2={width - pad.r} y2={pad.t + t * (height - pad.t - pad.b)} stroke={C.border2} strokeWidth={1} />
         ))}
         {series.map((s, si) => {
-          const col = resolveColor(s.color, PALETTE[si % PALETTE.length]);
+          const col = resolveColor(s.color, palette()[si % 8]);
           const pts = s.values.map((v, i) => `${x(i)},${y(v)}`).join(' ');
           return (
             <G key={si}>
@@ -103,7 +107,7 @@ function LineChart({ labels, series, width, height = 160 }) {
         <View style={{ position: 'absolute', top: 2, right: 2, flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end', maxWidth: width * 0.7 }}>
           {series.map((s, si) => (
             <View key={si} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: resolveColor(s.color, PALETTE[si % PALETTE.length]) }} />
+              <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: resolveColor(s.color, palette()[si % 8]) }} />
               <Text style={{ fontFamily: F.body, fontSize: 10, color: C.inkDim }}>{s.name}</Text>
             </View>
           ))}
@@ -129,7 +133,7 @@ function DonutChart({ data, centerV, centerL }) {
             <Circle cx={cx} cy={cy} r={r} stroke={C.border2} strokeWidth={sw} fill="none" />
             {data.map((d, i) => {
               const frac = Number(d.value) / total;
-              const col = resolveColor(d.color, PALETTE[i % PALETTE.length]);
+              const col = resolveColor(d.color, palette()[i % 8]);
               const seg = (
                 <Circle key={i} cx={cx} cy={cy} r={r} stroke={col} strokeWidth={sw} fill="none"
                   strokeDasharray={`${frac * circ} ${circ}`} strokeDashoffset={-acc * circ} strokeLinecap="butt" />
@@ -146,7 +150,7 @@ function DonutChart({ data, centerV, centerL }) {
       </View>
       <View style={{ flex: 1, gap: 5 }}>
         {data.map((d, i) => {
-          const col = resolveColor(d.color, PALETTE[i % PALETTE.length]);
+          const col = resolveColor(d.color, palette()[i % 8]);
           const pct = Math.round((Number(d.value) / total) * 100);
           return (
             <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
