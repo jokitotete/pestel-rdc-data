@@ -141,7 +141,15 @@ export default function App() {
   // disponible. Le fallback au rendu (ci-dessous) protège la frame courante ; cet effet rétablit la cohérence
   // (badge fraîcheur, sélecteur). Garde stricte → pas de boucle : latestDate() résout, donc no-op ensuite.
   useEffect(() => {
-    if (!getEdition(date)) { followLatestRef.current = true; setDate(latestDate()); }
+    if (!getEdition(date)) {
+      followLatestRef.current = true;
+      setDate(latestDate());
+      // RS3.2 : une fiche Detail ouverte SANS édition capturée (detailEd null) est liée à `date`. L'édition
+      // venant d'être invalidée, re-router la modale vers l'édition du jour montrerait un AUTRE article
+      // (codes non uniques entre éditions) ou « Dossier indisponible ». On ferme proprement — pas de bascule
+      // silencieuse. Favoris/Events capturent detailEd → non concernés (leur source d'origine survit).
+      if (detail && !detailEd) closeDetail();
+    }
   });
 
   if (!loaded) return null;   // polices en cours : le splash natif reste affiché (preventAutoHide)

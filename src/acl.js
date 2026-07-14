@@ -6,6 +6,11 @@
 const DANGER = new Set(['__proto__', 'constructor', 'prototype']);
 const isObj = (o) => o !== null && typeof o === 'object' && !Array.isArray(o);
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+// RS_Sec2 : une FEUILLE sûre à rendre comme enfant React — jamais un objet/tableau (qui lève
+// « Objects are not valid as a React child » = DoS distant persistant que l'ErrorBoundary ne guérit pas).
+// Autorise string/number/booléen/absent ; rejette objet et tableau.
+const isScalar = (x) => x == null || typeof x !== 'object';
+const okLeaf = (x) => isObj(x) && typeof x.code === 'string' && typeof x.title === 'string' && isScalar(x.text);
 
 // Le payload distant respecte-t-il le contrat ? (formes + types + intégrité). Tout ou rien.
 export function validateData(raw) {
@@ -13,6 +18,13 @@ export function validateData(raw) {
   const { editions, manifest, stats } = raw;
   if (!isObj(editions) || !Array.isArray(manifest) || manifest.length === 0) return false;
   if (!isObj(stats) || !Array.isArray(stats.themes) || !Array.isArray(stats.trends)) return false;
+  // RS_Sec2 : feuilles stats rendues (label/value/unit/note des KPI ; title/note des graphes) = scalaires.
+  const okTheme = (t) => isObj(t) && typeof t.label === 'string'
+    && (t.indicators == null || (Array.isArray(t.indicators)
+      && t.indicators.every((i) => isObj(i) && isScalar(i.value) && isScalar(i.label) && isScalar(i.unit) && isScalar(i.note))));
+  const okTrend = (tr) => isObj(tr) && isScalar(tr.title) && isScalar(tr.note);
+  if (!stats.themes.every(okTheme)) return false;
+  if (!stats.trends.every(okTrend)) return false;
 
   // manifest : chaque entrée = { date ISO, label }
   const okManifest = manifest.every(
@@ -29,7 +41,11 @@ export function validateData(raw) {
     // Valider TOUS les champs déréférencés sans garde par le store/les écrans (headline, sources,
     // axes[].items) : sous-valider ferait passer une donnée qui plante au rendu (pas d'ErrorBoundary).
     if (!isObj(e) || !Array.isArray(e.axes) || !Array.isArray(e.headline) || !Array.isArray(e.sources)) return false;
-    if (!e.axes.every((a) => isObj(a) && Array.isArray(a.items))) return false;
+    // RS_Sec2 : typer les FEUILLES effectivement RENDUES (code = clé de résolution ; title/text = enfants
+    // Text). Un objet à leur place passait la validation de forme puis crashait au rendu, en boucle.
+    if (!e.headline.every(okLeaf)) return false;
+    if (!e.axes.every((a) => isObj(a) && Array.isArray(a.items) && a.items.every(okLeaf))) return false;
+    if (!e.sources.every(isObj)) return false;
   }
 
   // Intégrité référentielle : l'édition la plus récente (manifest[0]) DOIT exister dans editions,
