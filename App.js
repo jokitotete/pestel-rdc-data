@@ -8,7 +8,7 @@ import { Fraunces_600SemiBold, Fraunces_700Bold } from '@expo-google-fonts/fraun
 import { IBMPlexSans_400Regular, IBMPlexSans_500Medium, IBMPlexSans_600SemiBold, IBMPlexSans_700Bold } from '@expo-google-fonts/ibm-plex-sans';
 import { IBMPlexMono_400Regular, IBMPlexMono_500Medium, IBMPlexMono_600SemiBold } from '@expo-google-fonts/ibm-plex-mono';
 
-import { C, F, applyTheme, tint } from './src/theme';
+import { C, F, applyTheme, tint, SP, TYPE, RADIUS, DUR, HIT } from './src/theme';
 import { Icon, shadow } from './src/ui';
 import { getEdition, findItem, latestDate, editionsList, applyRemote, getFeed, getTriage } from './src/store';
 import { fetchRemoteData } from './src/remote';
@@ -166,34 +166,34 @@ export default function App() {
       <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
       <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right']}>
         {/* En-tête de marque — logomark « aube cobalt » + wordmark Ntongo + fraîcheur des données */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.border2 }}>
-          <Image source={require('./assets/ntongo/icon.png')} style={{ width: 34, height: 34, borderRadius: 9, marginRight: 10 }} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: SP.gutter, paddingVertical: SP.md, borderBottomWidth: 1, borderBottomColor: C.border2 }}>
+          <Image source={require('./assets/ntongo/icon.png')} style={{ width: 34, height: 34, borderRadius: RADIUS.md, marginRight: SP.sm2 }} />
           <View style={{ flex: 1 }}>
-            <Text style={{ fontFamily: F.displayBold, fontSize: 18, color: C.ink }}>
+            <Text style={[TYPE.serifLead, { color: C.ink }]}>
               Ntongo <Text style={{ color: C.cobalt }}>· RDC</Text>
             </Text>
             <FreshnessTag net={net} ed={ed} isLatest={date === latestDate()} />
           </View>
-          <TouchableOpacity activeOpacity={0.7} onPress={toggleNotif} hitSlop={8}
+          <TouchableOpacity activeOpacity={0.7} onPress={toggleNotif} hitSlop={HIT.sm}
             accessibilityRole="button" accessibilityLabel={notifOn ? 'Briefing du matin activé' : 'Activer le briefing du matin'}
-            style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }}>
+            style={{ width: 36, height: 36, borderRadius: RADIUS.half(36), alignItems: 'center', justifyContent: 'center' }}>
             <Icon name={notifOn ? 'bell-on' : 'bell'} size={19} color={notifOn ? C.cobalt : C.inkDim} />
           </TouchableOpacity>
-          <TouchableOpacity activeOpacity={0.7} onPress={toggleTheme} hitSlop={8}
+          <TouchableOpacity activeOpacity={0.7} onPress={toggleTheme} hitSlop={HIT.sm}
             accessibilityRole="button" accessibilityLabel={mode === 'dark' ? 'Passer en thème clair' : 'Passer en thème sombre'}
-            style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }}>
+            style={{ width: 36, height: 36, borderRadius: RADIUS.half(36), alignItems: 'center', justifyContent: 'center' }}>
             <Icon name={mode === 'dark' ? 'sun' : 'moon'} size={18} color={C.inkDim} />
           </TouchableOpacity>
-          <TouchableOpacity activeOpacity={0.7} onPress={() => setSearchOpen(true)} hitSlop={8}
+          <TouchableOpacity activeOpacity={0.7} onPress={() => setSearchOpen(true)} hitSlop={HIT.sm}
             accessibilityRole="button" accessibilityLabel="Rechercher"
-            style={{ width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', marginRight: 4 }}>
+            style={{ width: 38, height: 38, borderRadius: RADIUS.half(38), alignItems: 'center', justifyContent: 'center', marginRight: SP.xs }}>
             <Icon name="search" size={20} color={C.inkDim} />
           </TouchableOpacity>
           <TouchableOpacity activeOpacity={0.8} onPress={() => setSheet(true)} hitSlop={{ top: 7, bottom: 7, left: 4, right: 4 }}
             accessibilityRole="button" accessibilityLabel={`Changer d'édition, actuellement ${ed.label}`}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.panel, borderWidth: 1, borderColor: C.border, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7 }}>
+            style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs2, backgroundColor: C.panel, borderWidth: 1, borderColor: C.border, borderRadius: RADIUS.chip, paddingHorizontal: SP.md, paddingVertical: SP.sm }}>
             <Icon name="calendar" size={14} color={C.cobalt} />
-            <Text style={{ fontFamily: F.bodySemi, fontSize: 12.5, color: C.ink }}>{ed.label}</Text>
+            <Text style={[TYPE.label, { color: C.ink }]}>{ed.label}</Text>
           </TouchableOpacity>
         </View>
 
@@ -219,11 +219,11 @@ export default function App() {
       {/* Modale de détail (zoom sur un item — dans son édition d'origine dEd) */}
       <Modal visible={!!detail} animationType="slide" onRequestClose={closeDetail}>
         <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right', 'bottom']}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.border2 }}>
-            <Text style={{ fontFamily: F.mono, fontSize: 11.5, color: C.inkMut }}>{dEd.label}</Text>
-            <TouchableOpacity onPress={closeDetail} hitSlop={14} accessibilityRole="button" accessibilityLabel="Fermer"
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44, justifyContent: 'center' }}>
-              <Text style={{ fontFamily: F.bodySemi, fontSize: 13, color: C.cobalt }}>Fermer</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SP.md2, paddingVertical: SP.sm2, borderBottomWidth: 1, borderBottomColor: C.border2 }}>
+            <Text style={[TYPE.caption, { color: C.inkMut }]}>{dEd.label}</Text>
+            <TouchableOpacity onPress={closeDetail} hitSlop={HIT.lg} accessibilityRole="button" accessibilityLabel="Fermer"
+              style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs, minHeight: 44, justifyContent: 'center' }}>
+              <Text style={[TYPE.label, { color: C.cobalt }]}>Fermer</Text>
               <Icon name="close" size={18} color={C.cobalt} />
             </TouchableOpacity>
           </View>
@@ -234,11 +234,11 @@ export default function App() {
       {/* Recherche (ouverte par la loupe de l'en-tête) */}
       <Modal visible={searchOpen} animationType="slide" onRequestClose={() => setSearchOpen(false)}>
         <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right', 'bottom']}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.border2 }}>
-            <Text style={{ fontFamily: F.display, fontSize: 16, color: C.ink }}>Recherche</Text>
-            <TouchableOpacity onPress={() => setSearchOpen(false)} hitSlop={14} accessibilityRole="button" accessibilityLabel="Fermer"
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44, justifyContent: 'center' }}>
-              <Text style={{ fontFamily: F.bodySemi, fontSize: 13, color: C.cobalt }}>Fermer</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SP.md2, paddingVertical: SP.sm2, borderBottomWidth: 1, borderBottomColor: C.border2 }}>
+            <Text style={[TYPE.serifLead, { color: C.ink }]}>Recherche</Text>
+            <TouchableOpacity onPress={() => setSearchOpen(false)} hitSlop={HIT.lg} accessibilityRole="button" accessibilityLabel="Fermer"
+              style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs, minHeight: 44, justifyContent: 'center' }}>
+              <Text style={[TYPE.label, { color: C.cobalt }]}>Fermer</Text>
               <Icon name="close" size={18} color={C.cobalt} />
             </TouchableOpacity>
           </View>
@@ -266,16 +266,16 @@ class ErrorBoundary extends React.Component {
   render() {
     if (!this.state.err) return this.props.children;
     return (
-      <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
-        <Icon name="warning" size={34} color={C.gold} style={{ marginBottom: 12 }} />
-        <Text style={{ fontFamily: F.displayBold, fontSize: 20, color: C.ink, marginBottom: 8, textAlign: 'center' }}>Une erreur est survenue</Text>
-        <Text style={{ fontFamily: F.body, fontSize: 13.5, color: C.inkMut, textAlign: 'center', lineHeight: 20, marginBottom: 22 }}>
+      <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', padding: SP.xxxl }}>
+        <Icon name="warning" size={34} color={C.gold} style={{ marginBottom: SP.md }} />
+        <Text style={[TYPE.title, { color: C.ink, marginBottom: SP.sm, textAlign: 'center' }]}>Une erreur est survenue</Text>
+        <Text style={[TYPE.bodySm, { color: C.inkMut, textAlign: 'center', marginBottom: SP.xl2 }]}>
           L'affichage a rencontré un problème. Réessayez ; si cela persiste, rouvrez l'application.
         </Text>
         <TouchableOpacity onPress={() => this.setState({ err: null })} activeOpacity={0.85}
           accessibilityRole="button" accessibilityLabel="Réessayer"
-          style={{ backgroundColor: C.actionFill, borderRadius: 22, paddingHorizontal: 24, minHeight: 44, justifyContent: 'center' }}>
-          <Text style={{ fontFamily: F.bodySemi, fontSize: 14, color: C.onAction }}>Réessayer</Text>
+          style={{ backgroundColor: C.actionFill, borderRadius: RADIUS.chip, paddingHorizontal: SP.xxl, minHeight: 44, justifyContent: 'center' }}>
+          <Text style={[TYPE.cardTitle, { color: C.onAction }]}>Réessayer</Text>
         </TouchableOpacity>
       </View>
     );
@@ -286,11 +286,11 @@ class ErrorBoundary extends React.Component {
 // (niveau ÉDITION, honnête). Point + libellé (WCAG 1.4.1), fermable (contrôle explicite).
 function NewEditionBanner({ ed, onDismiss }) {
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 9, backgroundColor: tint(C.cobalt, 0.1), borderBottomWidth: 1, borderBottomColor: tint(C.cobalt, 0.28) }}>
-      <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: C.cobalt }} />
-      <Text style={{ flex: 1, fontFamily: F.bodyMed, fontSize: 12, color: C.ink }}>Nouvelle édition du {ed.label}</Text>
-      <TouchableOpacity onPress={onDismiss} hitSlop={14} accessibilityRole="button" accessibilityLabel="Marquer comme vue"
-        style={{ minHeight: 32, justifyContent: 'center', paddingLeft: 6 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm, paddingHorizontal: SP.lg, paddingVertical: SP.sm, backgroundColor: tint(C.cobalt, 0.1), borderBottomWidth: 1, borderBottomColor: tint(C.cobalt, 0.28) }}>
+      <View style={{ width: 7, height: 7, borderRadius: RADIUS.xs, backgroundColor: C.cobalt }} />
+      <Text style={[TYPE.label, { flex: 1, color: C.ink }]}>Nouvelle édition du {ed.label}</Text>
+      <TouchableOpacity onPress={onDismiss} hitSlop={HIT.lg} accessibilityRole="button" accessibilityLabel="Marquer comme vue"
+        style={{ minHeight: 32, justifyContent: 'center', paddingLeft: SP.xs2 }}>
         <Icon name="close" size={16} color={C.inkMut} />
       </TouchableOpacity>
     </View>
@@ -304,8 +304,8 @@ function ScreenFade({ tabKey, children }) {
   useEffect(() => {
     op.setValue(0); ty.setValue(8);
     Animated.parallel([
-      Animated.timing(op, { toValue: 1, duration: 230, useNativeDriver: true }),
-      Animated.timing(ty, { toValue: 0, duration: 230, useNativeDriver: true }),
+      Animated.timing(op, { toValue: 1, duration: DUR.base, useNativeDriver: true }),
+      Animated.timing(ty, { toValue: 0, duration: DUR.base, useNativeDriver: true }),
     ]).start();
   }, [tabKey]);
   return <Animated.View style={{ flex: 1, opacity: op, transform: [{ translateY: ty }] }}>{children}</Animated.View>;
@@ -316,9 +316,9 @@ function FreshnessTag({ net, ed, isLatest }) {
   // RS1 : sur une édition ANTÉRIEURE, ne pas prétendre « à jour · en ligne » → état ARCHIVE honnête.
   if (isLatest === false) {
     return (
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 }}>
-        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.inkMut }} />
-        <Text style={{ fontFamily: F.mono, fontSize: 11, color: C.inkMut }} numberOfLines={1}>archive · édition du {ed.label}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs, marginTop: SP.hair }}>
+        <View style={{ width: 6, height: 6, borderRadius: RADIUS.half(6), backgroundColor: C.inkMut }} />
+        <Text style={[TYPE.caption, { color: C.inkMut }]} numberOfLines={1}>archive · édition du {ed.label}</Text>
       </View>
     );
   }
@@ -330,9 +330,9 @@ function FreshnessTag({ net, ed, isLatest }) {
     offline: { dot: C.gold, tx: C.goldText, label: `hors ligne · édition du ${ed.label}` },
   }[net] || { dot: C.inkMut, tx: C.inkMut, label: 'synchronisation…' };
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 }}>
-      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: S.dot }} />
-      <Text style={{ fontFamily: F.mono, fontSize: 11, color: S.tx }} numberOfLines={1}>{S.label}</Text>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs, marginTop: SP.hair }}>
+      <View style={{ width: 6, height: 6, borderRadius: RADIUS.half(6), backgroundColor: S.dot }} />
+      <Text style={[TYPE.caption, { color: S.tx }]} numberOfLines={1}>{S.label}</Text>
     </View>
   );
 }
@@ -341,15 +341,15 @@ function FreshnessTag({ net, ed, isLatest }) {
 // RS1 : bouton « Réessayer » (contrôle explicite) pour relancer la synchro manuellement.
 function OfflineBanner({ ed, onRetry }) {
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 9, backgroundColor: tint(C.gold, 0.15), borderBottomWidth: 1, borderBottomColor: tint(C.gold, 0.35) }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm, paddingHorizontal: SP.lg, paddingVertical: SP.sm, backgroundColor: tint(C.gold, 0.15), borderBottomWidth: 1, borderBottomColor: tint(C.gold, 0.35) }}>
       <Icon name="warning" size={15} color={C.gold} />
-      <Text style={{ flex: 1, fontFamily: F.bodyMed, fontSize: 11.5, color: C.ink, lineHeight: 15 }}>
+      <Text style={[TYPE.label, { flex: 1, color: C.ink }]}>
         Données embarquées du {ed.label} · dernière synchronisation impossible.
       </Text>
       {onRetry ? (
-        <TouchableOpacity onPress={onRetry} hitSlop={8} accessibilityRole="button" accessibilityLabel="Réessayer la synchronisation"
-          style={{ minHeight: 32, justifyContent: 'center', paddingHorizontal: 4 }}>
-          <Text style={{ fontFamily: F.bodySemi, fontSize: 12, color: C.cobalt }}>Réessayer</Text>
+        <TouchableOpacity onPress={onRetry} hitSlop={HIT.sm} accessibilityRole="button" accessibilityLabel="Réessayer la synchronisation"
+          style={{ minHeight: 32, justifyContent: 'center', paddingHorizontal: SP.xs }}>
+          <Text style={[TYPE.label, { color: C.cobalt }]}>Réessayer</Text>
         </TouchableOpacity>
       ) : null}
     </View>
@@ -363,20 +363,20 @@ function TabBar({ tab, setTab }) {
   // = pastille PLEINE actionFill + icône -on blanche (usage littéral du jeton, blanc 6,17:1 AA). Cobalt = action.
   // Sélection TRIPLE-encodée (WCAG 1.4.1) : pastille pleine + icône -on + libellé bodySemi. Cibles ≥ 48 px, pouce.
   return (
-    <View style={{ paddingHorizontal: 12, paddingBottom: Math.max(insets.bottom, 8) + 4, backgroundColor: 'transparent' }}>
+    <View style={{ paddingHorizontal: SP.md, paddingBottom: Math.max(insets.bottom, SP.sm) + SP.xs, backgroundColor: 'transparent' }}>
       <View accessibilityRole="tablist"
-        style={[{ flexDirection: 'row', backgroundColor: C.panel, borderRadius: 24, borderWidth: 1, borderColor: C.border2, paddingTop: 10, paddingBottom: 10, paddingHorizontal: 8 }, shadow]}>
+        style={[{ flexDirection: 'row', backgroundColor: C.panel, borderRadius: RADIUS.dock, borderWidth: 1, borderColor: C.border2, paddingTop: SP.sm2, paddingBottom: SP.sm2, paddingHorizontal: SP.sm }, shadow]}>
         {TABS.map((t, i) => {
           const on = tab === t.key;
           return (
             <TouchableOpacity key={t.key} activeOpacity={0.7} onPress={() => setTab(t.key)}
               accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={`${t.label}, onglet ${i + 1} sur ${TABS.length}`}
-              style={{ flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-              <View style={{ height: 32, minWidth: 56, paddingHorizontal: 14, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? C.actionFill : 'transparent' }}>
+              style={{ flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', gap: SP.xs }}>
+              <View style={{ height: 32, minWidth: 56, paddingHorizontal: SP.md2, borderRadius: RADIUS.lg, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? C.actionFill : 'transparent' }}>
                 <Icon name={on ? `${t.icon}-on` : t.icon} size={24} color={on ? C.onAction : C.inkMut} />
               </View>
               <Text numberOfLines={1} allowFontScaling maxFontSizeMultiplier={1.3}
-                style={{ fontFamily: on ? F.bodySemi : F.body, fontSize: 11, letterSpacing: 0.2, color: on ? C.cobalt : C.inkMut }}>
+                style={[TYPE.nav, { fontFamily: on ? F.bodySemi : F.body, color: on ? C.cobalt : C.inkMut }]}>
                 {t.label}
               </Text>
             </TouchableOpacity>
@@ -392,12 +392,12 @@ function EditionSheet({ open, date, onClose, onPick }) {
   const list = editionsList();
   return (
     <Modal visible={open} animationType="slide" transparent onRequestClose={onClose}>
-      <TouchableOpacity activeOpacity={1} onPress={onClose} style={{ flex: 1, backgroundColor: 'rgba(20,25,40,0.35)', justifyContent: 'flex-end' }}>
-        <TouchableOpacity activeOpacity={1} style={{ backgroundColor: C.bg, borderTopLeftRadius: 22, borderTopRightRadius: 22, paddingTop: 10, paddingBottom: 10 + insets.bottom, maxHeight: '70%' }}>
-          <View style={{ alignItems: 'center', paddingVertical: 6 }}>
-            <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: C.border }} />
+      <TouchableOpacity activeOpacity={1} onPress={onClose} style={{ flex: 1, backgroundColor: C.scrim, justifyContent: 'flex-end' }}>
+        <TouchableOpacity activeOpacity={1} style={{ backgroundColor: C.bg, borderTopLeftRadius: RADIUS.chip, borderTopRightRadius: RADIUS.chip, paddingTop: SP.sm2, paddingBottom: SP.sm2 + insets.bottom, maxHeight: '70%' }}>
+          <View style={{ alignItems: 'center', paddingVertical: SP.xs2 }}>
+            <View style={{ width: 40, height: 4, borderRadius: RADIUS.half(4), backgroundColor: C.border }} />
           </View>
-          <Text style={{ fontFamily: F.display, fontSize: 18, color: C.ink, paddingHorizontal: 20, paddingVertical: 10 }}>Choisir l'édition</Text>
+          <Text style={[TYPE.serifLead, { color: C.ink, paddingHorizontal: SP.xl, paddingVertical: SP.sm2 }]}>Choisir l'édition</Text>
           <ScrollView>
             {list.map((e) => {
               const on = e.date === date;
@@ -405,8 +405,8 @@ function EditionSheet({ open, date, onClose, onPick }) {
                 <TouchableOpacity key={e.date} onPress={() => onPick(e.date)}
                   accessibilityRole="button" accessibilityState={{ selected: on }}
                   accessibilityLabel={on ? `${e.label}, édition affichée` : e.label}
-                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 15 }}>
-                  <Text style={{ fontFamily: on ? F.bodySemi : F.body, fontSize: 15, color: on ? C.cobalt : C.ink }}>{e.label}</Text>
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SP.xl, paddingVertical: SP.md2 }}>
+                  <Text style={[TYPE.body, { fontFamily: on ? F.bodySemi : F.body, color: on ? C.cobalt : C.ink }]}>{e.label}</Text>
                   {on ? <Icon name="checkmark" size={18} color={C.cobalt} /> : null}
                 </TouchableOpacity>
               );

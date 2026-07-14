@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { Text, View, ScrollView } from 'react-native';
-import { C, F, AX_SHORT, AX_ORDER, RUBRIQUES } from '../theme';
+import { C, TYPE, SP, AX_SHORT, AX_ORDER, RUBRIQUES } from '../theme';
 import { Pill, NewsCard, PageHeader, Icon } from '../ui';
 import { SECTORS, itemInSector } from '../sectors';
 
 // Groupe de filtres étiqueté — IDENTIQUE à « À la une » / « Axes » (cohérence demandée par l'user).
 const FilterRow = ({ label, children }) => (
   <>
-    <Text style={{ fontFamily: F.mono, fontSize: 10, color: C.inkMut, letterSpacing: 0.8, marginLeft: 2, marginBottom: 7 }}>{label}</Text>
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14, marginHorizontal: -18 }} contentContainerStyle={{ paddingHorizontal: 18, gap: 8 }}>
+    <Text style={[TYPE.overline, { color: C.inkMut, marginLeft: SP.hair, marginBottom: SP.sm }]}>{label}</Text>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: SP.md2, marginHorizontal: -SP.gutter }} contentContainerStyle={{ paddingHorizontal: SP.gutter, gap: SP.sm }}>
       {children}
     </ScrollView>
   </>
@@ -28,13 +28,13 @@ export default function Favoris({ favs = [], onOpen, onToggleFav }) {
   });
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+    <ScrollView contentContainerStyle={{ padding: SP.gutter, paddingBottom: SP.huge }} showsVerticalScrollIndicator={false}>
       <PageHeader eyebrow="Vos étoiles" title="Favoris" subtitle="vos articles étoilés, jour après jour" />
 
       {favs.length === 0 ? (
-        <View style={{ alignItems: 'center', paddingTop: 36 }}>
-          <Icon name="star" size={34} color={C.inkMut} style={{ marginBottom: 12 }} />
-          <Text style={{ fontFamily: F.body, fontSize: 13.5, color: C.inkMut, textAlign: 'center', lineHeight: 20 }}>
+        <View style={{ alignItems: 'center', paddingTop: SP.huge }}>
+          <Icon name="star" size={34} color={C.inkMut} style={{ marginBottom: SP.md }} />
+          <Text style={[TYPE.bodySm, { color: C.inkMut, textAlign: 'center' }]}>
             Aucun favori pour l’instant.{'\n'}Touchez l’étoile d’un article pour l’ajouter — il restera ici, quel que soit le jour.
           </Text>
         </View>
@@ -64,7 +64,7 @@ export default function Favoris({ favs = [], onOpen, onToggleFav }) {
             <NewsCard key={f.id} axis={f.axis} title={f.title} text={f.text} reliability={f.reliability}
               source={f.source} onStar={() => onToggleFav && onToggleFav(f)} starred onPress={() => onOpen(f)} titleLines={3} />
           )) : (
-            <Text style={{ fontFamily: F.body, fontSize: 13, color: C.inkMut, paddingVertical: 20, textAlign: 'center', lineHeight: 19 }}>
+            <Text style={[TYPE.bodySm, { color: C.inkMut, paddingVertical: SP.xl, textAlign: 'center' }]}>
               Aucun favori dans ce filtre.
             </Text>
           )}

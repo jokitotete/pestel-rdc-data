@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, View, TouchableOpacity } from 'react-native';
 import Svg, { Rect, Circle, Line, Polyline, G } from 'react-native-svg';
-import { C, F, AX } from './theme';
+import { C, F, AX, SP, TYPE, RADIUS } from './theme';
 import { Icon } from './ui';
 import { confirmOpenURL } from './safeUrl';
 
@@ -32,7 +32,7 @@ const fmtNum = (v) => {
 
 // Petite étiquette absolue (centrée sur un x).
 const Lbl = ({ x, y, w = 60, children, style }) => (
-  <Text numberOfLines={1} style={[{ position: 'absolute', left: x - w / 2, top: y, width: w, textAlign: 'center', fontFamily: F.mono, fontSize: 10, color: C.inkMut }, style]}>{children}</Text>
+  <Text numberOfLines={1} style={[TYPE.caption, { position: 'absolute', left: x - w / 2, top: y, width: w, textAlign: 'center', color: C.inkMut }, style]}>{children}</Text>
 );
 
 // ---- Barres verticales ----
@@ -59,12 +59,12 @@ function BarChart({ data, unit = '', width, height = 150 }) {
         const cx = pad.l + i * bw + bw / 2;
         return (
           <React.Fragment key={i}>
-            <Lbl x={cx} y={scaleY(d.value) - 17} w={bw} style={{ fontFamily: F.monoSemi, fontSize: 11, color: C.ink }}>{fmtNum(d.value)}</Lbl>
+            <Lbl x={cx} y={scaleY(d.value) - 17} w={bw} style={[TYPE.mono, { color: C.ink }]}>{fmtNum(d.value)}</Lbl>
             <Lbl x={cx} y={height - pad.b + 5} w={bw}>{d.label}</Lbl>
           </React.Fragment>
         );
       })}
-      {unit ? <Text style={{ position: 'absolute', right: 2, top: 2, fontFamily: F.mono, fontSize: 10, color: C.inkMut }}>{unit.trim()}</Text> : null}
+      {unit ? <Text style={[TYPE.caption, { position: 'absolute', right: 2, top: 2, color: C.inkMut }]}>{unit.trim()}</Text> : null}
     </View>
   );
 }
@@ -104,11 +104,11 @@ function LineChart({ labels, series, width, height = 160 }) {
           : null
       ))}
       {series.length > 1 ? (
-        <View style={{ position: 'absolute', top: 2, right: 2, flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end', maxWidth: width * 0.7 }}>
+        <View style={{ position: 'absolute', top: 2, right: 2, flexDirection: 'row', flexWrap: 'wrap', gap: SP.sm, justifyContent: 'flex-end', maxWidth: width * 0.7 }}>
           {series.map((s, si) => (
-            <View key={si} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: resolveColor(s.color, palette()[si % 8]) }} />
-              <Text style={{ fontFamily: F.body, fontSize: 10, color: C.inkDim }}>{s.name}</Text>
+            <View key={si} style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs }}>
+              <View style={{ width: 8, height: 8, borderRadius: RADIUS.xs, backgroundColor: resolveColor(s.color, palette()[si % 8]) }} />
+              <Text style={[TYPE.bodySm, { color: C.inkDim }]}>{s.name}</Text>
             </View>
           ))}
         </View>
@@ -126,7 +126,7 @@ function DonutChart({ data, centerV, centerL }) {
   const total = data.reduce((n, d) => n + Number(d.value), 0) || 1;
   let acc = 0;
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.md2 }}>
       <View style={{ width: size, height: size }}>
         <Svg width={size} height={size} style={{ position: 'absolute' }}>
           <G rotation={-90} originX={cx} originY={cy}>
@@ -144,19 +144,19 @@ function DonutChart({ data, centerV, centerL }) {
           </G>
         </Svg>
         <View style={{ position: 'absolute', width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-          {centerV != null ? <Text style={{ fontFamily: F.displayBold, fontSize: 18, color: C.ink }}>{centerV}</Text> : null}
-          {centerL ? <Text style={{ fontFamily: F.mono, fontSize: 9, color: C.inkMut }}>{centerL}</Text> : null}
+          {centerV != null ? <Text style={[TYPE.data, { color: C.ink }]}>{centerV}</Text> : null}
+          {centerL ? <Text style={[TYPE.caption, { color: C.inkMut }]}>{centerL}</Text> : null}
         </View>
       </View>
-      <View style={{ flex: 1, gap: 5 }}>
+      <View style={{ flex: 1, gap: SP.xs2 }}>
         {data.map((d, i) => {
           const col = resolveColor(d.color, palette()[i % 8]);
           const pct = Math.round((Number(d.value) / total) * 100);
           return (
-            <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
-              <View style={{ width: 9, height: 9, borderRadius: 2, backgroundColor: col }} />
-              <Text style={{ fontFamily: F.body, fontSize: 11.5, color: C.inkDim, flex: 1 }} numberOfLines={1}>{d.label}</Text>
-              <Text style={{ fontFamily: F.monoSemi, fontSize: 11.5, color: C.ink }}>{pct}%</Text>
+            <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm }}>
+              <View style={{ width: 9, height: 9, borderRadius: RADIUS.xs, backgroundColor: col }} />
+              <Text style={[TYPE.bodySm, { color: C.inkDim, flex: 1 }]} numberOfLines={1}>{d.label}</Text>
+              <Text style={[TYPE.mono, { color: C.ink }]}>{pct}%</Text>
             </View>
           );
         })}
@@ -169,16 +169,16 @@ function DonutChart({ data, centerV, centerL }) {
 export function ChartCard({ trend, width }) {
   const inner = width - 28;
   return (
-    <View style={{ backgroundColor: C.panel, borderRadius: 16, borderWidth: 1, borderColor: C.border, padding: 14, marginBottom: 12 }}>
-      <Text style={{ fontFamily: F.bodySemi, fontSize: 14, color: C.ink }}>{trend.title}</Text>
-      {trend.note ? <Text style={{ fontFamily: F.body, fontSize: 11.5, color: C.inkMut, marginTop: 3, marginBottom: 10, lineHeight: 16 }}>{trend.note}</Text> : <View style={{ height: 10 }} />}
+    <View style={{ backgroundColor: C.panel, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: C.border, padding: SP.md2, marginBottom: SP.md }}>
+      <Text style={[TYPE.cardTitle, { color: C.ink }]}>{trend.title}</Text>
+      {trend.note ? <Text style={[TYPE.bodySm, { color: C.inkMut, marginTop: SP.xs, marginBottom: SP.sm2 }]}>{trend.note}</Text> : <View style={{ height: 10 }} />}
       {trend.type === 'bar' && <BarChart data={trend.data} unit={trend.unit} width={inner} />}
       {trend.type === 'line' && <LineChart labels={trend.labels} series={trend.series} width={inner} />}
       {trend.type === 'donut' && <DonutChart data={trend.data} centerV={trend.centerV} centerL={trend.centerL} />}
       {trend.src && trend.src.u ? (
-        <TouchableOpacity onPress={() => confirmOpenURL(trend.src.u)} accessibilityRole="link" style={{ flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-end', marginTop: 10 }}>
+        <TouchableOpacity onPress={() => confirmOpenURL(trend.src.u)} accessibilityRole="link" style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs, alignSelf: 'flex-end', marginTop: SP.sm2 }}>
           <Icon name="link" size={11} color={C.cobalt} />
-          <Text style={{ fontFamily: F.mono, fontSize: 10, color: C.cobalt }}>{trend.src.n || 'source'}</Text>
+          <Text style={[TYPE.caption, { color: C.cobalt }]}>{trend.src.n || 'source'}</Text>
         </TouchableOpacity>
       ) : null}
     </View>

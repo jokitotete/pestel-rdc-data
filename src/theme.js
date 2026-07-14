@@ -89,6 +89,7 @@ export const SPLASH = {
   gold: '#F4B740',                            // accent or (· RDC, barre de progression)
   textHi: '#FFFFFF', textMid: '#CFDDF0', textLow: '#9FB4DA',   // wordmark / slogan / accroche
   hint: 'rgba(255,255,255,0.5)', foot: '#6E82AA',
+  track: 'rgba(255,255,255,0.15)',            // rail (fond) de la barre de progression du splash
 };
 
 // Lot A — jetons de TEXTE d'axe (AA ≥ 4,5:1) : les couleurs AX vives (ci-dessus) servent le GRAPHIQUE
@@ -96,8 +97,11 @@ export const SPLASH = {
 // variante texte, conforme sur les fonds réels (tint clair assombri / vif sur fond sombre).
 // Dérivés DÉTERMINISTIQUEMENT de la rampe vive (script scratchpad/ramp.py) : chaque valeur ≥ 4,59:1 sur
 // crème (#f4f1ea) en clair et ≥ 4,65:1 sur #0a0e15 en sombre. Ne pas ajuster « à l'œil » — recalculer.
-export const AXT_L = { P:'#da0d14', E:'#866501', S:'#d21170', T:'#096ebd', Env:'#087a54', L:'#783ff9', C:'#cb1d6b', Sp:'#b34900', Ev:'#017a73' };
-export const AXT_D = { P:'#f33b41', E:'#f0b602', S:'#f04499', T:'#1994f4', Env:'#0cbd82', L:'#8d5dfa', C:'#e23482', Sp:'#ff7210', Ev:'#01c1b6' };
+// RS1-07 : re-dérivés DÉTERMINISTIQUEMENT pour être AA (≥4,5:1) sur le fond le PLUS STRICT où le texte d'axe
+// est rendu = tint(AX,0.14) sur panel (badge de compte). Comme le tint est le fond le plus sombre/saturé,
+// être AA dessus garantit l'AA sur bg et panel aussi. Vérifié par __tests__/contrast.test.js (clair + sombre).
+export const AXT_L = { P:'#d10c13', E:'#866501', S:'#cb106c', T:'#096dbb', Env:'#087a54', L:'#773ef7', C:'#c31c67', Sp:'#b34900', Ev:'#017972' };
+export const AXT_D = { P:'#f45257', E:'#f0b602', S:'#f14f9f', T:'#1a94f4', Env:'#0cbd82', L:'#9d74fb', C:'#e65395', Sp:'#ff7210', Ev:'#01c1b6' };
 export const AXT = { ...AXT_L };   // mutable (applyTheme)
 // Jetons de TEXTE de fiabilité (lettre A/B/C/D du SrcDot, sur fond teinté).
 export const RELT_L = { A:'#166e45', B:'#20639b', C:'#835a0c', D:'#a73237' };
@@ -169,6 +173,17 @@ export const TYPE = {
   overline:  { fontFamily: F.mono,        fontSize: 10.5, lineHeight: 14, letterSpacing: 1.0 },   // eyebrows / kickers (majuscules)
   mono:      { fontFamily: F.monoSemi,    fontSize: 11,   lineHeight: 15, letterSpacing: 0 },     // valeurs mono accentuées
   data:      { fontFamily: F.displayBold, fontSize: 21,   lineHeight: 24, letterSpacing: 0 },     // chiffres KPI
+  nav:       { fontFamily: F.body,        fontSize: 11,   lineHeight: 13, letterSpacing: 0.2 },   // libellé d'onglet (dock) — famille surchargée selon l'état actif
+};
+
+// Typographie de la surface de MARQUE de l'écran d'accueil (Welcome) — échelle propre, plus grande que le
+// contenu (c'est un splash, pas du corps de texte). Regroupée avec SPLASH pour que Welcome n'ait aucun littéral.
+export const SPLASH_TYPE = {
+  wordmark: { fontFamily: F.displayBold, fontSize: 30, letterSpacing: 0.3 },
+  slogan:   { fontFamily: F.body,        fontSize: 26, lineHeight: 34 },
+  accroche: { fontFamily: F.mono,        fontSize: 22, lineHeight: 30 },
+  hint:     { fontFamily: F.mono,        fontSize: 11, letterSpacing: 0.6 },
+  foot:     { fontFamily: F.mono,        fontSize: 12, letterSpacing: 0.4 },
 };
 
 // Lookup de jeton PROTOTYPE-SAFE (RS3) : `MAP[clé]` via bracket résout AUSSI les propriétés HÉRITÉES

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import { Text, View, Image, Animated, Easing, StyleSheet, Pressable } from 'react-native';
+import { Text, View, Image, Animated, StyleSheet, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { F, SLOGAN } from '../theme';
+import { SLOGAN, SP, RADIUS, DUR, EASE, SPLASH, SPLASH_TYPE } from '../theme';
 
 // Durée minimale garantie de l'écran d'accueil (« bande annonce »). RS3 : ramenée de 9 s à 4 s — 9 s à CHAQUE
 // lancement (l'écran revient toujours) lisait « appli figée » ; 4 s reste au-dessus du plancher RS1 « ≥ 3 s »
@@ -25,22 +25,22 @@ export default function Welcome({ onDone, onLayout }) {
   const skip = () => {
     if (doneRef.current) return;
     doneRef.current = true;
-    Animated.timing(fade, { toValue: 0, duration: 320, useNativeDriver: true }).start(() => onDone && onDone());
+    Animated.timing(fade, { toValue: 0, duration: DUR.slow, useNativeDriver: true }).start(() => onDone && onDone());
   };
 
   useEffect(() => {
     Animated.sequence([
       Animated.parallel([
-        Animated.timing(logoOp, { toValue: 1, duration: 520, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        Animated.timing(logoOp, { toValue: 1, duration: DUR.splashLogo, easing: EASE.standard, useNativeDriver: true }),
         Animated.spring(logoSc, { toValue: 1, friction: 6, tension: 60, useNativeDriver: true }),
       ]),
       Animated.parallel([
-        Animated.timing(textOp, { toValue: 1, duration: 480, useNativeDriver: true }),
-        Animated.timing(textTy, { toValue: 0, duration: 480, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        Animated.timing(textOp, { toValue: 1, duration: DUR.splashIn, useNativeDriver: true }),
+        Animated.timing(textTy, { toValue: 0, duration: DUR.splashIn, easing: EASE.standard, useNativeDriver: true }),
       ]),
     ]).start();
     // Barre de progression synchronisée sur la durée minimale (rythme « bande annonce »).
-    Animated.timing(bar, { toValue: 1, duration: MIN_MS - 500, easing: Easing.inOut(Easing.ease), useNativeDriver: false }).start();
+    Animated.timing(bar, { toValue: 1, duration: MIN_MS - 500, easing: EASE.inOut, useNativeDriver: false }).start();
 
     const t = setTimeout(skip, MIN_MS);
     return () => clearTimeout(t);
@@ -49,13 +49,13 @@ export default function Welcome({ onDone, onLayout }) {
   return (
     <Animated.View onLayout={onLayout} style={[StyleSheet.absoluteFill, { opacity: fade, zIndex: 999 }]}>
       <Pressable onPress={skip} style={{ flex: 1 }} accessibilityRole="button" accessibilityLabel="Passer l'écran d'accueil, entrer dans l'application">
-      <LinearGradient colors={['#070C1C', '#0F1E52', '#1D3FC4']} start={{ x: 0.1, y: 0 }} end={{ x: 0.9, y: 1 }} style={styles.fill}>
+      <LinearGradient colors={SPLASH.grad} start={{ x: 0.1, y: 0 }} end={{ x: 0.9, y: 1 }} style={styles.fill}>
         <View style={styles.center}>
           <Animated.View style={{ opacity: logoOp, transform: [{ scale: logoSc }] }}>
             <Image source={require('../../assets/ntongo/icon.png')} style={styles.logo} />
           </Animated.View>
           <Animated.View style={{ opacity: textOp, transform: [{ translateY: textTy }], alignItems: 'center' }}>
-            <Text style={styles.wordmark}>Ntongo <Text style={{ color: '#F4B740' }}>· RDC</Text></Text>
+            <Text style={styles.wordmark}>Ntongo <Text style={{ color: SPLASH.gold }}>· RDC</Text></Text>
             <Text style={styles.slogan}>{SLOGAN}</Text>
             {/* QW 14/07 : drapeau 🇨🇩 et boussole retirés — accueil épuré, seuls slogan + accroche portent la promesse. */}
             <Text style={styles.accrocheTxt}>{ACCROCHE}</Text>
@@ -75,15 +75,15 @@ export default function Welcome({ onDone, onLayout }) {
 }
 
 const styles = StyleSheet.create({
-  fill: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 48 },
+  fill: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: SP.giant },
   center: { alignItems: 'center' },
-  logo: { width: 104, height: 104, borderRadius: 26, marginBottom: 22 },
-  wordmark: { fontFamily: F.displayBold, fontSize: 30, color: '#FFFFFF', letterSpacing: 0.3 },
-  // QW : slogan et accroche réduits très légèrement (28→26 / 24→22).
-  slogan: { fontFamily: F.body, fontSize: 26, color: '#CFDDF0', marginTop: 14, textAlign: 'center', lineHeight: 34, paddingHorizontal: 20 },
-  accrocheTxt: { fontFamily: F.mono, fontSize: 22, color: '#9FB4DA', textAlign: 'center', lineHeight: 30, marginTop: 18, paddingHorizontal: 16 },
-  barTrack: { position: 'absolute', bottom: 78, alignSelf: 'center', width: 150, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.15)', overflow: 'hidden' },
-  skipHint: { position: 'absolute', bottom: 58, left: 0, right: 0, textAlign: 'center', fontFamily: F.mono, fontSize: 11, color: 'rgba(255,255,255,0.5)', letterSpacing: 0.6 },
-  barFill: { height: 3, borderRadius: 2, backgroundColor: '#F4B740' },
-  foot: { position: 'absolute', bottom: 34, left: 0, right: 0, textAlign: 'center', fontFamily: F.mono, fontSize: 12, color: '#6E82AA', letterSpacing: 0.4 },
+  logo: { width: 104, height: 104, borderRadius: RADIUS.dock, marginBottom: SP.xl2 },
+  // RS1 : typographie de MARQUE via SPLASH_TYPE (échelle propre au splash — QW : slogan 26 / accroche 22).
+  wordmark: { ...SPLASH_TYPE.wordmark, color: SPLASH.textHi },
+  slogan: { ...SPLASH_TYPE.slogan, color: SPLASH.textMid, marginTop: SP.md2, textAlign: 'center', paddingHorizontal: SP.xl },
+  accrocheTxt: { ...SPLASH_TYPE.accroche, color: SPLASH.textLow, textAlign: 'center', marginTop: SP.gutter, paddingHorizontal: SP.lg },
+  barTrack: { position: 'absolute', bottom: 78, alignSelf: 'center', width: 150, height: 3, borderRadius: RADIUS.xs, backgroundColor: SPLASH.track, overflow: 'hidden' },
+  skipHint: { ...SPLASH_TYPE.hint, position: 'absolute', bottom: 58, left: 0, right: 0, textAlign: 'center', color: SPLASH.hint },
+  barFill: { height: 3, borderRadius: RADIUS.xs, backgroundColor: SPLASH.gold },
+  foot: { ...SPLASH_TYPE.foot, position: 'absolute', bottom: 34, left: 0, right: 0, textAlign: 'center', color: SPLASH.foot },
 });

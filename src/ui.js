@@ -2,37 +2,31 @@ import React from 'react';
 import { Text, View, TouchableOpacity, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Glyph, AxisGlyph, SectorGlyph } from './icons';
-import { C, F, AX, AXT, REL, RELT, TOUCH, tint, pick, relFr, relIsOk, HERO_GRAD } from './theme';
+import { C, F, AX, AXT, REL, RELT, TOUCH, tint, pick, relFr, relIsOk, HERO_GRAD, SP, TYPE, RADIUS, HIT, ELEV } from './theme';
 export { Glyph, AxisGlyph, SectorGlyph } from './icons';
 
 // En-tête de PAGE unifié — bandeau cobalt (dégradé de marque) présent sur TOUS les écrans (cohérence).
 // Porte le CONTEXTE de l'écran (kicker + titre + sous-titre), jamais la fraîcheur (déjà dans l'en-tête Ntongo)
 // ni un compteur technique. Blanc ≥ 4,96:1 sur l'extrémité la plus claire (AA vérifié). Full-bleed via marges.
 export const PageHeader = ({ eyebrow, title, subtitle, glyph, children }) => (
-  <View style={{ marginHorizontal: -18, marginTop: -18, marginBottom: 16 }}>
+  <View style={{ marginHorizontal: -SP.gutter, marginTop: -SP.gutter, marginBottom: SP.lg }}>
     <LinearGradient colors={HERO_GRAD} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-      style={{ paddingHorizontal: 18, paddingTop: 20, paddingBottom: 18 }}>
+      style={{ paddingHorizontal: SP.gutter, paddingTop: SP.xl, paddingBottom: SP.gutter }}>
       {(eyebrow || glyph) ? (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 5 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm, marginBottom: SP.xs2 }}>
           {glyph || null}
-          {eyebrow ? <Text style={{ fontFamily: F.mono, fontSize: 11, color: 'rgba(255,255,255,0.75)', letterSpacing: 1.2 }}>{eyebrow}</Text> : null}
+          {eyebrow ? <Text style={[TYPE.overline, { color: C.onHeroDim }]}>{eyebrow}</Text> : null}
         </View>
       ) : null}
-      <Text style={{ fontFamily: F.displayBold, fontSize: 25, color: '#ffffff', letterSpacing: 0.2 }}>{title}</Text>
-      {subtitle ? <Text style={{ fontFamily: F.mono, fontSize: 11.5, color: 'rgba(255,255,255,0.75)', marginTop: 4 }}>{subtitle}</Text> : null}
+      <Text style={[TYPE.display, { color: C.onHero }]}>{title}</Text>
+      {subtitle ? <Text style={[TYPE.caption, { color: C.onHeroDim, marginTop: SP.xs }]}>{subtitle}</Text> : null}
       {children}
     </LinearGradient>
   </View>
 );
 
-export const shadowSm = Platform.select({
-  ios: { shadowColor: '#1a2740', shadowOpacity: 0.08, shadowRadius: 12, shadowOffset: { width: 0, height: 5 } },
-  android: { elevation: 2 },
-});
-export const shadow = Platform.select({
-  ios: { shadowColor: '#1a2740', shadowOpacity: 0.14, shadowRadius: 24, shadowOffset: { width: 0, height: 12 } },
-  android: { elevation: 6 },
-});
+export const shadowSm = ELEV.sm;
+export const shadow = ELEV.md;
 
 // Icône générique — puise dans le JEU UNIQUE (src/icons.js, SVG vectoriel). Plus d'Ionicons ni d'emoji.
 export const Icon = ({ name, size = 22, color = C.ink, style }) => (
@@ -42,7 +36,7 @@ export const Icon = ({ name, size = 22, color = C.ink, style }) => (
 // Carte de base — rayon/bordure/ombre cohérents partout.
 export const Card = ({ children, style, onPress, accent }) => {
   const base = [
-    { backgroundColor: C.panel, borderRadius: 16, borderWidth: 1, borderColor: C.border },
+    { backgroundColor: C.panel, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: C.border },
     accent ? { borderLeftWidth: 3, borderLeftColor: accent } : null,
     shadowSm, style,
   ];
@@ -56,9 +50,9 @@ export const RelBadge = ({ reliability }) => {
   const c = ok ? C.ok : C.gold;              // point (graphique, >= 3:1)
   const ct = ok ? C.okText : C.goldText;     // texte (>= 4,5:1)
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: c }} />
-      <Text style={{ fontFamily: F.bodyMed, fontSize: 11, color: ct }}>{relFr(reliability)}</Text>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs }}>
+      <View style={{ width: 6, height: 6, borderRadius: RADIUS.half(6), backgroundColor: c }} />
+      <Text style={[TYPE.label, { color: ct }]}>{relFr(reliability)}</Text>
     </View>
   );
 };
@@ -68,28 +62,28 @@ export const SrcDot = ({ rel }) => {
   const r = pick(REL, rel, REL.C);       // RS3 : prototype-safe — `REL['constructor']` renverrait une fonction
   const rt = pick(RELT, rel, C.ink);     // (truthy) et `|| REL.C` ne se replierait pas → tint(fonction) planterait
   return (
-    <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: tint(r.c, 0.16), alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ fontFamily: F.monoSemi, fontSize: 11, color: rt }}>{rel}</Text>
+    <View style={{ width: 20, height: 20, borderRadius: RADIUS.half(20), backgroundColor: tint(r.c, 0.16), alignItems: 'center', justifyContent: 'center' }}>
+      <Text style={[TYPE.mono, { color: rt }]}>{rel}</Text>
     </View>
   );
 };
 
 // Tag d'axe : glyphe duotone + libellé court (texte en jeton AA AXT).
 export const AxisTag = ({ axis, label }) => (
-  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+  <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs2 }}>
     <AxisGlyph axis={axis} size={15} />
-    <Text style={{ fontFamily: F.bodySemi, fontSize: 12, color: pick(AXT, axis, C.ink) }}>{label}</Text>
+    <Text style={[TYPE.label, { color: pick(AXT, axis, C.ink) }]}>{label}</Text>
   </View>
 );
 
 // En-tête de section : glyphe optionnel + titre serif + « loupe » (sous-titre interprétatif).
 export const SectionHead = ({ title, lens, icon }) => (
-  <View style={{ marginBottom: 14 }}>
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+  <View style={{ marginBottom: SP.md2 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm }}>
       {icon ? <Glyph name={icon} size={18} color={C.inkDim} /> : null}
-      <Text style={{ fontFamily: F.display, fontSize: 21, color: C.ink, letterSpacing: 0.2 }}>{title}</Text>
+      <Text style={[TYPE.title, { color: C.ink }]}>{title}</Text>
     </View>
-    {lens ? <Text style={{ fontFamily: F.mono, fontSize: 11.5, color: C.inkMut, marginTop: 3 }}>{lens}</Text> : null}
+    {lens ? <Text style={[TYPE.caption, { color: C.inkMut, marginTop: SP.xs }]}>{lens}</Text> : null}
   </View>
 );
 
@@ -97,7 +91,7 @@ export const SectionHead = ({ title, lens, icon }) => (
 export const AxisAvatar = ({ axis, size = 38 }) => {
   const c = pick(AX, axis, C.cobalt);   // RS3 : prototype-safe (cf. pick/theme.js)
   return (
-    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: tint(c, 0.16), borderWidth: 1, borderColor: tint(c, 0.38), alignItems: 'center', justifyContent: 'center' }}>
+    <View style={{ width: size, height: size, borderRadius: RADIUS.half(size), backgroundColor: tint(c, 0.16), borderWidth: 1, borderColor: tint(c, 0.38), alignItems: 'center', justifyContent: 'center' }}>
       <AxisGlyph axis={axis} size={Math.round(size * 0.56)} />
     </View>
   );
@@ -118,9 +112,9 @@ export const SourceLine = ({ source, style }) => {
   const label = (name && host && nn && !hh.startsWith(nn) && !nn.startsWith(hh)) ? `${name} · ${host}` : (host || name);
   if (!label) return null;
   return (
-    <View style={[{ flexDirection: 'row', alignItems: 'center', gap: 5 }, style]}>
+    <View style={[{ flexDirection: 'row', alignItems: 'center', gap: SP.xs2 }, style]}>
       <Glyph name="link" size={12} color={C.inkMut} />
-      <Text style={{ fontFamily: F.mono, fontSize: 10.5, color: C.inkMut }} numberOfLines={1}>{label}</Text>
+      <Text style={[TYPE.caption, { color: C.inkMut }]} numberOfLines={1}>{label}</Text>
     </View>
   );
 };
@@ -134,28 +128,28 @@ export const NewsCard = ({ axis, rank, title, text, reliability, cta, source, on
   return (
     <TouchableOpacity activeOpacity={0.85} onPress={onPress}
       accessibilityRole="button" accessibilityLabel={title}
-      style={[{ backgroundColor: C.panel, borderRadius: 16, borderWidth: 1, borderColor: C.border, marginBottom: 12 }, shadowSm]}>
-      <View style={{ position: 'absolute', left: 0, top: 12, bottom: 12, width: 5, borderRadius: 3, backgroundColor: c }} />
-      <View style={{ padding: 15, paddingLeft: 18 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 9 }}>
+      style={[{ backgroundColor: C.panel, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: C.border, marginBottom: SP.md }, shadowSm]}>
+      <View style={{ position: 'absolute', left: 0, top: 12, bottom: 12, width: 5, borderRadius: RADIUS.xs, backgroundColor: c }} />
+      <View style={{ padding: SP.lg, paddingLeft: SP.gutter }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm2, marginBottom: SP.sm2 }}>
           <AxisAvatar axis={axis} size={rank ? 40 : 34} />
-          {rank ? <Text style={{ fontFamily: F.displayBold, fontSize: 20, color: ct }}>{rank}</Text> : null}
+          {rank ? <Text style={[TYPE.data, { color: ct }]}>{rank}</Text> : null}
           <View style={{ flex: 1 }} />
           {reliability ? <RelBadge reliability={reliability} /> : null}
           {onStar ? (
-            <TouchableOpacity onPress={onStar} hitSlop={10} accessibilityRole="button" accessibilityState={{ selected: !!starred }}
-              accessibilityLabel={starred ? 'Retirer des favoris' : 'Ajouter aux favoris'} style={{ minHeight: 32, justifyContent: 'center', paddingLeft: 8 }}>
+            <TouchableOpacity onPress={onStar} hitSlop={HIT.md} accessibilityRole="button" accessibilityState={{ selected: !!starred }}
+              accessibilityLabel={starred ? 'Retirer des favoris' : 'Ajouter aux favoris'} style={{ minHeight: 32, justifyContent: 'center', paddingLeft: SP.sm }}>
               <Glyph name={starred ? 'star-on' : 'star'} size={18} color={starred ? C.gold : C.inkMut} />
             </TouchableOpacity>
           ) : null}
         </View>
-        <Text style={{ fontFamily: rank ? F.bodyBold : F.bodySemi, fontSize: rank ? 16 : 14.5, color: C.ink, lineHeight: rank ? 22 : 20, marginBottom: text ? 6 : 0 }} numberOfLines={titleLines}>{title}</Text>
-        {text ? <Text style={{ fontFamily: F.body, fontSize: 13.5, color: C.inkDim, lineHeight: 19.5 }} numberOfLines={rank ? 4 : 2}>{text}</Text> : null}
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, gap: 8 }}>
+        <Text style={[rank ? TYPE.heading : TYPE.cardTitle, { color: C.ink, marginBottom: text ? SP.xs2 : SP.none }]} numberOfLines={titleLines}>{title}</Text>
+        {text ? <Text style={[TYPE.bodySm, { color: C.inkDim }]} numberOfLines={rank ? 4 : 2}>{text}</Text> : null}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: SP.sm2, gap: SP.sm }}>
           {source ? <SourceLine source={source} style={{ flex: 1 }} /> : <View style={{ flex: 1 }} />}
           {cta ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-              <Text style={{ fontFamily: F.bodySemi, fontSize: 12, color: ct }}>{cta}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs2 }}>
+              <Text style={[TYPE.label, { color: ct }]}>{cta}</Text>
               <Glyph name="chevron" size={14} color={ct} />
             </View>
           ) : null}
@@ -173,9 +167,9 @@ export const Pill = ({ label, active, onPress, axis, sectorKey, icon }) => {
   return (
     <TouchableOpacity activeOpacity={0.85} onPress={onPress}
       accessibilityRole="button" accessibilityState={{ selected: !!active }} accessibilityLabel={label}
-      style={[{ minHeight: TOUCH.min, flexDirection: 'row', alignItems: 'center', gap: 6, justifyContent: 'center', backgroundColor: active ? C.actionFill : C.panel, borderColor: active ? C.actionFill : C.border, borderWidth: 1, borderRadius: 22, paddingHorizontal: 14 }, active ? shadowSm : null]}>
+      style={[{ minHeight: TOUCH.min, flexDirection: 'row', alignItems: 'center', gap: SP.xs2, justifyContent: 'center', backgroundColor: active ? C.actionFill : C.panel, borderColor: active ? C.actionFill : C.border, borderWidth: 1, borderRadius: RADIUS.chip, paddingHorizontal: SP.md2 }, active ? shadowSm : null]}>
       {axis ? <AxisGlyph axis={axis} size={16} active={active} /> : sectorKey ? <SectorGlyph sectorKey={sectorKey} size={16} active={active} /> : icon ? <Glyph name={icon} size={16} color={active ? C.onAction : C.inkDim} /> : null}
-      <Text style={{ fontFamily: active ? F.bodySemi : F.bodyMed, fontSize: 12.5, color: active ? C.onAction : C.inkDim }}>{label}</Text>
+      <Text style={[TYPE.label, { fontFamily: active ? F.bodySemi : F.bodyMed, color: active ? C.onAction : C.inkDim }]}>{label}</Text>
     </TouchableOpacity>
   );
 };

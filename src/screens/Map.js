@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Text, View, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { C, F, tint } from '../theme';
+import { C, tint, SP, TYPE, RADIUS, HIT } from '../theme';
 import { Card, RelBadge, Icon, PageHeader, SourceLine } from '../ui';
 import { projectPaths, mapAspect, activityByProvince } from '../geo';
 import { primarySource } from '../store';
@@ -31,70 +31,70 @@ export default function MapScreen({ ed, onOpen }) {
   };
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+    <ScrollView contentContainerStyle={{ padding: SP.gutter, paddingBottom: SP.huge }} showsVerticalScrollIndicator={false}>
       <PageHeader eyebrow="Cartographie" title="Carte" subtitle="par province · touchez pour explorer" />
 
       {/* Dénominateur explicite : la carte ne couvre que les actualités géolocalisées. */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs2, marginBottom: SP.md, flexWrap: 'wrap' }}>
         <Icon name="map-pin" size={13} color={C.cobalt} />
-        <Text style={{ fontFamily: F.bodySemi, fontSize: 12.5, color: C.ink }}>{nLoc} localisée{nLoc > 1 ? 's' : ''} / {totalItems}</Text>
-        <Text style={{ fontFamily: F.mono, fontSize: 10, color: C.inkMut }}>{totalItems - nLoc} nationales · un item peut couvrir plusieurs provinces</Text>
+        <Text style={[TYPE.label, { color: C.ink }]}>{nLoc} localisée{nLoc > 1 ? 's' : ''} / {totalItems}</Text>
+        <Text style={[TYPE.caption, { color: C.inkMut }]}>{totalItems - nLoc} nationales · un item peut couvrir plusieurs provinces</Text>
       </View>
 
-      <Card style={{ padding: 12, alignItems: 'center' }}>
+      <Card style={{ padding: SP.md, alignItems: 'center' }}>
         <Svg width={mapW} height={mapH}>
           {paths.map((p) => (
             <Path key={p.name} d={p.d} fill={fillFor(p.name)} stroke={C.mapStroke} strokeWidth={0.7}
               onPress={() => setSel(sel === p.name ? null : p.name)} />
           ))}
         </Svg>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
-          <View style={{ width: 11, height: 11, borderRadius: 3, backgroundColor: C.mapNeutral }} />
-          <Text style={{ fontFamily: F.mono, fontSize: 10, color: C.inkMut }}>calme</Text>
-          <View style={{ width: 26, height: 8, borderRadius: 4, backgroundColor: tint(C.cobalt, 0.45), marginLeft: 6 }} />
-          <Text style={{ fontFamily: F.mono, fontSize: 10, color: C.inkMut }}>plus d'actualités →</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs2, marginTop: SP.sm }}>
+          <View style={{ width: 11, height: 11, borderRadius: RADIUS.xs, backgroundColor: C.mapNeutral }} />
+          <Text style={[TYPE.caption, { color: C.inkMut }]}>calme</Text>
+          <View style={{ width: 26, height: 8, borderRadius: RADIUS.xs, backgroundColor: tint(C.cobalt, 0.45), marginLeft: SP.xs2 }} />
+          <Text style={[TYPE.caption, { color: C.inkMut }]}>plus d'actualités →</Text>
         </View>
       </Card>
 
       {/* Détail province sélectionnée */}
       {sel ? (
-        <View style={{ marginTop: 18 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        <View style={{ marginTop: SP.gutter }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm, marginBottom: SP.sm2 }}>
             <Icon name="map-pin" size={16} color={C.cobalt} />
-            <Text style={{ fontFamily: F.display, fontSize: 18, color: C.ink, flex: 1 }}>{sel}</Text>
-            <TouchableOpacity onPress={() => setSel(null)} hitSlop={14} accessibilityRole="button" accessibilityLabel="Fermer la province"><Icon name="close" size={18} color={C.inkMut} /></TouchableOpacity>
+            <Text style={[TYPE.serifLead, { color: C.ink, flex: 1 }]}>{sel}</Text>
+            <TouchableOpacity onPress={() => setSel(null)} hitSlop={HIT.lg} accessibilityRole="button" accessibilityLabel="Fermer la province"><Icon name="close" size={18} color={C.inkMut} /></TouchableOpacity>
           </View>
           {selItems.length ? selItems.map((it) => (
-            <Card key={it.code} accent={C.cobalt} onPress={() => onOpen(it.code)} style={{ padding: 14, marginBottom: 9 }}>
-              <Text style={{ fontFamily: F.bodySemi, fontSize: 14, color: C.ink, lineHeight: 20, marginBottom: 6 }} numberOfLines={3}>{it.title}</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <Card key={it.code} accent={C.cobalt} onPress={() => onOpen(it.code)} style={{ padding: SP.md2, marginBottom: SP.sm2 }}>
+              <Text style={[TYPE.cardTitle, { color: C.ink, marginBottom: SP.xs2 }]} numberOfLines={3}>{it.title}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SP.sm }}>
                 <SourceLine source={primarySource(ed, it)} style={{ flex: 1 }} />
                 <RelBadge reliability={it.reliability} />
                 <Icon name="chevron" size={15} color={C.inkMut} />
               </View>
             </Card>
           )) : (
-            <Text style={{ fontFamily: F.body, fontSize: 13, color: C.inkMut, paddingVertical: 12 }}>
+            <Text style={[TYPE.bodySm, { color: C.inkMut, paddingVertical: SP.md }]}>
               Aucune actualité localisée dans cette province pour cette édition.
             </Text>
           )}
         </View>
       ) : (
-        <View style={{ marginTop: 18 }}>
-          <Text style={{ fontFamily: F.bodySemi, fontSize: 13, color: C.inkDim, marginBottom: 10 }}>Provinces actives cette édition</Text>
+        <View style={{ marginTop: SP.gutter }}>
+          <Text style={[TYPE.label, { color: C.inkDim, marginBottom: SP.sm2 }]}>Provinces actives cette édition</Text>
           {actives.length ? actives.map((name) => (
             <TouchableOpacity key={name} onPress={() => setSel(name)}
-              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.border2 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <View style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: fillFor(name) }} />
-                <Text style={{ fontFamily: F.bodyMed, fontSize: 14, color: C.ink }}>{name}</Text>
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: SP.md, borderBottomWidth: 1, borderBottomColor: C.border2 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm }}>
+                <View style={{ width: 10, height: 10, borderRadius: RADIUS.xs, backgroundColor: fillFor(name) }} />
+                <Text style={[TYPE.cardTitle, { color: C.ink }]}>{name}</Text>
               </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={{ fontFamily: F.monoSemi, fontSize: 12, color: C.cobalt }}>{activity[name].length}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs2 }}>
+                <Text style={[TYPE.mono, { color: C.cobalt }]}>{activity[name].length}</Text>
                 <Icon name="chevron" size={14} color={C.inkMut} />
               </View>
             </TouchableOpacity>
-          )) : <Text style={{ fontFamily: F.body, fontSize: 13, color: C.inkMut }}>—</Text>}
+          )) : <Text style={[TYPE.bodySm, { color: C.inkMut }]}>—</Text>}
         </View>
       )}
     </ScrollView>

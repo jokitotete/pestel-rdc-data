@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Text, View, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
-import { C, F, AX, AXT, AX_SHORT, AX_ORDER, RUBRIQUES, tint, pick } from '../theme';
+import { C, F, AX, AXT, AX_SHORT, AX_ORDER, RUBRIQUES, tint, pick, SP, TYPE, RADIUS } from '../theme';
 import { Card, SectionHead, Pill, Icon, Rule, AxisGlyph, SectorGlyph, NewsCard, PageHeader, SourceLine } from '../ui';
 import { allItems, upcomingEvents, primarySource, findItem } from '../store';
 import { SECTORS, itemInSector } from '../sectors';
@@ -10,8 +10,8 @@ import { DiversList } from './Triage';
 // Groupe de filtres étiqueté (rangée horizontale de pastilles) — identique à « Axes ».
 const FilterRow = ({ label, children }) => (
   <>
-    <Text style={{ fontFamily: F.mono, fontSize: 10, color: C.inkMut, letterSpacing: 0.8, marginLeft: 2, marginBottom: 7 }}>{label}</Text>
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14, marginHorizontal: -18 }} contentContainerStyle={{ paddingHorizontal: 18, gap: 8 }}>
+    <Text style={[TYPE.overline, { color: C.inkMut, marginLeft: SP.hair, marginBottom: SP.sm }]}>{label}</Text>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: SP.md2, marginHorizontal: -SP.gutter }} contentContainerStyle={{ paddingHorizontal: SP.gutter, gap: SP.sm }}>
       {children}
     </ScrollView>
   </>
@@ -23,28 +23,28 @@ function ToTreatSection({ feed }) {
   const items = (feed || []).filter((f) => f && f.title && isSafeUrl(f.url)).slice(0, 12);
   if (!items.length) return null;
   return (
-    <View style={{ marginTop: 22 }}>
+    <View style={{ marginTop: SP.xl2 }}>
       <SectionHead title="À traiter" icon="triage" lens="capté aujourd’hui · à décrypter" />
-      <Card style={{ paddingVertical: 4 }}>
+      <Card style={{ paddingVertical: SP.xs }}>
         {items.map((f, i, arr) => {
           const ct = pick(AXT, f.axis, C.inkDim);   // RS3 : prototype-safe (f.axis vient du feed NON FIABLE)
           return (
             <View key={i}>
               <TouchableOpacity activeOpacity={0.7} onPress={() => confirmOpenURL(f.url)}
                 accessibilityRole="link" accessibilityLabel={`Ouvrir ${hostOf(f.url)} : ${f.title}`}
-                style={{ paddingVertical: 11, paddingHorizontal: 14 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                style={{ paddingVertical: SP.md, paddingHorizontal: SP.md2 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs2, marginBottom: SP.xs }}>
                   {f.axis && f.axis !== '?' ? <AxisGlyph axis={f.axis} size={13} /> : null}
-                  <Text style={{ fontFamily: F.monoSemi, fontSize: 10, color: ct }}>{f.axisLabel || 'à trier'}</Text>
+                  <Text style={[TYPE.mono, { color: ct }]}>{f.axisLabel || 'à trier'}</Text>
                   <View style={{ flex: 1 }} />
-                  <View style={{ backgroundColor: tint(C.gold, 0.16), borderRadius: 20, paddingHorizontal: 7, paddingVertical: 2 }}>
-                    <Text style={{ fontFamily: F.monoSemi, fontSize: 9, color: C.goldText }}>à traiter</Text>
+                  <View style={{ backgroundColor: tint(C.gold, 0.16), borderRadius: RADIUS.chip, paddingHorizontal: SP.sm, paddingVertical: SP.hair }}>
+                    <Text style={[TYPE.mono, { color: C.goldText }]}>à traiter</Text>
                   </View>
                 </View>
-                <Text style={{ fontFamily: F.bodySemi, fontSize: 13.5, color: C.ink, lineHeight: 19 }} numberOfLines={2}>{f.title}</Text>
-                <SourceLine source={{ name: f.source, host: hostOf(f.url) }} style={{ marginTop: 3 }} />
+                <Text style={[TYPE.cardTitle, { color: C.ink }]} numberOfLines={2}>{f.title}</Text>
+                <SourceLine source={{ name: f.source, host: hostOf(f.url) }} style={{ marginTop: SP.xs }} />
               </TouchableOpacity>
-              {i < arr.length - 1 && <Rule style={{ marginHorizontal: 14 }} />}
+              {i < arr.length - 1 && <Rule style={{ marginHorizontal: SP.md2 }} />}
             </View>
           );
         })}
@@ -57,7 +57,7 @@ function ToTreatSection({ feed }) {
 function FilteredList({ items, emptyLabel, isRubrique, onOpen, ed }) {
   if (!items.length) {
     return (
-      <Text style={{ fontFamily: F.body, fontSize: 13, color: C.inkMut, paddingVertical: 20, textAlign: 'center', lineHeight: 19 }}>
+      <Text style={[TYPE.bodySm, { color: C.inkMut, paddingVertical: SP.xl, textAlign: 'center' }]}>
         {emptyLabel}
         {isRubrique ? '\nRubrique couverte à partir des prochaines veilles.' : ''}
       </Text>
@@ -81,32 +81,32 @@ function EventsView({ onOpenEvent }) {
   const Ec = AX.Ev || C.cobalt;
   if (!events.length) {
     return (
-      <Text style={{ fontFamily: F.body, fontSize: 13, color: C.inkMut, paddingVertical: 20, textAlign: 'center', lineHeight: 19 }}>
+      <Text style={[TYPE.bodySm, { color: C.inkMut, paddingVertical: SP.xl, textAlign: 'center' }]}>
         Aucun rendez-vous daté sur les 3 prochaines semaines.{'\n'}Rubrique alimentée par les agendas des prochaines veilles.
       </Text>
     );
   }
   return (
-    <Card style={{ paddingVertical: 4 }}>
+    <Card style={{ paddingVertical: SP.xs }}>
       {events.map((e, i, arr) => (
         <View key={i}>
           <TouchableOpacity activeOpacity={e.code ? 0.7 : 1} onPress={() => e.code && onOpenEvent && onOpenEvent(e.code, e.edDate)}
             accessibilityRole={e.code ? 'button' : 'text'} accessibilityLabel={e.what}
-            style={{ flexDirection: 'row', gap: 10, paddingVertical: 12, paddingHorizontal: 14, alignItems: 'flex-start' }}>
-            <View style={{ alignSelf: 'flex-start', backgroundColor: tint(Ec, 0.14), borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, marginTop: 1 }}>
-              <Text style={{ fontFamily: F.monoSemi, fontSize: 10, color: AXT.Ev || C.ink }} numberOfLines={1}>{e.when}</Text>
+            style={{ flexDirection: 'row', gap: SP.sm2, paddingVertical: SP.md, paddingHorizontal: SP.md2, alignItems: 'flex-start' }}>
+            <View style={{ alignSelf: 'flex-start', backgroundColor: tint(Ec, 0.14), borderRadius: RADIUS.sm, paddingHorizontal: SP.sm, paddingVertical: SP.xs, marginTop: SP.hair }}>
+              <Text style={[TYPE.mono, { color: AXT.Ev || C.ink }]} numberOfLines={1}>{e.when}</Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontFamily: F.body, fontSize: 13, color: C.inkDim, lineHeight: 18 }}>{e.what}</Text>
+              <Text style={[TYPE.bodySm, { color: C.inkDim }]}>{e.what}</Text>
               {e.code ? (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6 }}>
-                  <Text style={{ fontFamily: F.bodySemi, fontSize: 11, color: AXT.Ev || C.cobalt }}>voir le dossier</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs2, marginTop: SP.xs2 }}>
+                  <Text style={[TYPE.label, { color: AXT.Ev || C.cobalt }]}>voir le dossier</Text>
                   <AxisGlyph axis="Ev" size={12} />
                 </View>
               ) : null}
             </View>
           </TouchableOpacity>
-          {i < arr.length - 1 ? <Rule style={{ marginHorizontal: 14 }} /> : null}
+          {i < arr.length - 1 ? <Rule style={{ marginHorizontal: SP.md2 }} /> : null}
         </View>
       ))}
     </Card>
@@ -140,7 +140,7 @@ export default function Home({ ed, onOpen, feed = [], triage = [], onOpenEvent, 
         : { eyebrow: 'Aujourd’hui', title: 'À la une', subtitle: 'les faits qui comptent aujourd’hui' };
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 40 }} showsVerticalScrollIndicator={false}
+    <ScrollView contentContainerStyle={{ padding: SP.gutter, paddingBottom: SP.huge }} showsVerticalScrollIndicator={false}
       refreshControl={onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={C.cobalt} colors={[C.cobalt]} /> : undefined}>
       <PageHeader eyebrow={header.eyebrow} title={header.title} subtitle={header.subtitle}
         glyph={header.sector && sector ? <SectorGlyph sectorKey={sector.key} size={16} active /> : undefined} />
@@ -181,16 +181,16 @@ export default function Home({ ed, onOpen, feed = [], triage = [], onOpenEvent, 
           <ToTreatSection feed={feed} />
 
           {ed.agenda && ed.agenda.length > 0 && (
-            <View style={{ marginTop: 18 }}>
+            <View style={{ marginTop: SP.gutter }}>
               <SectionHead title="À suivre" icon="calendar" lens="agenda des prochains jalons" />
-              <Card style={{ paddingVertical: 4 }}>
+              <Card style={{ paddingVertical: SP.xs }}>
                 {ed.agenda.slice(0, 5).map((a, i, arr) => (
                   <View key={i}>
-                    <View style={{ flexDirection: 'row', gap: 12, paddingVertical: 12, paddingHorizontal: 14, alignItems: 'flex-start' }}>
-                      <Text style={{ fontFamily: F.monoSemi, fontSize: 11.5, color: C.inkDim, width: 92 }}>{a.when}</Text>
-                      <Text style={{ fontFamily: F.body, fontSize: 13, color: C.inkDim, flex: 1, lineHeight: 18 }}>{a.what}</Text>
+                    <View style={{ flexDirection: 'row', gap: SP.md, paddingVertical: SP.md, paddingHorizontal: SP.md2, alignItems: 'flex-start' }}>
+                      <Text style={[TYPE.mono, { color: C.inkDim, width: 92 }]}>{a.when}</Text>
+                      <Text style={[TYPE.bodySm, { color: C.inkDim, flex: 1 }]}>{a.what}</Text>
                     </View>
-                    {i < arr.length - 1 && <Rule style={{ marginHorizontal: 14 }} />}
+                    {i < arr.length - 1 && <Rule style={{ marginHorizontal: SP.md2 }} />}
                   </View>
                 ))}
               </Card>
