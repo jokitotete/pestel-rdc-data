@@ -121,6 +121,32 @@ export const search = (ed, q) => {
   );
 };
 
+// RS1-09 — Recherche MULTI-ÉDITIONS : la veille devient longitudinale. Cherche dans TOUTES les éditions
+// chargées (clés PROPRES d'EDITIONS, plus récente d'abord), enrichit chaque résultat de son édition source
+// {edDate, edLabel} pour l'ouvrir au bon endroit, et DÉDUPLIQUE par titre normalisé (les codes ne sont PAS
+// uniques entre éditions) en gardant l'occurrence la PLUS RÉCENTE. Résultats déjà triés du récent à l'ancien.
+const normTitle = (s) => (typeof s === 'string' ? s : '')
+  .normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+export const searchAll = (q) => {
+  const t = (q || '').trim().toLowerCase();
+  if (t.length < 2) return [];
+  const labelOf = {};
+  for (const m of MANIFEST) if (m && typeof m.date === 'string') labelOf[m.date] = m.label;
+  const seen = new Set(), out = [];
+  for (const d of Object.keys(EDITIONS).sort().reverse()) {   // plus récent d'abord
+    const ed = EDITIONS[d];
+    if (!ed) continue;
+    for (const it of allItems(ed)) {
+      if (!`${it.title} ${it.text} ${it.analysis || ''}`.toLowerCase().includes(t)) continue;
+      const key = normTitle(it.title);
+      if (key && seen.has(key)) continue;   // déjà vu dans une édition plus récente → on garde la plus récente
+      if (key) seen.add(key);
+      out.push({ ...it, edDate: d, edLabel: labelOf[d] || ed.label || d });
+    }
+  }
+  return out;
+};
+
 // Remplace les données embarquées par celles récupérées en ligne (mutation en place → tous les
 // consommateurs voient les nouvelles données au prochain rendu). Renvoie true si appliqué.
 export function applyRemote(d) {

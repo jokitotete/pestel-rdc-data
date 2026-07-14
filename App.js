@@ -210,13 +210,31 @@ export default function App() {
           {tab === 'axes' && <Axes ed={ed} onOpen={openItem} triage={date === latestDate() ? getTriage() : []} onOpenEvent={openEvent} />}
           {tab === 'map' && <MapScreen ed={ed} onOpen={openItem} />}
           {tab === 'stats' && <Stats />}
-          {tab === 'favoris' && <Favoris favs={favs} onOpen={openFav} onToggleFav={toggleFav} />}
+          {tab === 'favoris' && <Favoris favs={favs} onOpen={openFav} onToggleFav={toggleFav} onSearch={() => setSearchOpen(true)} />}
         </ScreenFade>
 
         <TabBar tab={tab} setTab={setTab} />
       </SafeAreaView>
 
-      {/* Modale de détail (zoom sur un item — dans son édition d'origine dEd) */}
+      {/* Recherche (ouverte par la loupe de l'en-tête) — RS1-09/10 : multi-éditions, reste MONTÉE quand un
+          résultat s'ouvre (la modale Détail se pose PAR-DESSUS, déclarée après → au retour on retrouve la liste). */}
+      <Modal visible={searchOpen} animationType="slide" onRequestClose={() => setSearchOpen(false)}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right', 'bottom']}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SP.md2, paddingVertical: SP.sm2, borderBottomWidth: 1, borderBottomColor: C.border2 }}>
+            <Text style={[TYPE.serifLead, { color: C.ink }]}>Recherche</Text>
+            <TouchableOpacity onPress={() => setSearchOpen(false)} hitSlop={HIT.lg} accessibilityRole="button" accessibilityLabel="Fermer"
+              style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs, minHeight: 44, justifyContent: 'center' }}>
+              <Text style={[TYPE.label, { color: C.cobalt }]}>Fermer</Text>
+              <Icon name="close" size={18} color={C.cobalt} />
+            </TouchableOpacity>
+          </View>
+          {/* onOpen(code, edDate) = openEvent : ouvre le résultat dans SON édition source, sans fermer la recherche */}
+          <Search onOpen={openEvent} />
+        </SafeAreaView>
+      </Modal>
+
+      {/* Modale de détail (zoom sur un item — dans son édition d'origine dEd). Déclarée EN DERNIER → se pose
+          par-dessus la recherche quand on ouvre un résultat (continuité RS1-10). */}
       <Modal visible={!!detail} animationType="slide" onRequestClose={closeDetail}>
         <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right', 'bottom']}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SP.md2, paddingVertical: SP.sm2, borderBottomWidth: 1, borderBottomColor: C.border2 }}>
@@ -228,21 +246,6 @@ export default function App() {
             </TouchableOpacity>
           </View>
           {detail ? <Detail ed={dEd} code={detail} onOpen={setDetail} isFav={isFav} onToggleFav={toggleFav} /> : null}
-        </SafeAreaView>
-      </Modal>
-
-      {/* Recherche (ouverte par la loupe de l'en-tête) */}
-      <Modal visible={searchOpen} animationType="slide" onRequestClose={() => setSearchOpen(false)}>
-        <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right', 'bottom']}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SP.md2, paddingVertical: SP.sm2, borderBottomWidth: 1, borderBottomColor: C.border2 }}>
-            <Text style={[TYPE.serifLead, { color: C.ink }]}>Recherche</Text>
-            <TouchableOpacity onPress={() => setSearchOpen(false)} hitSlop={HIT.lg} accessibilityRole="button" accessibilityLabel="Fermer"
-              style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs, minHeight: 44, justifyContent: 'center' }}>
-              <Text style={[TYPE.label, { color: C.cobalt }]}>Fermer</Text>
-              <Icon name="close" size={18} color={C.cobalt} />
-            </TouchableOpacity>
-          </View>
-          <Search ed={ed} onOpen={(code) => { setSearchOpen(false); openItem(code); }} />
         </SafeAreaView>
       </Modal>
 

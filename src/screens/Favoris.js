@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Text, View, ScrollView } from 'react-native';
-import { C, TYPE, SP, AX_SHORT, AX_ORDER, RUBRIQUES } from '../theme';
+import { Text, View, ScrollView, TouchableOpacity } from 'react-native';
+import { C, TYPE, SP, RADIUS, HIT, AX_SHORT, AX_ORDER, RUBRIQUES } from '../theme';
 import { Pill, NewsCard, PageHeader, Icon } from '../ui';
 import { SECTORS, itemInSector } from '../sectors';
 
@@ -17,7 +17,7 @@ const FilterRow = ({ label, children }) => (
 // « Favoris » — les articles ÉTOILÉS, PERSISTANTS : restent visibles quel que soit le jour tant que l'étoile
 // est sélectionnée (snapshots autonomes de l'édition). Filtrables par Axes / Rubriques / Secteurs, comme
 // les autres écrans. On retire un favori en rouvrant l'article (l'étoile s'y bascule).
-export default function Favoris({ favs = [], onOpen, onToggleFav }) {
+export default function Favoris({ favs = [], onOpen, onToggleFav, onSearch }) {
   const [filter, setFilter] = useState({ type: 'all' });
   const sector = filter.type === 'sector' ? SECTORS.find((s) => s.key === filter.key) : null;
 
@@ -34,9 +34,17 @@ export default function Favoris({ favs = [], onOpen, onToggleFav }) {
       {favs.length === 0 ? (
         <View style={{ alignItems: 'center', paddingTop: SP.huge }}>
           <Icon name="star" size={34} color={C.inkMut} style={{ marginBottom: SP.md }} />
-          <Text style={[TYPE.bodySm, { color: C.inkMut, textAlign: 'center' }]}>
+          <Text style={[TYPE.bodySm, { color: C.inkMut, textAlign: 'center', marginBottom: SP.xl }]}>
             Aucun favori pour l’instant.{'\n'}Touchez l’étoile d’un article pour l’ajouter — il restera ici, quel que soit le jour.
           </Text>
+          {/* RS1-11 : point d'entrée LIBELLÉ vers la recherche multi-éditions (au-delà de la loupe d'en-tête). */}
+          {onSearch ? (
+            <TouchableOpacity onPress={onSearch} hitSlop={HIT.md} accessibilityRole="button" accessibilityLabel="Rechercher dans les éditions"
+              style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm, minHeight: 44, paddingHorizontal: SP.lg, backgroundColor: C.actionFill, borderRadius: RADIUS.chip }}>
+              <Icon name="search" size={16} color={C.onAction} />
+              <Text style={[TYPE.label, { color: C.onAction }]}>Rechercher dans les éditions</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
       ) : (
         <>

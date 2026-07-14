@@ -92,3 +92,28 @@ export function savePrefs(patch) {
   });
   return _writeChain;
 }
+
+// RS1-10 — Requêtes de recherche RÉCENTES (reconnaissance vs rappel). Purement LOCAL (aucune donnée ne quitte
+// l'appareil, posture cybersécurité), assaini à la relecture (que des strings), plafonné à 5.
+const KEY_RECENT = 'ntongo.recent.v1';
+const MAX_RECENT = 5;
+export async function loadRecent() {
+  try {
+    const raw = await AsyncStorage.getItem(KEY_RECENT);
+    const a = raw ? JSON.parse(raw) : [];
+    return Array.isArray(a) ? a.filter((x) => typeof x === 'string').slice(0, MAX_RECENT) : [];
+  } catch (e) { return []; }
+}
+export async function pushRecent(q) {
+  try {
+    const s = (q || '').trim();
+    if (s.length < 2) return null;
+    const cur = await loadRecent();
+    const next = [s, ...cur.filter((x) => x.toLowerCase() !== s.toLowerCase())].slice(0, MAX_RECENT);
+    await AsyncStorage.setItem(KEY_RECENT, JSON.stringify(next));
+    return next;
+  } catch (e) { return null; }
+}
+export async function clearRecent() {
+  try { await AsyncStorage.removeItem(KEY_RECENT); } catch (e) { /* best-effort */ }
+}

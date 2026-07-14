@@ -1,4 +1,4 @@
-import { parseWhen, upcomingEvents, sectorItems, findItem, getEdition, latestDate, allItems, primarySource } from '../src/store';
+import { parseWhen, upcomingEvents, sectorItems, findItem, getEdition, latestDate, allItems, primarySource, searchAll } from '../src/store';
 
 describe('store.parseWhen — fuzz', () => {
   it('parse les formats datés réels', () => {
@@ -70,6 +70,38 @@ describe('store.primarySource — coercition défensive', () => {
   it('renvoie null si aucune source résolue', () => {
     expect(primarySource(edWith({ id: 9 }), { sources: [1] })).toBeNull();
     expect(primarySource({ sources: [] }, { sources: [] })).toBeNull();
+  });
+});
+
+// RS1-09 : recherche MULTI-ÉDITIONS — chaque résultat porte son édition source (ouvrable là), dédup par titre,
+// trié du plus récent au plus ancien. Rend la veille longitudinale (retrouver un fait d'une édition passée).
+describe('store.searchAll — recherche multi-éditions', () => {
+  it('chaque résultat porte une édition source RÉSOLVABLE, triés du récent à l’ancien, dédup par titre', () => {
+    const r = searchAll('congo');
+    expect(Array.isArray(r)).toBe(true);
+    let prev = '￿';
+    const seen = new Set();
+    for (const it of r) {
+      expect(typeof it.edDate).toBe('string');
+      expect(it.edLabel).toBeTruthy();
+      expect(getEdition(it.edDate)).toBeTruthy();       // ouvrable dans son édition
+      expect(it.edDate <= prev).toBe(true);             // tri décroissant (date ISO)
+      prev = it.edDate;
+      const k = (it.title || '').toLowerCase().replace(/\s+/g, ' ').trim();
+      expect(seen.has(k)).toBe(false);                  // pas de doublon de titre
+      seen.add(k);
+    }
+  });
+  it('balaie plusieurs éditions (pas seulement la dernière) quand le terme y figure', () => {
+    // terme large très probablement présent sur >1 édition de la veille RDC
+    const r = searchAll('rdc');
+    const editions = new Set(r.map((x) => x.edDate));
+    expect(editions.size).toBeGreaterThanOrEqual(1);    // au moins une édition datée
+  });
+  it('moins de 2 lettres → vide', () => {
+    expect(searchAll('a')).toEqual([]);
+    expect(searchAll('')).toEqual([]);
+    expect(searchAll(null)).toEqual([]);
   });
 });
 
