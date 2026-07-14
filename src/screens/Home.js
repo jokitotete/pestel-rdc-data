@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Text, View, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { C, F, AX, AXT, AX_SHORT, AX_ORDER, RUBRIQUES, tint, pick, SP, TYPE, RADIUS } from '../theme';
 import { Card, SectionHead, Pill, Icon, Rule, AxisGlyph, SectorGlyph, NewsCard, PageHeader, SourceLine } from '../ui';
-import { allItems, upcomingEvents, primarySource, findItem } from '../store';
+import { allItems, upcomingEvents, primarySource, findItem, followedItems } from '../store';
 import { SECTORS, itemInSector } from '../sectors';
 import { confirmOpenURL, hostOf, isSafeUrl } from '../safeUrl';
 import { DiversList } from './Triage';
@@ -115,8 +115,8 @@ function EventsView({ onOpenEvent }) {
 
 // « À la une » — filtres IDENTIQUES à « Axes » : 3 groupes (Axes PESTEL · Rubriques · Secteurs transversaux).
 // Sans filtre (« Tous ») : l'essentiel national + le fil « À traiter » + l'agenda.
-export default function Home({ ed, onOpen, feed = [], triage = [], onOpenEvent, onRefresh, refreshing, seed, onSeedApplied }) {
-  const [filter, setFilter] = useState({ type: 'all' });   // {type:'all'|'axis'|'sector'|'divers', key}
+export default function Home({ ed, onOpen, feed = [], triage = [], onOpenEvent, onRefresh, refreshing, seed, onSeedApplied, follows = [], isFollowing, onToggleFollow }) {
+  const [filter, setFilter] = useState({ type: 'all' });   // {type:'all'|'axis'|'sector'|'divers'|'follow', key}
   // RS1-19/20 : applique un filtre semé par un lien croisé (item→axe/secteur), puis le consomme (one-shot).
   useEffect(() => { if (seed && seed.filter) { setFilter(seed.filter); onSeedApplied && onSeedApplied(); } }, [seed]);
   const sector = filter.type === 'sector' ? SECTORS.find((s) => s.key === filter.key) : null;
@@ -137,9 +137,11 @@ export default function Home({ ed, onOpen, feed = [], triage = [], onOpenEvent, 
     ? { eyebrow: 'Votre Une', title: sector ? sector.label : 'Secteur', subtitle: 'les actualités de votre secteur', sector: true }
     : filter.type === 'divers'
       ? { eyebrow: 'En vrac', title: 'Divers', subtitle: 'capté automatiquement, hors classement PESTEL' }
-      : filter.type === 'axis'
-        ? { eyebrow: isRubrique ? 'Rubrique' : 'Axe PESTEL', title: AX_SHORT[filter.key], subtitle: isEvents ? 'rendez-vous à venir · 3 semaines' : 'les faits de cet axe' }
-        : { eyebrow: 'Aujourd’hui', title: 'À la une', subtitle: 'les faits qui comptent aujourd’hui' };
+      : filter.type === 'follow'
+        ? { eyebrow: 'Le Réveil', title: 'Pour vous', subtitle: 'les axes et secteurs que vous suivez' }
+        : filter.type === 'axis'
+          ? { eyebrow: isRubrique ? 'Rubrique' : 'Axe PESTEL', title: AX_SHORT[filter.key], subtitle: isEvents ? 'rendez-vous à venir · 3 semaines' : 'les faits de cet axe' }
+          : { eyebrow: 'Aujourd’hui', title: 'À la une', subtitle: 'les faits qui comptent aujourd’hui' };
 
   return (
     <ScrollView contentContainerStyle={{ padding: SP.gutter, paddingBottom: SP.huge }} showsVerticalScrollIndicator={false}
@@ -147,8 +149,11 @@ export default function Home({ ed, onOpen, feed = [], triage = [], onOpenEvent, 
       <PageHeader eyebrow={header.eyebrow} title={header.title} subtitle={header.subtitle}
         glyph={header.sector && sector ? <SectorGlyph sectorKey={sector.key} size={16} active /> : undefined} />
 
-      {/* Filtres — identiques à « Axes » */}
+      {/* Filtres — identiques à « Axes » (+ « Pour vous » RS1-23 si des sujets sont suivis) */}
       <FilterRow label="AXES PESTEL">
+        {follows && follows.length ? (
+          <Pill label="Pour vous" icon="star" active={filter.type === 'follow'} onPress={() => setFilter(filter.type === 'follow' ? { type: 'all' } : { type: 'follow' })} />
+        ) : null}
         <Pill label="Tous" active={filter.type === 'all'} onPress={() => setFilter({ type: 'all' })} />
         {AX_ORDER.map((k) => (
           <Pill key={k} label={AX_SHORT[k]} axis={k} active={filter.type === 'axis' && filter.key === k} onPress={() => setFilter(filter.type === 'axis' && filter.key === k ? { type: 'all' } : { type: 'axis', key: k })} />
@@ -166,7 +171,22 @@ export default function Home({ ed, onOpen, feed = [], triage = [], onOpenEvent, 
         ))}
       </FilterRow>
 
-      {filter.type === 'divers' ? (
+      {/* RS1-23 : « Suivre » un axe/secteur filtré — bascule locale qui alimente « Pour vous ». */}
+      {onToggleFollow && (filter.type === 'axis' || filter.type === 'sector') ? (() => {
+        const following = isFollowing && isFollowing(filter.type, filter.key);
+        return (
+          <TouchableOpacity onPress={() => onToggleFollow(filter.type, filter.key)} accessibilityRole="button"
+            accessibilityState={{ selected: !!following }} accessibilityLabel={following ? 'Ne plus suivre ce sujet' : 'Suivre ce sujet'} hitSlop={HIT.sm}
+            style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: SP.xs, minHeight: 36, paddingHorizontal: SP.md, marginBottom: SP.md, borderRadius: RADIUS.chip, backgroundColor: following ? C.actionFill : C.panel, borderWidth: 1, borderColor: following ? C.actionFill : C.border }}>
+            <Icon name={following ? 'star-on' : 'star'} size={14} color={following ? C.onAction : C.cobalt} />
+            <Text style={[TYPE.label, { color: following ? C.onAction : C.cobalt }]}>{following ? 'Suivi' : 'Suivre ce sujet'}</Text>
+          </TouchableOpacity>
+        );
+      })() : null}
+
+      {filter.type === 'follow' ? (
+        <FilteredList items={followedItems(ed, follows)} emptyLabel={'Rien de vos sujets suivis dans cette édition.\nSuivez un axe ou un secteur pour peupler « Pour vous ».'} isRubrique={false} onOpen={onOpen} ed={ed} />
+      ) : filter.type === 'divers' ? (
         <DiversList items={triage} />
       ) : isEvents ? (
         <EventsView onOpenEvent={onOpenEvent} />

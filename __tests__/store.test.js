@@ -1,4 +1,4 @@
-import { parseWhen, upcomingEvents, sectorItems, findItem, getEdition, latestDate, allItems, primarySource, searchAll } from '../src/store';
+import { parseWhen, upcomingEvents, sectorItems, findItem, getEdition, latestDate, allItems, primarySource, searchAll, followedItems } from '../src/store';
 
 describe('store.parseWhen — fuzz', () => {
   it('parse les formats datés réels', () => {
@@ -102,6 +102,20 @@ describe('store.searchAll — recherche multi-éditions', () => {
     expect(searchAll('a')).toEqual([]);
     expect(searchAll('')).toEqual([]);
     expect(searchAll(null)).toEqual([]);
+  });
+});
+
+// RS1-23 : « Pour vous » — items de l'édition correspondant aux axes/secteurs suivis.
+describe('store.followedItems — Pour vous', () => {
+  const ed = getEdition(latestDate());
+  it('ne renvoie que les items de l’axe suivi', () => {
+    const r = followedItems(ed, [{ type: 'axis', key: 'P' }]);
+    for (const it of r) expect(it.axis).toBe('P');
+  });
+  it('vide si aucun suivi / entrées manquantes', () => {
+    expect(followedItems(ed, [])).toEqual([]);
+    expect(followedItems(ed, null)).toEqual([]);
+    expect(followedItems(null, [{ type: 'axis', key: 'P' }])).toEqual([]);
   });
 });
 

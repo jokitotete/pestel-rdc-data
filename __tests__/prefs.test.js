@@ -2,7 +2,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { loadSector, saveSector, sanitizeFavs, MAX_FAVS, loadPrefs, savePrefs } from '../src/prefs';
+import { loadSector, saveSector, sanitizeFavs, MAX_FAVS, loadPrefs, savePrefs, loadFollows, saveFollows } from '../src/prefs';
 
 describe('prefs — persistance du secteur (Lentille)', () => {
   it('save puis load restaure le secteur choisi', async () => {
@@ -58,6 +58,21 @@ describe('prefs.sanitizeFavs — frontière de stockage (fail-closed)', () => {
 
 // RS3 : savePrefs sérialise les écritures via un cache RAM (source de vérité) → deux patches de clés
 // DIFFÉRENTES non attendus ne se perdent plus (l'ancien read-modify-write disque en écrasait un).
+// RS1-23 : sujets suivis — persistance locale assainie (type liste blanche, key string, dédup, plafond).
+describe('prefs follows — Suivre (local, fail-closed)', () => {
+  beforeEach(async () => { await AsyncStorage.clear(); });
+  it('loadFollows assainit + déduplique', async () => {
+    await saveFollows([{ type: 'axis', key: 'P' }, { type: 'axis', key: 'P' }, { type: 'sector', key: 'banques' },
+      { type: 'bad', key: 'x' }, { type: 'axis', key: 5 }, 'nope', null]);
+    expect(await loadFollows()).toEqual([{ type: 'axis', key: 'P' }, { type: 'sector', key: 'banques' }]);
+  });
+  it('vide par défaut / sur blob corrompu', async () => {
+    expect(await loadFollows()).toEqual([]);
+    await saveFollows('x');
+    expect(await loadFollows()).toEqual([]);
+  });
+});
+
 describe('prefs.savePrefs — écritures sérialisées, pas de lost-update', () => {
   beforeEach(async () => { await AsyncStorage.clear(); await loadPrefs(); });
   it('conserve les DEUX clés quand deux savePrefs concurrents visent des clés distinctes', async () => {

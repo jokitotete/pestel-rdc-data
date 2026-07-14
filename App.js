@@ -13,7 +13,7 @@ import { Icon, shadow, useReduceMotion, ModalHeader } from './src/ui';
 import { getEdition, findItem, latestDate, editionsList, applyRemote, getFeed, getTriage } from './src/store';
 import { fetchRemoteData } from './src/remote';
 import { confirmOpenURL, isSafeUrl } from './src/safeUrl';
-import { loadPrefs, savePrefs, MAX_FAVS } from './src/prefs';
+import { loadPrefs, savePrefs, MAX_FAVS, loadFollows, saveFollows } from './src/prefs';
 import { scheduleDailyBriefing, cancelDailyBriefing } from './src/notify';
 import Home from './src/screens/Home';
 import Axes from './src/screens/Axes';
@@ -84,6 +84,18 @@ export default function App() {
   // tant que l'étoile est sélectionnée, indépendamment de l'édition affichée. Clé = `${edDate}:${code}`.
   const [favs, setFavs] = useState([]);
   const isFav = useCallback((id) => favs.some((f) => f.id === id), [favs]);
+  // RS1-23 — SUJETS SUIVIS (axe/secteur), local, pour la vue « Pour vous ».
+  const [follows, setFollows] = useState([]);
+  const isFollowing = useCallback((type, key) => follows.some((f) => f.type === type && f.key === key), [follows]);
+  const toggleFollow = useCallback((type, key) => {
+    if (!type || !key) return;
+    setFollows((prev) => {
+      const has = prev.some((f) => f.type === type && f.key === key);
+      const next = has ? prev.filter((f) => !(f.type === type && f.key === key)) : [{ type, key }, ...prev].slice(0, 50);
+      saveFollows(next);
+      return next;
+    });
+  }, []);
   const toggleFav = useCallback((snap) => {
     if (!snap || !snap.id) return;
     setFavs((prev) => {
@@ -132,6 +144,7 @@ export default function App() {
   }, []);
   useEffect(() => {
     refresh();
+    loadFollows().then(setFollows);                                            // RS1-23 : sujets suivis (Pour vous)
     loadPrefs().then((p) => {                                                  // hydrate dernière édition vue + opt-in notif
       if (p.lastSeen) setLastSeen(p.lastSeen);
       else { const d = latestDate(); setLastSeen(d); savePrefs({ lastSeen: d }); }   // 1er lancement = référence, pas d'alerte
@@ -218,7 +231,7 @@ export default function App() {
 
         {/* Écran actif (fondu + léger glissement à chaque changement d'onglet) */}
         <ScreenFade tabKey={tab}>
-          {tab === 'home' && <Home ed={ed} onOpen={openItem} feed={date === latestDate() ? getFeed() : []} triage={date === latestDate() ? getTriage() : []} onOpenEvent={openEvent} onRefresh={refresh} refreshing={net === 'loading'} seed={navSeed && navSeed.tab === 'home' ? navSeed : null} onSeedApplied={() => setNavSeed(null)} />}
+          {tab === 'home' && <Home ed={ed} onOpen={openItem} feed={date === latestDate() ? getFeed() : []} triage={date === latestDate() ? getTriage() : []} onOpenEvent={openEvent} onRefresh={refresh} refreshing={net === 'loading'} seed={navSeed && navSeed.tab === 'home' ? navSeed : null} onSeedApplied={() => setNavSeed(null)} follows={follows} isFollowing={isFollowing} onToggleFollow={toggleFollow} />}
           {tab === 'axes' && <Axes ed={ed} onOpen={openItem} triage={date === latestDate() ? getTriage() : []} onOpenEvent={openEvent} seed={navSeed && navSeed.tab === 'axes' ? navSeed : null} onSeedApplied={() => setNavSeed(null)} />}
           {tab === 'map' && <MapScreen ed={ed} onOpen={openItem} seed={navSeed && navSeed.tab === 'map' ? navSeed : null} onSeedApplied={() => setNavSeed(null)} />}
           {tab === 'stats' && <Stats />}

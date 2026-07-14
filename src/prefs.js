@@ -117,3 +117,28 @@ export async function pushRecent(q) {
 export async function clearRecent() {
   try { await AsyncStorage.removeItem(KEY_RECENT); } catch (e) { /* best-effort */ }
 }
+
+// RS1-23 — « SUIVRE » un sujet (axe / secteur). Rétention SANS compte ni serveur : purement LOCAL, assaini
+// à la relecture (type dans une liste blanche, key string), dédupliqué, plafonné. Alimente la vue « Pour vous ».
+const KEY_FOLLOWS = 'ntongo.follows.v1';
+const FOLLOW_TYPES = new Set(['axis', 'sector']);
+export async function loadFollows() {
+  try {
+    const raw = await AsyncStorage.getItem(KEY_FOLLOWS);
+    const a = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(a)) return [];
+    const seen = new Set(), out = [];
+    for (const f of a) {
+      if (!isObj(f) || !FOLLOW_TYPES.has(f.type) || typeof f.key !== 'string') continue;   // fail-closed
+      const id = f.type + ':' + f.key;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      out.push({ type: f.type, key: f.key });
+      if (out.length >= 50) break;
+    }
+    return out;
+  } catch (e) { return []; }
+}
+export async function saveFollows(list) {
+  try { await AsyncStorage.setItem(KEY_FOLLOWS, JSON.stringify(Array.isArray(list) ? list : [])); } catch (e) { /* best-effort */ }
+}

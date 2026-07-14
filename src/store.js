@@ -127,6 +127,20 @@ export const search = (ed, q) => {
 // uniques entre éditions) en gardant l'occurrence la PLUS RÉCENTE. Résultats déjà triés du récent à l'ancien.
 const normTitle = (s) => (typeof s === 'string' ? s : '')
   .normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+// RS1-23 — items de l'édition correspondant aux sujets SUIVIS (axe et/ou secteur). Alimente « Pour vous ».
+export const followedItems = (ed, follows) => {
+  if (!ed || !Array.isArray(follows) || !follows.length) return [];
+  const axes = new Set(follows.filter((f) => f.type === 'axis').map((f) => f.key));
+  const sectors = follows.filter((f) => f.type === 'sector').map((f) => sectorByKey(f.key)).filter(Boolean);
+  const out = [], seen = new Set();
+  for (const it of allItems(ed)) {
+    let match = axes.has(it.axis);
+    if (!match) { for (const s of sectors) if (itemInSectorStrong(it, s)) { match = true; break; } }
+    if (match && !seen.has(it.code)) { seen.add(it.code); out.push(it); }
+  }
+  return out;
+};
+
 export const searchAll = (q) => {
   const t = (q || '').trim().toLowerCase();
   if (t.length < 2) return [];
