@@ -1,4 +1,4 @@
-import { pick, tint, AX } from '../src/theme';
+import { pick, tint, AX, mapLevel, MAP_RAMP, MAP_CATS } from '../src/theme';
 
 // RS3 (campagne 2026-07-14) : `MAP[cléNonFiable]` résout aussi les propriétés HÉRITÉES du prototype
 // (constructor/__proto__/toString…) — toutes truthy — donc `MAP[clé] || fallback` ne se replie pas et une
@@ -20,6 +20,21 @@ describe('theme.pick — lookup prototype-safe', () => {
 
 // RS3 : défense en profondeur — tint() ne doit jamais lever `hex.replace is not a function` si une couleur
 // non-string lui parvenait malgré pick (fonction/objet/undefined) ; elle retombe sur cobalt.
+// RS1-13 : palier d'activité DISCRET de la carte (0=calme, 1..3 par tiers) + rampe/catégories alignées.
+describe('theme.mapLevel — palier discret de la carte', () => {
+  it('0 actu → calme (0) ; sinon 1..3 par tiers de n/maxN', () => {
+    expect(mapLevel(0, 10)).toBe(0);
+    expect(mapLevel(1, 9)).toBe(1);
+    expect(mapLevel(5, 9)).toBe(2);
+    expect(mapLevel(9, 9)).toBe(3);
+    expect(mapLevel(50, 9)).toBe(3);   // plafonné à 3
+  });
+  it('MAP_RAMP et MAP_CATS ont 4 paliers alignés', () => {
+    expect(MAP_RAMP.length).toBe(4);
+    expect(MAP_CATS).toEqual(['calme', 'faible', 'modérée', 'forte']);
+  });
+});
+
 describe('theme.tint — jamais de crash sur couleur non-string', () => {
   it('retombe sur une rgba valide pour un hex non-string', () => {
     for (const bad of [undefined, null, 42, {}, Object, () => {}]) {

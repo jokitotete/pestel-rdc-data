@@ -49,6 +49,7 @@ export function applyTheme(mode) {
   Object.assign(C, dark ? DARK : LIGHT);
   Object.assign(AXT, dark ? AXT_D : AXT_L);       // texte d'axe conforme AA selon le thème
   Object.assign(RELT, dark ? RELT_D : RELT_L);
+  MAP_RAMP.length = 0; MAP_RAMP.push(...(dark ? MAP_RAMP_D : MAP_RAMP_L));   // rampe carte selon le thème
   return mode;
 }
 
@@ -107,6 +108,18 @@ export const AXT = { ...AXT_L };   // mutable (applyTheme)
 export const RELT_L = { A:'#166e45', B:'#20639b', C:'#835a0c', D:'#a73237' };
 export const RELT_D = { A:'#3eab79', B:'#4a9ee4', C:'#cb8e19', D:'#e06e72' };
 export const RELT = { ...RELT_L };
+
+// RS1-13 — Carte : rampe séquentielle DISCRÈTE (4 paliers, fills OPAQUES pour un contraste déterministe),
+// dérivée du cobalt sur mapNeutral. L'activité n'est PAS portée par la seule couleur (WCAG 1.4.1) : chaque
+// province porte AUSSI une catégorie TEXTE (MAP_CATS) + une mini-barre segmentée → la rampe est un encodage
+// REDONDANT (arbitrage Lead Tech : l'exigence normative est 1.4.1, tenue par le texte ; la rampe reste
+// perceptible, le palier haut nettement distinct du neutre). Swappée par thème comme AXT/RELT.
+export const MAP_RAMP_L = ['#e9e2d4', '#b1b7d8', '#8393db', '#506cde'];   // calme · faible · modérée · forte
+export const MAP_RAMP_D = ['#28313f', '#384979', '#455ea9', '#5373dc'];
+export const MAP_RAMP = [...MAP_RAMP_L];
+export const MAP_CATS = ['calme', 'faible', 'modérée', 'forte'];
+// Palier d'activité (0..3) d'une province : 0 si aucune actu, sinon tiers de n/maxN.
+export const mapLevel = (n, maxN) => (!n ? 0 : Math.min(3, Math.ceil((n / Math.max(1, maxN)) * 3)));
 
 // Fiabilité des sources (A→D), couleurs du portail (--rel-*)
 export const REL = {
