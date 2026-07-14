@@ -190,6 +190,22 @@ export const Pill = ({ label, active, onPress, axis, sectorKey, icon }) => {
 // Trait fin de séparation.
 export const Rule = ({ style }) => <View style={[{ height: 1, backgroundColor: C.border2 }, style]} />;
 
+// RS1-18 — En-tête de MODALE unifié (Detail / Recherche) : même chrome, contexte « où suis-je » (eyebrow +
+// titre optionnels), fermeture ≥44 px. Une seule source pour la parité visuelle des deux modales plein écran.
+export const ModalHeader = ({ eyebrow, title, onClose, closeLabel = 'Fermer' }) => (
+  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SP.md2, paddingVertical: SP.sm2, borderBottomWidth: 1, borderBottomColor: C.border2 }}>
+    <View style={{ flex: 1 }}>
+      {eyebrow ? <Text style={[TYPE.caption, { color: C.inkMut }]} numberOfLines={1}>{eyebrow}</Text> : null}
+      {title ? <Text style={[TYPE.serifLead, { color: C.ink }]} numberOfLines={1}>{title}</Text> : null}
+    </View>
+    <TouchableOpacity onPress={onClose} hitSlop={HIT.lg} accessibilityRole="button" accessibilityLabel={closeLabel}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs, minHeight: 44, justifyContent: 'center', paddingLeft: SP.sm }}>
+      <Text style={[TYPE.label, { color: C.cobalt }]}>{closeLabel}</Text>
+      <Glyph name="close" size={18} color={C.cobalt} />
+    </TouchableOpacity>
+  </View>
+);
+
 // RS1-17 — LANGAGE D'ÉTAT unifié : un seul composant pour tous les états vides/erreur (Home/Search/Favoris/
 // Map/Detail/Triage + ErrorBoundary), dans la langue duotone (glyphe cobalt dans un cercle teinté) + jetons.
 export const StateView = ({ glyph = 'triage', title, body, action, tone = C.inkMut }) => (

@@ -192,6 +192,7 @@ export const TYPE = {
   mono:      { fontFamily: F.monoSemi,    fontSize: 11,   lineHeight: 15, letterSpacing: 0 },     // valeurs mono accentuées
   data:      { fontFamily: F.displayBold, fontSize: 21,   lineHeight: 24, letterSpacing: 0 },     // chiffres KPI
   nav:       { fontFamily: F.body,        fontSize: 11,   lineHeight: 13, letterSpacing: 0.2 },   // libellé d'onglet (dock) — famille surchargée selon l'état actif
+  quote:     { fontFamily: F.display,     fontSize: 15.5, lineHeight: 24, letterSpacing: 0.1 },   // RS1-22 : « voix » éditoriale sérif (Analyse) — emphase STRUCTURELLE (pas de faux italique)
 };
 
 // Typographie de la surface de MARQUE de l'écran d'accueil (Welcome) — échelle propre, plus grande que le

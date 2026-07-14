@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Text, View, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { C, F, AX, AXT, AX_SHORT, AX_ORDER, RUBRIQUES, tint, pick, SP, TYPE, RADIUS } from '../theme';
 import { Card, SectionHead, Pill, Icon, Rule, AxisGlyph, SectorGlyph, NewsCard, PageHeader, SourceLine } from '../ui';
@@ -115,8 +115,10 @@ function EventsView({ onOpenEvent }) {
 
 // « À la une » — filtres IDENTIQUES à « Axes » : 3 groupes (Axes PESTEL · Rubriques · Secteurs transversaux).
 // Sans filtre (« Tous ») : l'essentiel national + le fil « À traiter » + l'agenda.
-export default function Home({ ed, onOpen, feed = [], triage = [], onOpenEvent, onRefresh, refreshing }) {
+export default function Home({ ed, onOpen, feed = [], triage = [], onOpenEvent, onRefresh, refreshing, seed, onSeedApplied }) {
   const [filter, setFilter] = useState({ type: 'all' });   // {type:'all'|'axis'|'sector'|'divers', key}
+  // RS1-19/20 : applique un filtre semé par un lien croisé (item→axe/secteur), puis le consomme (one-shot).
+  useEffect(() => { if (seed && seed.filter) { setFilter(seed.filter); onSeedApplied && onSeedApplied(); } }, [seed]);
   const sector = filter.type === 'sector' ? SECTORS.find((s) => s.key === filter.key) : null;
 
   const items = filter.type === 'axis'

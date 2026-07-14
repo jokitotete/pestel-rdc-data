@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Text, View, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { C, SP, TYPE, RADIUS, HIT, MAP_RAMP, MAP_CATS, mapLevel } from '../theme';
@@ -18,12 +18,14 @@ const LevelBar = ({ level }) => (
 // « Carte des actualités » — 26 provinces, coloriées par activité (rampe DISCRÈTE), sélection tactile.
 // A11Y (RS1-12) : le SVG est décoratif (masqué aux lecteurs d'écran) ; la LISTE des provinces est le chemin
 // accessible primaire (chaque ligne = bouton avec nom + compte + catégorie + état sélectionné).
-export default function MapScreen({ ed, onOpen }) {
+export default function MapScreen({ ed, onOpen, seed, onSeedApplied }) {
   const mapW = Dimensions.get('window').width - 36 - 24; // largeur écran - padding - padding carte
   const mapH = Math.round(mapW * mapAspect);
   const paths = useMemo(() => projectPaths(mapW, mapH), [mapW, mapH]);
   const activity = useMemo(() => activityByProvince(ed), [ed]);
   const [sel, setSel] = useState(null);
+  // RS1-19 : une province semée par un lien croisé (Detail → Carte) est présélectionnée, puis consommée.
+  useEffect(() => { if (seed && seed.province) { setSel(seed.province); onSeedApplied && onSeedApplied(); } }, [seed]);
 
   const maxN = Math.max(1, ...Object.values(activity).map((a) => a.length));
   const selItems = sel ? activity[sel] || [] : [];

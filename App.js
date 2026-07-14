@@ -9,7 +9,7 @@ import { IBMPlexSans_400Regular, IBMPlexSans_500Medium, IBMPlexSans_600SemiBold,
 import { IBMPlexMono_400Regular, IBMPlexMono_500Medium, IBMPlexMono_600SemiBold } from '@expo-google-fonts/ibm-plex-mono';
 
 import { C, F, applyTheme, tint, SP, TYPE, RADIUS, DUR, HIT } from './src/theme';
-import { Icon, shadow, useReduceMotion } from './src/ui';
+import { Icon, shadow, useReduceMotion, ModalHeader } from './src/ui';
 import { getEdition, findItem, latestDate, editionsList, applyRemote, getFeed, getTriage } from './src/store';
 import { fetchRemoteData } from './src/remote';
 import { confirmOpenURL, isSafeUrl } from './src/safeUrl';
@@ -55,6 +55,18 @@ export default function App() {
     setDetailEd(e); setDetail(code);
   };
   const closeDetail = () => { setDetail(null); setDetailEd(null); };
+  // RS1-19/20 — TISSU DE LIENS CROISÉS + sélection « explore » partagée. goTo() est l'API d'intention unique :
+  // change d'onglet et SÈME un filtre/une province dans l'écran cible (nonce → ré-application même si identique).
+  // Les écrans lisent `seed` et l'appliquent à leur état local. Relie item↔axe↔secteur↔carte en ≤1 tap.
+  const [navSeed, setNavSeed] = useState(null);
+  const seedRef = useRef(0);
+  const goTo = ({ tab, filter, province, edition }) => {
+    closeDetail();
+    if (edition) chooseDate(edition);
+    if (province) { setTab('map'); setNavSeed({ tab: 'map', province, n: ++seedRef.current }); return; }
+    if (tab) setTab(tab);
+    if (filter) setNavSeed({ tab: tab || 'home', filter, n: ++seedRef.current });
+  };
   const [sheet, setSheet] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [net, setNet] = useState('loading');      // 'loading' | 'online' | 'offline' — fraîcheur des données (P2, anti-ARCA)
@@ -206,9 +218,9 @@ export default function App() {
 
         {/* Écran actif (fondu + léger glissement à chaque changement d'onglet) */}
         <ScreenFade tabKey={tab}>
-          {tab === 'home' && <Home ed={ed} onOpen={openItem} feed={date === latestDate() ? getFeed() : []} triage={date === latestDate() ? getTriage() : []} onOpenEvent={openEvent} onRefresh={refresh} refreshing={net === 'loading'} />}
-          {tab === 'axes' && <Axes ed={ed} onOpen={openItem} triage={date === latestDate() ? getTriage() : []} onOpenEvent={openEvent} />}
-          {tab === 'map' && <MapScreen ed={ed} onOpen={openItem} />}
+          {tab === 'home' && <Home ed={ed} onOpen={openItem} feed={date === latestDate() ? getFeed() : []} triage={date === latestDate() ? getTriage() : []} onOpenEvent={openEvent} onRefresh={refresh} refreshing={net === 'loading'} seed={navSeed && navSeed.tab === 'home' ? navSeed : null} onSeedApplied={() => setNavSeed(null)} />}
+          {tab === 'axes' && <Axes ed={ed} onOpen={openItem} triage={date === latestDate() ? getTriage() : []} onOpenEvent={openEvent} seed={navSeed && navSeed.tab === 'axes' ? navSeed : null} onSeedApplied={() => setNavSeed(null)} />}
+          {tab === 'map' && <MapScreen ed={ed} onOpen={openItem} seed={navSeed && navSeed.tab === 'map' ? navSeed : null} onSeedApplied={() => setNavSeed(null)} />}
           {tab === 'stats' && <Stats />}
           {tab === 'favoris' && <Favoris favs={favs} onOpen={openFav} onToggleFav={toggleFav} onSearch={() => setSearchOpen(true)} />}
         </ScreenFade>
@@ -220,14 +232,7 @@ export default function App() {
           résultat s'ouvre (la modale Détail se pose PAR-DESSUS, déclarée après → au retour on retrouve la liste). */}
       <Modal visible={searchOpen} animationType="slide" onRequestClose={() => setSearchOpen(false)}>
         <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right', 'bottom']}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SP.md2, paddingVertical: SP.sm2, borderBottomWidth: 1, borderBottomColor: C.border2 }}>
-            <Text style={[TYPE.serifLead, { color: C.ink }]}>Recherche</Text>
-            <TouchableOpacity onPress={() => setSearchOpen(false)} hitSlop={HIT.lg} accessibilityRole="button" accessibilityLabel="Fermer"
-              style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs, minHeight: 44, justifyContent: 'center' }}>
-              <Text style={[TYPE.label, { color: C.cobalt }]}>Fermer</Text>
-              <Icon name="close" size={18} color={C.cobalt} />
-            </TouchableOpacity>
-          </View>
+          <ModalHeader title="Recherche" onClose={() => setSearchOpen(false)} />
           {/* onOpen(code, edDate) = openEvent : ouvre le résultat dans SON édition source, sans fermer la recherche */}
           <Search onOpen={openEvent} />
         </SafeAreaView>
@@ -237,15 +242,8 @@ export default function App() {
           par-dessus la recherche quand on ouvre un résultat (continuité RS1-10). */}
       <Modal visible={!!detail} animationType="slide" onRequestClose={closeDetail}>
         <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right', 'bottom']}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SP.md2, paddingVertical: SP.sm2, borderBottomWidth: 1, borderBottomColor: C.border2 }}>
-            <Text style={[TYPE.caption, { color: C.inkMut }]}>{dEd.label}</Text>
-            <TouchableOpacity onPress={closeDetail} hitSlop={HIT.lg} accessibilityRole="button" accessibilityLabel="Fermer"
-              style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs, minHeight: 44, justifyContent: 'center' }}>
-              <Text style={[TYPE.label, { color: C.cobalt }]}>Fermer</Text>
-              <Icon name="close" size={18} color={C.cobalt} />
-            </TouchableOpacity>
-          </View>
-          {detail ? <Detail ed={dEd} code={detail} onOpen={setDetail} isFav={isFav} onToggleFav={toggleFav} /> : null}
+          <ModalHeader eyebrow={`Dossier · édition du ${dEd.label}`} onClose={closeDetail} />
+          {detail ? <Detail ed={dEd} code={detail} onOpen={setDetail} isFav={isFav} onToggleFav={toggleFav} onGoTo={goTo} /> : null}
         </SafeAreaView>
       </Modal>
 

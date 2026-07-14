@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Text, View, ScrollView, TouchableOpacity } from 'react-native';
 import { C, F, AX, AXT, AX_SHORT, AX_ORDER, RUBRIQUES, tint, pick, SP, TYPE, RADIUS } from '../theme';
 import { Card, RelBadge, Pill, AxisGlyph, PageHeader, SourceLine, Icon } from '../ui';
@@ -17,8 +17,10 @@ const FilterRow = ({ label, children }) => (
 );
 
 // « Décryptage » — navigation par AXE PESTEL, par RUBRIQUE (Culture & Arts, Sports) ou par SECTEUR transversal.
-export default function Axes({ ed, onOpen, triage = [], onOpenEvent }) {
+export default function Axes({ ed, onOpen, triage = [], onOpenEvent, seed, onSeedApplied }) {
   const [filter, setFilter] = useState({ type: 'all' }); // {type:'all'|'axis'|'sector'|'divers', key}
+  // RS1-19/20 : filtre semé par un lien croisé (item→axe/secteur depuis le Détail), consommé une fois.
+  useEffect(() => { if (seed && seed.filter) { setFilter(seed.filter); onSeedApplied && onSeedApplied(); } }, [seed]);
   const sector = filter.type === 'sector' ? SECTORS.find((s) => s.key === filter.key) : null;
 
   const axes = ed.axes

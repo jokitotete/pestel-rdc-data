@@ -1,12 +1,22 @@
 import React from 'react';
 import { Text, View, ScrollView, TouchableOpacity, Share } from 'react-native';
-import { C, F, AX, AXT, tint, pick, relFr, relIsOk, TYPE, SP, RADIUS, HIT } from '../theme';
+import { C, F, AX, AXT, AX_SHORT, tint, pick, relFr, relIsOk, TYPE, SP, RADIUS, HIT } from '../theme';
 import { RelBadge, SrcDot, Icon, Rule, AxisGlyph, StateView } from '../ui';
 import { findItem, sourcesFor, primarySource } from '../store';
+import { itemProvinces } from '../geo';
 import { confirmOpenURL, hostOf, isSafeUrl } from '../safeUrl';
 
+// Puce de LIEN CROISÉ (RS1-19) — mène vers un autre écran (axe filtré, province sur la carte).
+const RelChip = ({ icon, glyphAxis, label, onPress }) => (
+  <TouchableOpacity onPress={onPress} accessibilityRole="button" accessibilityLabel={label} hitSlop={HIT.sm}
+    style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs, minHeight: 36, paddingHorizontal: SP.md, backgroundColor: tint(C.cobalt, 0.1), borderRadius: RADIUS.chip }}>
+    {glyphAxis ? <AxisGlyph axis={glyphAxis} size={14} /> : icon ? <Icon name={icon} size={13} color={C.cobalt} /> : null}
+    <Text style={[TYPE.label, { color: C.cobalt }]}>{label}</Text>
+  </TouchableOpacity>
+);
+
 // Zoom sur un item : texte intégral, analyse, contexte, chronologie, acteurs, perspectives, sources.
-export default function Detail({ ed, code, onOpen, isFav, onToggleFav }) {
+export default function Detail({ ed, code, onOpen, isFav, onToggleFav, onGoTo }) {
   const it = findItem(ed, code);
   // ROB-04 : jamais de feuille MUETTE. Un code introuvable (agenda orphelin, course de synchro) affiche
   // un état vide EXPLICITE au lieu de `return null` (qui laissait une modale sans contenu ni message).
@@ -67,7 +77,9 @@ export default function Detail({ ed, code, onOpen, isFav, onToggleFav }) {
       {it.analysis ? (
         <View style={{ backgroundColor: tint(c, 0.08), borderLeftWidth: 3, borderLeftColor: c, borderRadius: RADIUS.md, padding: SP.md2, marginTop: SP.lg }}>
           <Text style={[TYPE.overline, { color: ct, textTransform: 'uppercase', marginBottom: SP.xs2 }]}>Analyse</Text>
-          <Text style={[TYPE.body, { color: C.inkDim, fontStyle: 'italic' }]}>{it.analysis}</Text>
+          {/* RS1-22 : emphase STRUCTURELLE — voix éditoriale sérif (TYPE.quote) + filet gauche + fond teinté ;
+              plus de fontStyle:'italic' (ignoré par RN sans fonte italique = no-op silencieux). */}
+          <Text style={[TYPE.quote, { color: C.inkDim }]}>{it.analysis}</Text>
         </View>
       ) : null}
 
@@ -137,6 +149,22 @@ export default function Detail({ ed, code, onOpen, isFav, onToggleFav }) {
           ))}
         </Block>
       ) : null}
+
+      {/* RS1-19 : RELATIONS — explorer les liens (axe filtré, provinces citées) en ≤1 tap. Rendu seulement s'il y a un lien. */}
+      {(() => {
+        if (!onGoTo) return null;
+        const provs = itemProvinces(it);
+        const axLabel = pick(AX_SHORT, it.axis, null);
+        if (!axLabel && !provs.length) return null;
+        return (
+          <Block title="Explorer les liens">
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SP.sm }}>
+              {axLabel ? <RelChip glyphAxis={it.axis} label={`Axe · ${axLabel}`} onPress={() => onGoTo({ tab: 'axes', filter: { type: 'axis', key: it.axis } })} /> : null}
+              {provs.map((p) => <RelChip key={p} icon="map-pin" label={p} onPress={() => onGoTo({ tab: 'map', province: p })} />)}
+            </View>
+          </Block>
+        );
+      })()}
     </ScrollView>
   );
 }
