@@ -31,7 +31,7 @@ const okAxis = (a) => isObj(a) && typeof a.key === 'string'                     
 const okSource = (s) => isObj(s)
   && isScalar(s.name) && isScalar(s.type) && isScalar(s.date) && isScalar(s.url);   // name : primarySource.split ; type/date/url rendus/traités
 const okAgenda = (a) => isObj(a) && isScalar(a.when) && isScalar(a.what) && isScalar(a.code);   // Home « À suivre »
-const okListOfObj = (v) => Array.isArray(v) && v.every((x) => isObj(x) && isScalar(x.title));   // feed/triage (title rendu)
+const okListOfObj = (v) => Array.isArray(v) && v.every((x) => isObj(x) && isScalar(x.title) && isScalar(x.axisLabel));   // feed/triage : title + axisLabel rendus
 
 // Stats — feuilles rendues par l'onglet Données (KPI + graphes).
 const okKV = (s) => s == null || (isObj(s) && isScalar(s.n) && isScalar(s.u));                   // src {n,u} (libellé + url)
@@ -54,6 +54,7 @@ export function validateData(raw) {
   const { editions, manifest, stats } = raw;
   if (!isObj(editions) || !Array.isArray(manifest) || manifest.length === 0) return false;
   if (!isObj(stats) || !Array.isArray(stats.themes) || !Array.isArray(stats.trends)) return false;
+  if (!isScalar(stats.updated)) return false;   // RS3.4 : « maj {STATS.updated} » rendu par l'onglet Données
   if (!stats.themes.every(okTheme)) return false;
   if (!stats.trends.every(okTrend)) return false;
 
@@ -70,6 +71,7 @@ export function validateData(raw) {
     if (DANGER.has(k) || !DATE_RE.test(k)) return false;
     const e = editions[k];
     if (!isObj(e) || !Array.isArray(e.axes) || !Array.isArray(e.headline) || !Array.isArray(e.sources)) return false;
+    if (!isScalar(e.label) || !isScalar(e.date)) return false;   // RS3.4 : ed.label rendu (en-tête/bandeaux) ; ed.date → favId
     // RS3.3 : typer EXHAUSTIVEMENT les feuilles rendues/déréférencées — headline & items (code/title/text/
     // analysis/zoom), axes (key/short/name/lens), sources (name/type/date/url), agenda (when/what/code).
     if (!e.headline.every(okItem)) return false;

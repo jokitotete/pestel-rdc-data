@@ -89,6 +89,26 @@ describe('acl.validateData — fail-closed', () => {
     expect(validateData(b)).toBe(true);
   });
 
+  // RS3.4 (itération 4) : feuilles de CONTENEUR oubliées par le typage exhaustif — champs scalaires propres
+  // de l'objet édition (label/date) et de l'objet stats (updated), + feed/triage.axisLabel. Rendus directs.
+  it('RS3.4 : rejette un OBJET dans les feuilles conteneur (edition.label/date, stats.updated, axisLabel)', () => {
+    let b;
+    b = base(); b.editions['2026-07-13'].label = { x: 1 }; expect(validateData(b)).toBe(false);   // {ed.label} en-tête
+    b = base(); b.editions['2026-07-13'].date = { x: 1 }; expect(validateData(b)).toBe(false);    // ed.date -> favId
+    b = base(); b.stats.updated = { x: 1 }; expect(validateData(b)).toBe(false);                  // {STATS.updated} onglet Données
+    b = base(); b.feed = [{ title: 'n', url: 'https://a.cd/x', axisLabel: { x: 1 } }]; expect(validateData(b)).toBe(false);   // {f.axisLabel} Home
+    b = base(); b.triage = [{ title: 'n', url: 'https://a.cd/x', axisLabel: { x: 1 } }]; expect(validateData(b)).toBe(false);
+  });
+
+  it('RS3.4 : accepte les feuilles conteneur scalaires (label/date/updated/axisLabel string)', () => {
+    const b = base();
+    b.editions['2026-07-13'].label = '13 juillet 2026';
+    b.editions['2026-07-13'].date = '2026-07-13';
+    b.stats.updated = '14/07/2026';
+    b.feed = [{ title: 'News', url: 'https://a.cd/x', axisLabel: 'Social' }];
+    expect(validateData(b)).toBe(true);
+  });
+
   it('rejette la pollution de prototype (chemin réel JSON.parse)', () => {
     const evil = JSON.parse(
       '{"editions":{"__proto__":{"axes":[],"headline":[],"sources":[]},"2026-07-13":{"axes":[],"headline":[],"sources":[]}},"manifest":[{"date":"2026-07-13","label":"x"}],"stats":{"themes":[],"trends":[]}}'
