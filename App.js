@@ -155,6 +155,10 @@ export default function App() {
   if (!loaded) return null;   // polices en cours : le splash natif reste affiché (preventAutoHide)
   const ed = getEdition(date) || getEdition(latestDate());   // RS3 : jamais null au rendu (cf. effet de re-calage)
   const dEd = detailEd || ed;   // l'item du détail peut venir d'une autre édition (Event)
+  // RS3.2 : ouvrir un item CAPTURE son édition d'origine (comme Favoris/Events) — la fiche survit à un
+  // changement d'édition en arrière-plan (synchro/sélecteur) sans basculer silencieusement sur un autre
+  // article (codes non uniques entre éditions). La référence objet reste valide même si EDITIONS purge la clé.
+  const openItem = (code) => { setDetailEd(ed); setDetail(code); };
 
   return (
     <ErrorBoundary>
@@ -202,9 +206,9 @@ export default function App() {
 
         {/* Écran actif (fondu + léger glissement à chaque changement d'onglet) */}
         <ScreenFade tabKey={tab}>
-          {tab === 'home' && <Home ed={ed} onOpen={setDetail} feed={date === latestDate() ? getFeed() : []} triage={date === latestDate() ? getTriage() : []} onOpenEvent={openEvent} onRefresh={refresh} refreshing={net === 'loading'} />}
-          {tab === 'axes' && <Axes ed={ed} onOpen={setDetail} triage={date === latestDate() ? getTriage() : []} onOpenEvent={openEvent} />}
-          {tab === 'map' && <MapScreen ed={ed} onOpen={setDetail} />}
+          {tab === 'home' && <Home ed={ed} onOpen={openItem} feed={date === latestDate() ? getFeed() : []} triage={date === latestDate() ? getTriage() : []} onOpenEvent={openEvent} onRefresh={refresh} refreshing={net === 'loading'} />}
+          {tab === 'axes' && <Axes ed={ed} onOpen={openItem} triage={date === latestDate() ? getTriage() : []} onOpenEvent={openEvent} />}
+          {tab === 'map' && <MapScreen ed={ed} onOpen={openItem} />}
           {tab === 'stats' && <Stats />}
           {tab === 'favoris' && <Favoris favs={favs} onOpen={openFav} onToggleFav={toggleFav} />}
         </ScreenFade>
@@ -238,7 +242,7 @@ export default function App() {
               <Icon name="close" size={18} color={C.cobalt} />
             </TouchableOpacity>
           </View>
-          <Search ed={ed} onOpen={(code) => { setSearchOpen(false); setDetail(code); }} />
+          <Search ed={ed} onOpen={(code) => { setSearchOpen(false); openItem(code); }} />
         </SafeAreaView>
       </Modal>
 

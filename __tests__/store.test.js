@@ -1,4 +1,4 @@
-import { parseWhen, upcomingEvents, sectorItems, findItem, getEdition, latestDate, allItems } from '../src/store';
+import { parseWhen, upcomingEvents, sectorItems, findItem, getEdition, latestDate, allItems, primarySource } from '../src/store';
 
 describe('store.parseWhen — fuzz', () => {
   it('parse les formats datés réels', () => {
@@ -48,6 +48,28 @@ describe('store.getEdition — anti prototype-pollution (lecture)', () => {
     const d = latestDate();
     expect(getEdition(d)).toBeTruthy();
     expect(getEdition(d).date || d).toBeTruthy();
+  });
+});
+
+// RS3.3 : primarySource ne doit JAMAIS planter sur une source dont name/url ne sont pas des strings
+// (défense en profondeur — l'ACL les type déjà, mais .split sur un objet planterait avant le rendu).
+describe('store.primarySource — coercition défensive', () => {
+  const edWith = (src) => ({ sources: [src], axes: [] });
+  it('ne crash pas et coerce name/url non-string', () => {
+    const it = { sources: [1] };
+    expect(() => primarySource(edWith({ id: 1, name: { x: 1 }, url: { y: 2 } }), it)).not.toThrow();
+    const r = primarySource(edWith({ id: 1, name: { x: 1 }, url: { y: 2 } }), it);
+    expect(r.name).toBe('');       // objet -> string vide (jamais [object Object] ni crash)
+    expect(r.url).toBeNull();      // url non-string -> null
+  });
+  it('extrait l’outlet d’un name string normal', () => {
+    const r = primarySource(edWith({ id: 1, name: 'Actualité.cd — « x »', url: 'https://actualite.cd/a' }), { sources: [1] });
+    expect(r.name).toBe('Actualité.cd');
+    expect(r.host).toBe('actualite.cd');
+  });
+  it('renvoie null si aucune source résolue', () => {
+    expect(primarySource(edWith({ id: 9 }), { sources: [1] })).toBeNull();
+    expect(primarySource({ sources: [] }, { sources: [] })).toBeNull();
   });
 });
 

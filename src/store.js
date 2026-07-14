@@ -49,9 +49,12 @@ export const primarySource = (ed, it) => {
   const ids = it && it.sources;
   const s = (ids && ids.length && ed && ed.sources) ? ed.sources.find((x) => x.id === ids[0]) : null;
   if (!s) return null;
-  const outlet = (s.name || '').split(/\s[—–-]\s|«/)[0].trim();   // « Actualite.cd — « … » » → « Actualite.cd »
-  const host = s.url ? hostOf(s.url).replace(/^www\./, '') : '';
-  return { name: outlet, host, url: s.url || null };
+  // RS3.3 défense en profondeur : coercition stricte en string (s.name/s.url viennent du JSON distant ;
+  // l'ACL les type déjà, mais un .split sur un objet planterait AVANT le rendu — jamais de crash logique).
+  const outlet = (typeof s.name === 'string' ? s.name : '').split(/\s[—–-]\s|«/)[0].trim();
+  const url = typeof s.url === 'string' ? s.url : null;
+  const host = url ? hostOf(url).replace(/^www\./, '') : '';
+  return { name: outlet, host, url };
 };
 
 // Lentille sectorielle (P1) — items de l'édition correspondant FORTEMENT au secteur (titre/analyse).

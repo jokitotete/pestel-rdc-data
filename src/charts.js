@@ -34,6 +34,8 @@ const Lbl = ({ x, y, w = 60, children, style }) => (
 // ---- Barres verticales ----
 function BarChart({ data, unit = '', width, height = 150 }) {
   const pad = { l: 8, r: 8, t: 22, b: 26 };
+  data = Array.isArray(data) ? data.filter((d) => d && typeof d === 'object') : [];   // RS3.3 : défensif
+  if (!data.length) return null;
   const max = Math.max(...data.map((d) => Number(d.value))) * 1.12 || 1;
   const bw = (width - pad.l - pad.r) / data.length;
   const barW = Math.min(bw * 0.55, 54);
@@ -66,6 +68,9 @@ function BarChart({ data, unit = '', width, height = 150 }) {
 // ---- Courbes (multi-séries) ----
 function LineChart({ labels, series, width, height = 160 }) {
   const pad = { l: 10, r: 12, t: 16, b: 26 };
+  series = Array.isArray(series) ? series.filter((s) => s && Array.isArray(s.values)) : [];   // RS3.3 : défensif
+  labels = Array.isArray(labels) ? labels : [];
+  if (!series.length || !labels.length) return null;
   const all = series.flatMap((s) => s.values.map(Number));
   const min = Math.min(...all), max = Math.max(...all);
   const span = max - min || 1;
@@ -112,6 +117,8 @@ function LineChart({ labels, series, width, height = 160 }) {
 function DonutChart({ data, centerV, centerL }) {
   const size = 130, r = 52, cx = size / 2, cy = size / 2, sw = 20;
   const circ = 2 * Math.PI * r;
+  data = Array.isArray(data) ? data.filter((d) => d && typeof d === 'object') : [];   // RS3.3 : défensif
+  if (!data.length) return null;
   const total = data.reduce((n, d) => n + Number(d.value), 0) || 1;
   let acc = 0;
   return (

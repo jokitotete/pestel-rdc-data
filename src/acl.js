@@ -6,11 +6,47 @@
 const DANGER = new Set(['__proto__', 'constructor', 'prototype']);
 const isObj = (o) => o !== null && typeof o === 'object' && !Array.isArray(o);
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-// RS_Sec2 : une FEUILLE sûre à rendre comme enfant React — jamais un objet/tableau (qui lève
-// « Objects are not valid as a React child » = DoS distant persistant que l'ErrorBoundary ne guérit pas).
-// Autorise string/number/booléen/absent ; rejette objet et tableau.
+
+// RS3.3 : une FEUILLE sûre — jamais un objet/tableau là où le rendu attend un enfant Text ou le store
+// appelle une méthode de string. Un objet à sa place lève « Objects are not valid as a React child » ou
+// un TypeError (.split/.map) = DoS distant PERSISTANT que l'ErrorBoundary ne guérit pas (le store muté
+// re-crashe à chaque rendu). Autorise string/number/booléen/absent ; rejette objet et tableau.
 const isScalar = (x) => x == null || typeof x !== 'object';
-const okLeaf = (x) => isObj(x) && typeof x.code === 'string' && typeof x.title === 'string' && isScalar(x.text);
+
+// Prédicats de contenu — typent EXHAUSTIVEMENT tout champ RENDU comme enfant React OU sur lequel le
+// store/les écrans/les graphes appellent une méthode. Dérivés du schéma RÉEL (public/pestel-data.json,
+// généré par build_data.js). Sous-valider = laisser un objet crasher au rendu (itérations QA 1→3).
+const okTimelineEntry = (e) => isObj(e) && isScalar(e.d) && isScalar(e.e);          // Detail chrono : {t.d}/{t.e}
+const okZoom = (z) => z == null || (isObj(z)
+  && isScalar(z.context) && isScalar(z.outlook)                                     // Detail : {z.context}/{z.outlook}
+  && (z.timeline == null || (Array.isArray(z.timeline) && z.timeline.every(okTimelineEntry))));
+  // z.actors : Detail le rend DÉFENSIVEMENT (string | tableau | objets {name,role}) → non contraint ici.
+const okItem = (x) => isObj(x)
+  && typeof x.code === 'string' && typeof x.title === 'string'                      // code = clé de résolution ; title = enfant Text
+  && isScalar(x.text) && isScalar(x.analysis) && isScalar(x.reliability)            // rendus par NewsCard/Detail
+  && okZoom(x.zoom);
+const okAxis = (a) => isObj(a) && typeof a.key === 'string'                         // key = pick(AX,…) + résolution
+  && isScalar(a.name) && isScalar(a.short) && isScalar(a.lens)                      // axisName = short||name ; lens rendus
+  && Array.isArray(a.items) && a.items.every(okItem);
+const okSource = (s) => isObj(s)
+  && isScalar(s.name) && isScalar(s.type) && isScalar(s.date) && isScalar(s.url);   // name : primarySource.split ; type/date/url rendus/traités
+const okAgenda = (a) => isObj(a) && isScalar(a.when) && isScalar(a.what) && isScalar(a.code);   // Home « À suivre »
+const okListOfObj = (v) => Array.isArray(v) && v.every((x) => isObj(x) && isScalar(x.title));   // feed/triage (title rendu)
+
+// Stats — feuilles rendues par l'onglet Données (KPI + graphes).
+const okKV = (s) => s == null || (isObj(s) && isScalar(s.n) && isScalar(s.u));                   // src {n,u} (libellé + url)
+const okIndicator = (i) => isObj(i) && isScalar(i.value) && isScalar(i.label) && isScalar(i.unit) && isScalar(i.note) && okKV(i.src);
+const okTheme = (t) => isObj(t) && typeof t.label === 'string'
+  && (t.indicators == null || (Array.isArray(t.indicators) && t.indicators.every(okIndicator)));
+const okSeries = (s) => isObj(s) && isScalar(s.name) && Array.isArray(s.values);                 // charts fait s.values.map
+const okChartDatum = (d) => isObj(d) && isScalar(d.label) && isScalar(d.value);                  // BarChart/DonutChart : {d.label}
+const okTrend = (tr) => isObj(tr)
+  && isScalar(tr.type) && isScalar(tr.title) && isScalar(tr.note)
+  && isScalar(tr.centerV) && isScalar(tr.centerL) && isScalar(tr.unit)
+  && okKV(tr.src)
+  && (tr.labels == null || (Array.isArray(tr.labels) && tr.labels.every(isScalar)))             // LineChart : {l}
+  && (tr.series == null || (Array.isArray(tr.series) && tr.series.every(okSeries)))
+  && (tr.data == null || (Array.isArray(tr.data) && tr.data.every(okChartDatum)));
 
 // Le payload distant respecte-t-il le contrat ? (formes + types + intégrité). Tout ou rien.
 export function validateData(raw) {
@@ -18,11 +54,6 @@ export function validateData(raw) {
   const { editions, manifest, stats } = raw;
   if (!isObj(editions) || !Array.isArray(manifest) || manifest.length === 0) return false;
   if (!isObj(stats) || !Array.isArray(stats.themes) || !Array.isArray(stats.trends)) return false;
-  // RS_Sec2 : feuilles stats rendues (label/value/unit/note des KPI ; title/note des graphes) = scalaires.
-  const okTheme = (t) => isObj(t) && typeof t.label === 'string'
-    && (t.indicators == null || (Array.isArray(t.indicators)
-      && t.indicators.every((i) => isObj(i) && isScalar(i.value) && isScalar(i.label) && isScalar(i.unit) && isScalar(i.note))));
-  const okTrend = (tr) => isObj(tr) && isScalar(tr.title) && isScalar(tr.note);
   if (!stats.themes.every(okTheme)) return false;
   if (!stats.trends.every(okTrend)) return false;
 
@@ -32,35 +63,29 @@ export function validateData(raw) {
   );
   if (!okManifest) return false;
 
-  // editions : clés = dates ISO (jamais une clé dangereuse) ; valeurs = objets porteurs de axes[]
+  // editions : clés = dates ISO (jamais une clé dangereuse) ; valeurs = objets porteurs de axes[]/headline[]/sources[]
   const keys = Object.keys(editions);
   if (keys.length === 0) return false;
   for (const k of keys) {
     if (DANGER.has(k) || !DATE_RE.test(k)) return false;
     const e = editions[k];
-    // Valider TOUS les champs déréférencés sans garde par le store/les écrans (headline, sources,
-    // axes[].items) : sous-valider ferait passer une donnée qui plante au rendu (pas d'ErrorBoundary).
     if (!isObj(e) || !Array.isArray(e.axes) || !Array.isArray(e.headline) || !Array.isArray(e.sources)) return false;
-    // RS_Sec2 : typer les FEUILLES effectivement RENDUES (code = clé de résolution ; title/text = enfants
-    // Text). Un objet à leur place passait la validation de forme puis crashait au rendu, en boucle.
-    if (!e.headline.every(okLeaf)) return false;
-    if (!e.axes.every((a) => isObj(a) && Array.isArray(a.items) && a.items.every(okLeaf))) return false;
-    if (!e.sources.every(isObj)) return false;
+    // RS3.3 : typer EXHAUSTIVEMENT les feuilles rendues/déréférencées — headline & items (code/title/text/
+    // analysis/zoom), axes (key/short/name/lens), sources (name/type/date/url), agenda (when/what/code).
+    if (!e.headline.every(okItem)) return false;
+    if (!e.axes.every(okAxis)) return false;
+    if (!e.sources.every(okSource)) return false;
+    if (e.agenda != null && !(Array.isArray(e.agenda) && e.agenda.every(okAgenda))) return false;
   }
 
   // Intégrité référentielle : l'édition la plus récente (manifest[0]) DOIT exister dans editions,
-  // sinon latestDate()→getEdition() renvoie undefined → ed.axes plante (écran blanc).
+  // sinon latestDate()→getEdition() renvoie null → fallback, mais on préfère rejeter un contrat cassé.
   if (!Object.prototype.hasOwnProperty.call(editions, manifest[0].date)) return false;
 
-  // `feed` (fil « À traiter » issu de la collecte) est OPTIONNEL. S'il est présent, il doit être un
-  // tableau d'objets (sinon crash au rendu) — fail-closed. La SÛRETÉ de l'URL est revalidée à l'ouverture
-  // (isSafeUrl/confirmOpenURL) : on n'ouvre jamais un lien sur la seule foi de l'ACL.
-  if ('feed' in raw) {
-    if (!Array.isArray(raw.feed) || !raw.feed.every(isObj)) return false;
-  }
-  if ('triage' in raw) {
-    if (!Array.isArray(raw.triage) || !raw.triage.every(isObj)) return false;
-  }
+  // `feed`/`triage` (fils de collecte) OPTIONNELS. Présents → tableaux d'objets à title scalaire (rendu).
+  // La SÛRETÉ de l'URL est revalidée à l'ouverture (isSafeUrl/confirmOpenURL) : jamais sur la seule foi de l'ACL.
+  if ('feed' in raw && !okListOfObj(raw.feed)) return false;
+  if ('triage' in raw && !okListOfObj(raw.triage)) return false;
   return true;
 }
 

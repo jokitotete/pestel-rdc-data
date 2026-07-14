@@ -2,7 +2,7 @@ import { validateData, safeAssign } from '../src/acl';
 import { EDITIONS, MANIFEST, STATS } from '../src/data/pestel';
 
 const base = () => ({
-  editions: { '2026-07-13': { axes: [{ items: [] }], headline: [], sources: [] } },
+  editions: { '2026-07-13': { axes: [{ key: 'P', items: [] }], headline: [], sources: [] } },
   manifest: [{ date: '2026-07-13', label: '13 juillet 2026' }],
   stats: { themes: [], trends: [] },
 });
@@ -36,7 +36,7 @@ describe('acl.validateData — fail-closed', () => {
   it('RS_Sec2 : rejette un champ-feuille de type OBJET (anti crash de rendu)', () => {
     let b;
     b = base(); b.editions['2026-07-13'].headline = [{ code: 'P1', title: { x: 1 } }]; expect(validateData(b)).toBe(false);
-    b = base(); b.editions['2026-07-13'].axes = [{ items: [{ code: 'P1', title: { x: 1 } }] }]; expect(validateData(b)).toBe(false);
+    b = base(); b.editions['2026-07-13'].axes = [{ key: 'P', items: [{ code: 'P1', title: { x: 1 } }] }]; expect(validateData(b)).toBe(false);
     b = base(); b.editions['2026-07-13'].headline = [{ code: 'P1', title: 'ok', text: { y: 2 } }]; expect(validateData(b)).toBe(false);
     b = base(); b.editions['2026-07-13'].headline = [{ code: 5, title: 'ok' }]; expect(validateData(b)).toBe(false);   // code non-string
     b = base(); b.editions['2026-07-13'].sources = [42]; expect(validateData(b)).toBe(false);                          // source non-objet
@@ -47,10 +47,45 @@ describe('acl.validateData — fail-closed', () => {
   it('RS_Sec2 : accepte les feuilles SCALAIRES valides (string/number)', () => {
     const b = base();
     b.editions['2026-07-13'].headline = [{ code: 'P1', title: 'Titre', text: 'corps' }];
-    b.editions['2026-07-13'].axes = [{ items: [{ code: 'E2', title: 'x' }] }];
+    b.editions['2026-07-13'].axes = [{ key: 'E', items: [{ code: 'E2', title: 'x' }] }];
     b.editions['2026-07-13'].sources = [{ id: 's1', name: 'A' }];
     b.stats.themes = [{ label: 'Banques', indicators: [{ value: '13,5', label: 'Taux', unit: '%' }] }];
     b.stats.trends = [{ title: 'Croissance', note: 'x' }];
+    expect(validateData(b)).toBe(true);
+  });
+
+  // RS3.3 (itération 3) : typage EXHAUSTIF des feuilles — toutes les feuilles rendues/déréférencées, pas
+  // seulement title/value. Enumération dérivée du schéma réel (source name/type/date, zoom, axis, agenda,
+  // trend labels/series/data, indicator.src). Sans quoi un objet à leur place crashe au rendu (DoS distant).
+  it('RS3.3 : rejette un OBJET dans n’importe quelle feuille rendue/déréférencée', () => {
+    let b;
+    b = base(); b.editions['2026-07-13'].sources = [{ id: 1, name: { x: 1 } }]; expect(validateData(b)).toBe(false);          // source.name (primarySource.split)
+    b = base(); b.editions['2026-07-13'].sources = [{ id: 1, name: 'A', type: { x: 1 } }]; expect(validateData(b)).toBe(false); // source.type
+    b = base(); b.editions['2026-07-13'].axes = [{ key: 'P', name: { x: 1 }, items: [] }]; expect(validateData(b)).toBe(false); // axis.name
+    b = base(); b.editions['2026-07-13'].axes = [{ key: 'P', lens: { x: 1 }, items: [] }]; expect(validateData(b)).toBe(false); // axis.lens
+    b = base(); b.editions['2026-07-13'].axes = [{ key: 'P', items: [{ code: 'P1', title: 't', analysis: { x: 1 } }] }]; expect(validateData(b)).toBe(false);         // item.analysis
+    b = base(); b.editions['2026-07-13'].axes = [{ key: 'P', items: [{ code: 'P1', title: 't', zoom: { context: { x: 1 } } }] }]; expect(validateData(b)).toBe(false); // zoom.context
+    b = base(); b.editions['2026-07-13'].axes = [{ key: 'P', items: [{ code: 'P1', title: 't', zoom: { timeline: [{ d: { x: 1 }, e: 'e' }] } }] }]; expect(validateData(b)).toBe(false); // timeline.d
+    b = base(); b.editions['2026-07-13'].agenda = [{ when: '5/7', what: { x: 1 } }]; expect(validateData(b)).toBe(false);      // agenda.what
+    b = base(); b.stats.trends = [{ title: 't', labels: [{ x: 1 }] }]; expect(validateData(b)).toBe(false);                   // trend.labels
+    b = base(); b.stats.trends = [{ title: 't', series: [{ name: 'x', values: 'nope' }] }]; expect(validateData(b)).toBe(false); // series.values non-array
+    b = base(); b.stats.trends = [{ title: 't', data: [{ value: 1, label: { x: 1 } }] }]; expect(validateData(b)).toBe(false); // chart datum label
+    b = base(); b.stats.themes = [{ label: 'x', indicators: [{ value: '1', src: { n: { x: 1 } } }] }]; expect(validateData(b)).toBe(false); // indicator.src.n
+  });
+
+  it('RS3.3 : accepte un contenu riche VALIDE (zoom, agenda, graphes typés)', () => {
+    const b = base();
+    b.editions['2026-07-13'].axes = [{ key: 'P', name: 'Politique', short: 'Pol', lens: 'analyse', items: [
+      { code: 'P1', title: 'Titre', text: 'corps', analysis: 'a', reliability: 'established',
+        zoom: { context: 'ctx', outlook: 'out', timeline: [{ d: '5/7', e: 'évén.' }], actors: [{ name: 'X', role: 'r' }] } },
+    ] }];
+    b.editions['2026-07-13'].sources = [{ id: 1, name: 'Actualité.cd', type: 'presse', date: '2026-07-10', url: 'https://actualite.cd/x' }];
+    b.editions['2026-07-13'].agenda = [{ when: '8/7', what: 'Marche', code: 'P1' }];
+    b.stats.themes = [{ key: 'bk', label: 'Banques', indicators: [{ value: '13,5', label: 'Taux', unit: '%', note: 'n', src: { n: 'BCC', u: 'https://bcc.cd' } }] }];
+    b.stats.trends = [
+      { id: 't1', theme: 'bk', type: 'line', title: 'Croissance', labels: ['jan', 'fév'], series: [{ name: 'PIB', values: [1, 2] }] },
+      { id: 't2', theme: 'bk', type: 'bar', title: 'Barres', data: [{ label: 'A', value: 3 }] },
+    ];
     expect(validateData(b)).toBe(true);
   });
 
