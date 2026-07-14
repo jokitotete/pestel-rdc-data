@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Text, View, ScrollView, TextInput, TouchableOpacity } from 'react-native';
 import { C, AX, AXT, pick, tint, SP, TYPE, RADIUS, HIT } from '../theme';
-import { Card, RelBadge, Icon, AxisGlyph, SourceLine } from '../ui';
+import { Card, RelBadge, Icon, AxisGlyph, SourceLine, StateView } from '../ui';
 import { searchAll, getEdition, primarySource } from '../store';
 import { loadRecent, pushRecent, clearRecent } from '../prefs';
 
@@ -80,12 +80,7 @@ export default function Search({ onOpen }) {
             {results.length} résultat{results.length > 1 ? 's' : ''} · toutes éditions
           </Text>
           {results.length === 0 ? (
-            <View style={{ alignItems: 'center', paddingTop: SP.huge }}>
-              <Icon name="search" size={30} color={C.inkMut} style={{ marginBottom: SP.sm2 }} />
-              <Text style={[TYPE.bodySm, { color: C.inkMut, textAlign: 'center' }]}>
-                Aucun résultat pour « {q} ».{'\n'}Essayez d'autres mots-clés.
-              </Text>
-            </View>
+            <StateView glyph="search" title={`Aucun résultat pour « ${q} »`} body="Essayez d'autres mots-clés, ou une autre orthographe." />
           ) : null}
           {results.map((it) => {
             const c = pick(AX, it.axis, C.cobalt);   // RS3 : prototype-safe (it.axis vient de l'édition NON FIABLE)

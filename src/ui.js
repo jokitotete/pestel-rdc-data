@@ -1,8 +1,21 @@
-import React from 'react';
-import { Text, View, TouchableOpacity, Platform } from 'react-native';
+import React, { useRef, useEffect, useState } from 'react';
+import { Text, View, TouchableOpacity, Platform, Animated, AccessibilityInfo } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Glyph, AxisGlyph, SectorGlyph } from './icons';
-import { C, F, AX, AXT, REL, RELT, TOUCH, tint, pick, relFr, relIsOk, HERO_GRAD, SP, TYPE, RADIUS, HIT, ELEV } from './theme';
+import { C, F, AX, AXT, REL, RELT, TOUCH, tint, pick, relFr, relIsOk, HERO_GRAD, SP, TYPE, RADIUS, HIT, ELEV, STATE, DUR } from './theme';
+
+// RS1-16 — préférence système « réduire les animations » (WCAG 2.3.3). Hook partagé : les composants animés
+// (ScreenFade, Welcome, press-scale) le lisent et suppriment translate/scale si activé.
+export function useReduceMotion() {
+  const [reduce, setReduce] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    AccessibilityInfo.isReduceMotionEnabled().then((v) => alive && setReduce(!!v)).catch(() => {});
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', (v) => setReduce(!!v));
+    return () => { alive = false; if (sub && sub.remove) sub.remove(); };
+  }, []);
+  return reduce;
+}
 export { Glyph, AxisGlyph, SectorGlyph } from './icons';
 
 // En-tête de PAGE unifié — bandeau cobalt (dégradé de marque) présent sur TOUS les écrans (cohérence).
@@ -176,3 +189,46 @@ export const Pill = ({ label, active, onPress, axis, sectorKey, icon }) => {
 
 // Trait fin de séparation.
 export const Rule = ({ style }) => <View style={[{ height: 1, backgroundColor: C.border2 }, style]} />;
+
+// RS1-17 — LANGAGE D'ÉTAT unifié : un seul composant pour tous les états vides/erreur (Home/Search/Favoris/
+// Map/Detail/Triage + ErrorBoundary), dans la langue duotone (glyphe cobalt dans un cercle teinté) + jetons.
+export const StateView = ({ glyph = 'triage', title, body, action, tone = C.inkMut }) => (
+  <View style={{ alignItems: 'center', paddingVertical: SP.xxxl, paddingHorizontal: SP.lg }}>
+    <View style={{ width: 56, height: 56, borderRadius: RADIUS.half(56), backgroundColor: tint(C.cobalt, 0.1), alignItems: 'center', justifyContent: 'center', marginBottom: SP.md }}>
+      <Glyph name={glyph} size={26} color={C.cobalt} />
+    </View>
+    {title ? <Text style={[TYPE.cardTitle, { color: C.ink, textAlign: 'center', marginBottom: SP.xs }]}>{title}</Text> : null}
+    {body ? <Text style={[TYPE.bodySm, { color: tone, textAlign: 'center' }]}>{body}</Text> : null}
+    {action ? (
+      <TouchableOpacity onPress={action.onPress} hitSlop={HIT.md} accessibilityRole="button" accessibilityLabel={action.label}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm, minHeight: 44, paddingHorizontal: SP.lg, backgroundColor: C.actionFill, borderRadius: RADIUS.chip, marginTop: SP.lg }}>
+        {action.icon ? <Glyph name={action.icon} size={16} color={C.onAction} /> : null}
+        <Text style={[TYPE.label, { color: C.onAction }]}>{action.label}</Text>
+      </TouchableOpacity>
+    ) : null}
+  </View>
+);
+
+// RS1-17 — SQUELETTES de chargement (perception de vitesse au cold start). Pulsation respectant reduce-motion.
+export const Skeleton = ({ w = '100%', h = 14, style }) => {
+  const op = useRef(new Animated.Value(0.4)).current;
+  const reduce = useReduceMotion();
+  useEffect(() => {
+    if (reduce) { op.setValue(0.6); return undefined; }
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(op, { toValue: 0.9, duration: DUR.pulse, useNativeDriver: true }),
+      Animated.timing(op, { toValue: 0.4, duration: DUR.pulse, useNativeDriver: true }),
+    ]));
+    loop.start();
+    return () => loop.stop();
+  }, [reduce]);
+  return <Animated.View style={[{ width: w, height: h, borderRadius: RADIUS.sm, backgroundColor: C.border2, opacity: op }, style]} />;
+};
+export const SkeletonCard = () => (
+  <View style={{ backgroundColor: C.panel, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: C.border, padding: SP.lg, marginBottom: SP.md }}>
+    <Skeleton w={90} h={12} style={{ marginBottom: SP.md }} />
+    <Skeleton h={16} style={{ marginBottom: SP.sm }} />
+    <Skeleton w="70%" h={16} style={{ marginBottom: SP.md }} />
+    <Skeleton w={120} h={10} />
+  </View>
+);

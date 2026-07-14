@@ -71,7 +71,7 @@ function BarChart({ data, unit = '', width, height = 150 }) {
 
 // ---- Courbes (multi-séries) ----
 function LineChart({ labels, series, width, height = 160 }) {
-  const pad = { l: 10, r: 12, t: 16, b: 26 };
+  const pad = { l: 40, r: 12, t: 16, b: 26 };   // marge gauche élargie pour les VALEURS de l'axe Y (ordonnées)
   series = Array.isArray(series) ? series.filter((s) => s && Array.isArray(s.values)) : [];   // RS3.3 : défensif
   labels = Array.isArray(labels) ? labels : [];
   if (!series.length || !labels.length) return null;
@@ -81,11 +81,12 @@ function LineChart({ labels, series, width, height = 160 }) {
   const n = labels.length;
   const x = (i) => pad.l + (n === 1 ? 0.5 : i / (n - 1)) * (width - pad.l - pad.r);
   const y = (v) => pad.t + (1 - (Number(v) - min) / span) * (height - pad.t - pad.b);
+  const gridY = (t) => pad.t + t * (height - pad.t - pad.b);
   return (
     <View style={{ width, height }}>
       <Svg width={width} height={height} style={{ position: 'absolute' }}>
         {[0, 0.5, 1].map((t, i) => (
-          <Line key={i} x1={pad.l} y1={pad.t + t * (height - pad.t - pad.b)} x2={width - pad.r} y2={pad.t + t * (height - pad.t - pad.b)} stroke={C.border2} strokeWidth={1} />
+          <Line key={i} x1={pad.l} y1={gridY(t)} x2={width - pad.r} y2={gridY(t)} stroke={C.border2} strokeWidth={1} />
         ))}
         {series.map((s, si) => {
           const col = resolveColor(s.color, palette()[si % 8]);
@@ -98,6 +99,14 @@ function LineChart({ labels, series, width, height = 160 }) {
           );
         })}
       </Svg>
+      {/* Valeurs de l'axe Y (ordonnées) — max en haut, milieu, min en bas — alignées sur les 3 lignes de grille.
+          NB user : la courbe n'affichait aucune échelle Y ; on la rend lisible. Text RN (SVG Text invisible). */}
+      {[0, 0.5, 1].map((t, i) => (
+        <Text key={`y${i}`} numberOfLines={1}
+          style={[TYPE.caption, { position: 'absolute', left: 0, top: gridY(t) - 7, width: pad.l - 6, textAlign: 'right', color: C.inkMut }]}>
+          {fmtNum(max - t * span)}
+        </Text>
+      ))}
       {labels.map((l, i) => (
         (i === 0 || i === n - 1 || n <= 4)
           ? <Lbl key={i} x={x(i)} y={height - 14} w={72}>{l}</Lbl>

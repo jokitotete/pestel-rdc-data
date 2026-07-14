@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, View, ScrollView, TouchableOpacity, Share } from 'react-native';
 import { C, F, AX, AXT, tint, pick, relFr, relIsOk, TYPE, SP, RADIUS, HIT } from '../theme';
-import { RelBadge, SrcDot, Icon, Rule, AxisGlyph } from '../ui';
+import { RelBadge, SrcDot, Icon, Rule, AxisGlyph, StateView } from '../ui';
 import { findItem, sourcesFor, primarySource } from '../store';
 import { confirmOpenURL, hostOf, isSafeUrl } from '../safeUrl';
 
@@ -11,12 +11,9 @@ export default function Detail({ ed, code, onOpen, isFav, onToggleFav }) {
   // ROB-04 : jamais de feuille MUETTE. Un code introuvable (agenda orphelin, course de synchro) affiche
   // un état vide EXPLICITE au lieu de `return null` (qui laissait une modale sans contenu ni message).
   if (!it) return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: SP.xxxl }}>
-      <Icon name="triage" size={30} color={C.inkMut} style={{ marginBottom: SP.sm2 }} />
-      <Text style={[TYPE.cardTitle, { color: C.ink, textAlign: 'center', marginBottom: SP.xs }]}>Dossier indisponible</Text>
-      <Text style={[TYPE.bodySm, { color: C.inkMut, textAlign: 'center' }]}>
-        Cet élément n'existe pas (ou plus) dans l'édition affichée. Il a pu changer lors d'une mise à jour.
-      </Text>
+    <View style={{ flex: 1, justifyContent: 'center' }}>
+      <StateView glyph="triage" title="Dossier indisponible"
+        body="Cet élément n'existe pas (ou plus) dans l'édition affichée. Il a pu changer lors d'une mise à jour." />
     </View>
   );
   const c = pick(AX, it.axis, C.cobalt);   // graphique (bordure/tint/point) — RS3 : prototype-safe

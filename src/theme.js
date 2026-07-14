@@ -24,6 +24,7 @@ export const LIGHT = {
   onHero: '#ffffff', onHeroDim: 'rgba(255,255,255,0.75)',   // texte sur bandeau/splash cobalt (blanc ≥8:1)
   scrim: 'rgba(20,25,40,0.35)',                             // voile modale (EditionSheet)
   shadow: '#1a2740',                                        // couleur d'ombre (ELEV) — jadis en dur dans ui.js
+  press: 'rgba(20,30,60,0.06)',                             // RS1-15 : voile d'état PRESSÉ (feedback tactile)
 };
 export const DARK = {
   bg: '#0a0e15', bg2: '#0f1620', panel: '#121a26', panel2: '#0f1620', elev: '#17212f',
@@ -38,7 +39,11 @@ export const DARK = {
   mapNeutral: '#28313f', mapStroke: '#0a0e15',
   onHero: '#ffffff', onHeroDim: 'rgba(255,255,255,0.75)',   // le bandeau HERO_GRAD est fixe (sombre) → blanc dans les 2 thèmes
   scrim: 'rgba(0,0,0,0.5)', shadow: '#000000',
+  press: 'rgba(255,255,255,0.08)',
 };
+
+// RS1-15 : jetons d'ÉTAT partagés (feedback/erreurs/focus, Bastien & Scapin + WCAG 2.4.7).
+export const STATE = { disabledOpacity: 0.4, focusWidth: 2, pressScale: 0.98 };
 export const C = { ...LIGHT };                    // palette active (mutée par applyTheme)
 
 // Cible tactile (jeton) — HIG 44 px / WCAG 2.2 AA 2.5.8 ≥ 24 px. Pilote tous les hitSlop (aucun littéral).
@@ -157,7 +162,7 @@ export const SP = {
 export const RADIUS = { xs: 4, sm: 6, md: 10, lg: 16, chip: 22, dock: 24, pill: 999, half: (s) => s / 2 };
 
 // ── MOTION — durées (ms) + courbes. Réutilisées par ScreenFade / Welcome / micro-interactions.
-export const DUR = { instant: 0, fast: 120, base: 230, slow: 320, splashIn: 480, splashLogo: 520 };
+export const DUR = { instant: 0, fast: 120, base: 230, slow: 320, splashIn: 480, splashLogo: 520, pulse: 700 };
 export const EASE = { standard: Easing.out(Easing.cubic), inOut: Easing.inOut(Easing.ease) };
 
 // ── CIBLES TACTILES (hitSlop) — dérivées de TOUCH.min. Plus aucun hitSlop littéral.

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Text, View, ScrollView, TouchableOpacity } from 'react-native';
-import { C, TYPE, SP, RADIUS, HIT, AX_SHORT, AX_ORDER, RUBRIQUES } from '../theme';
-import { Pill, NewsCard, PageHeader, Icon } from '../ui';
+import { Text, View, ScrollView } from 'react-native';
+import { C, TYPE, SP, AX_SHORT, AX_ORDER, RUBRIQUES } from '../theme';
+import { Pill, NewsCard, PageHeader, StateView } from '../ui';
 import { SECTORS, itemInSector } from '../sectors';
 
 // Groupe de filtres étiqueté — IDENTIQUE à « À la une » / « Axes » (cohérence demandée par l'user).
@@ -32,20 +32,10 @@ export default function Favoris({ favs = [], onOpen, onToggleFav, onSearch }) {
       <PageHeader eyebrow="Vos étoiles" title="Favoris" subtitle="vos articles étoilés, jour après jour" />
 
       {favs.length === 0 ? (
-        <View style={{ alignItems: 'center', paddingTop: SP.huge }}>
-          <Icon name="star" size={34} color={C.inkMut} style={{ marginBottom: SP.md }} />
-          <Text style={[TYPE.bodySm, { color: C.inkMut, textAlign: 'center', marginBottom: SP.xl }]}>
-            Aucun favori pour l’instant.{'\n'}Touchez l’étoile d’un article pour l’ajouter — il restera ici, quel que soit le jour.
-          </Text>
-          {/* RS1-11 : point d'entrée LIBELLÉ vers la recherche multi-éditions (au-delà de la loupe d'en-tête). */}
-          {onSearch ? (
-            <TouchableOpacity onPress={onSearch} hitSlop={HIT.md} accessibilityRole="button" accessibilityLabel="Rechercher dans les éditions"
-              style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm, minHeight: 44, paddingHorizontal: SP.lg, backgroundColor: C.actionFill, borderRadius: RADIUS.chip }}>
-              <Icon name="search" size={16} color={C.onAction} />
-              <Text style={[TYPE.label, { color: C.onAction }]}>Rechercher dans les éditions</Text>
-            </TouchableOpacity>
-          ) : null}
-        </View>
+        // RS1-17 : état vide unifié (StateView) ; RS1-11 : action LIBELLÉE vers la recherche multi-éditions.
+        <StateView glyph="star" title="Aucun favori pour l’instant"
+          body="Touchez l’étoile d’un article pour l’ajouter — il restera ici, quel que soit le jour."
+          action={onSearch ? { label: 'Rechercher dans les éditions', icon: 'search', onPress: onSearch } : null} />
       ) : (
         <>
           <FilterRow label="AXES PESTEL">

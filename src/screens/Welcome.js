@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Text, View, Image, Animated, StyleSheet, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SLOGAN, SP, RADIUS, DUR, EASE, SPLASH, SPLASH_TYPE } from '../theme';
+import { useReduceMotion } from '../ui';
 
 // Durée minimale garantie de l'écran d'accueil (« bande annonce »). RS3 : ramenée de 9 s à 4 s — 9 s à CHAQUE
 // lancement (l'écran revient toujours) lisait « appli figée » ; 4 s reste au-dessus du plancher RS1 « ≥ 3 s »
@@ -21,6 +22,7 @@ export default function Welcome({ onDone, onLayout }) {
   const bar = useRef(new Animated.Value(0)).current;      // barre de progression (0 → 1) sur ~3 s
   const fade = useRef(new Animated.Value(1)).current;      // fondu de sortie de tout l'écran
   const doneRef = useRef(false);
+  const reduce = useReduceMotion();   // RS1-16 : respecte « réduire les animations »
   // RS1 : splash SKIPPABLE (contrôle explicite) — un tap lance le fondu de sortie tout de suite, sans attendre les 9 s.
   const skip = () => {
     if (doneRef.current) return;
@@ -29,22 +31,31 @@ export default function Welcome({ onDone, onLayout }) {
   };
 
   useEffect(() => {
-    Animated.sequence([
+    if (reduce) {
+      // Reduce-motion : ni scale ni translate — apparition par simple opacité (plancher MIN_MS conservé).
+      logoSc.setValue(1); textTy.setValue(0);
       Animated.parallel([
-        Animated.timing(logoOp, { toValue: 1, duration: DUR.splashLogo, easing: EASE.standard, useNativeDriver: true }),
-        Animated.spring(logoSc, { toValue: 1, friction: 6, tension: 60, useNativeDriver: true }),
-      ]),
-      Animated.parallel([
-        Animated.timing(textOp, { toValue: 1, duration: DUR.splashIn, useNativeDriver: true }),
-        Animated.timing(textTy, { toValue: 0, duration: DUR.splashIn, easing: EASE.standard, useNativeDriver: true }),
-      ]),
-    ]).start();
+        Animated.timing(logoOp, { toValue: 1, duration: DUR.slow, useNativeDriver: true }),
+        Animated.timing(textOp, { toValue: 1, duration: DUR.slow, useNativeDriver: true }),
+      ]).start();
+    } else {
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(logoOp, { toValue: 1, duration: DUR.splashLogo, easing: EASE.standard, useNativeDriver: true }),
+          Animated.spring(logoSc, { toValue: 1, friction: 6, tension: 60, useNativeDriver: true }),
+        ]),
+        Animated.parallel([
+          Animated.timing(textOp, { toValue: 1, duration: DUR.splashIn, useNativeDriver: true }),
+          Animated.timing(textTy, { toValue: 0, duration: DUR.splashIn, easing: EASE.standard, useNativeDriver: true }),
+        ]),
+      ]).start();
+    }
     // Barre de progression synchronisée sur la durée minimale (rythme « bande annonce »).
     Animated.timing(bar, { toValue: 1, duration: MIN_MS - 500, easing: EASE.inOut, useNativeDriver: false }).start();
 
     const t = setTimeout(skip, MIN_MS);
     return () => clearTimeout(t);
-  }, []);
+  }, [reduce]);
 
   return (
     <Animated.View onLayout={onLayout} style={[StyleSheet.absoluteFill, { opacity: fade, zIndex: 999 }]}>

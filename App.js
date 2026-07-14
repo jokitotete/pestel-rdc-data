@@ -9,7 +9,7 @@ import { IBMPlexSans_400Regular, IBMPlexSans_500Medium, IBMPlexSans_600SemiBold,
 import { IBMPlexMono_400Regular, IBMPlexMono_500Medium, IBMPlexMono_600SemiBold } from '@expo-google-fonts/ibm-plex-mono';
 
 import { C, F, applyTheme, tint, SP, TYPE, RADIUS, DUR, HIT } from './src/theme';
-import { Icon, shadow } from './src/ui';
+import { Icon, shadow, useReduceMotion } from './src/ui';
 import { getEdition, findItem, latestDate, editionsList, applyRemote, getFeed, getTriage } from './src/store';
 import { fetchRemoteData } from './src/remote';
 import { confirmOpenURL, isSafeUrl } from './src/safeUrl';
@@ -304,13 +304,14 @@ function NewEditionBanner({ ed, onDismiss }) {
 function ScreenFade({ tabKey, children }) {
   const op = useRef(new Animated.Value(0)).current;
   const ty = useRef(new Animated.Value(8)).current;
+  const reduce = useReduceMotion();   // RS1-16 : respecte « réduire les animations » (WCAG 2.3.3)
   useEffect(() => {
-    op.setValue(0); ty.setValue(8);
+    op.setValue(0); ty.setValue(reduce ? 0 : 8);   // reduce-motion : pas de glissement, fondu seul
     Animated.parallel([
       Animated.timing(op, { toValue: 1, duration: DUR.base, useNativeDriver: true }),
-      Animated.timing(ty, { toValue: 0, duration: DUR.base, useNativeDriver: true }),
+      Animated.timing(ty, { toValue: 0, duration: reduce ? 0 : DUR.base, useNativeDriver: true }),
     ]).start();
-  }, [tabKey]);
+  }, [tabKey, reduce]);
   return <Animated.View style={{ flex: 1, opacity: op, transform: [{ translateY: ty }] }}>{children}</Animated.View>;
 }
 
