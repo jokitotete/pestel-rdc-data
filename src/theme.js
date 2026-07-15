@@ -180,8 +180,16 @@ export const ELEV = {
 // couleur : `style={[TYPE.body, { color: C.inkDim }]}`. ≤11 rôles couvrent 100 % des textes ; demi-points repliés.
 export const TYPE = {
   display:   { fontFamily: F.displayBold, fontSize: 25,   lineHeight: 30, letterSpacing: 0.2 },   // titre de bandeau (PageHeader)
+  // MARQUE — le logotype n'est PAS du contenu : il porte la graisse 700 (displayBold) qui le distingue
+  // de tout titre éditorial. Même leçon que SPLASH_TYPE : mapper la marque sur un rôle de contenu la dilue.
+  wordmark:  { fontFamily: F.displayBold, fontSize: 18,   lineHeight: 24, letterSpacing: 0 },     // logotype « Ntongo · RDC » (en-tête)
   title:     { fontFamily: F.display,     fontSize: 21,   lineHeight: 26, letterSpacing: 0.2 },   // titre de section
-  serifLead: { fontFamily: F.display,     fontSize: 18,   lineHeight: 26, letterSpacing: 0 },     // titre d'article (Detail)
+  // Titre d'ARTICLE (Detail) : plus gros que `title` À DESSEIN — sur l'écran Detail, le titre du fait est le
+  // héros, les en-têtes de bloc (Contexte/Sources…) lui sont subordonnés. C'est la voix éditoriale du produit.
+  serifLead: { fontFamily: F.display,     fontSize: 22,   lineHeight: 29, letterSpacing: 0 },     // titre d'article (Detail) — UNIQUEMENT
+  // Titre d'OBJET nommé : province, thème, axe, feuille d'édition, en-tête de modale. Distinct de serifLead :
+  // on nomme une entité, on ne porte pas un titre éditorial. (Fusionner les deux avait coûté 4 px au titre d'article.)
+  subtitle:  { fontFamily: F.display,     fontSize: 18,   lineHeight: 26, letterSpacing: 0 },     // titre d'objet
   heading:   { fontFamily: F.bodyBold,    fontSize: 16,   lineHeight: 22, letterSpacing: 0 },     // titre de carte « à la une » (rank)
   cardTitle: { fontFamily: F.bodySemi,    fontSize: 14.5, lineHeight: 20, letterSpacing: 0 },     // titre de carte (sans rank), items de liste
   body:      { fontFamily: F.body,        fontSize: 15,   lineHeight: 23, letterSpacing: 0 },     // corps long (Detail)

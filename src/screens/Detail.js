@@ -159,8 +159,10 @@ export default function Detail({ ed, code, onOpen, isFav, onToggleFav, onGoTo })
         return (
           <Block title="Explorer les liens">
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SP.sm }}>
-              {axLabel ? <RelChip glyphAxis={it.axis} label={`Axe · ${axLabel}`} onPress={() => onGoTo({ tab: 'axes', filter: { type: 'axis', key: it.axis } })} /> : null}
-              {provs.map((p) => <RelChip key={p} icon="map-pin" label={p} onPress={() => onGoTo({ tab: 'map', province: p })} />)}
+              {/* `edition: ed.date` : le lien mène à l'axe/la province DANS L'ÉDITION SOURCE de l'article
+                  (un fait du 3 juillet ouvre la carte du 3 juillet) — sinon on atterrit sur une autre édition. */}
+              {axLabel ? <RelChip glyphAxis={it.axis} label={`Axe · ${axLabel}`} onPress={() => onGoTo({ tab: 'axes', filter: { type: 'axis', key: it.axis }, edition: ed.date })} /> : null}
+              {provs.map((p) => <RelChip key={p} icon="map-pin" label={p} onPress={() => onGoTo({ tab: 'map', province: p, edition: ed.date })} />)}
             </View>
           </Block>
         );

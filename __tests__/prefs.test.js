@@ -47,6 +47,34 @@ describe('prefs.sanitizeFavs — frontière de stockage (fail-closed)', () => {
     expect(sanitizeFavs(many).length).toBe(MAX_FAVS);
   });
 
+  // IF-02 (QA v1.1) — SYMÉTRIE des bornes. `recent` bornait déjà NOMBRE **et** LONGUEUR ; `favs` ne bornait
+  // que le NOMBRE. Or un favori est RENDU (NewsCard) : un titre de plusieurs Mo planté dans le stockage
+  // (terminal compromis / adb) survivait au filtre `typeof string`, puis Yoga devait le mesurer sur le thread
+  // principal → gel de l'écran Favoris. Plafonner le nombre ne protège pas d'UNE chaîne géante.
+  it('IF-02 : tronque les chaînes géantes relues du stockage (anti-DoS de rendu)', () => {
+    const huge = 'x'.repeat(50000);
+    const [f] = sanitizeFavs([{
+      id: huge, code: huge, edDate: huge, axisName: huge, title: huge, text: huge,
+      reliability: huge, source: { name: huge, host: huge, url: 'https://a.cd/x' },
+    }]);
+    expect(f.title.length).toBe(200);
+    expect(f.text.length).toBe(600);
+    expect(f.id.length).toBe(64);
+    expect(f.code.length).toBe(32);
+    expect(f.edDate.length).toBe(16);
+    expect(f.axisName.length).toBe(64);
+    expect(f.reliability.length).toBe(32);
+    expect(f.source.name.length).toBe(120);
+    expect(f.source.host.length).toBe(120);
+  });
+
+  it('IF-02 : ne mutile PAS un favori de taille normale (la borne ne doit pas coûter au cas réel)', () => {
+    const ok = { id: '2026-07-14:P-1', code: 'P-1', edDate: '2026-07-14', axis: 'P', axisName: 'Politique',
+      title: 'Titre normal', text: 'Un texte de longueur ordinaire.', reliability: 'A',
+      source: { name: 'Radio Okapi', host: 'radiookapi.net', url: 'https://radiookapi.net/a' } };
+    expect(sanitizeFavs([ok])[0]).toEqual({ ...ok, source: { ...ok.source } });
+  });
+
   it("RS3 : l'axis est réduit à une liste blanche (jamais une clé de prototype)", () => {
     expect(sanitizeFavs([ok({ axis: 'constructor' })])[0].axis).toBe('?');
     expect(sanitizeFavs([ok({ axis: '__proto__' })])[0].axis).toBe('?');

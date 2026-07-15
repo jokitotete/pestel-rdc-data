@@ -90,7 +90,7 @@ export default function Axes({ ed, onOpen, triage = [], onOpenEvent, seed, onSee
                 <AxisGlyph axis={a.key} size={20} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[TYPE.serifLead, { color: C.ink }]}>{a.short || a.name}</Text>
+                <Text style={[TYPE.subtitle, { color: C.ink }]}>{a.short || a.name}</Text>
                 <Text style={[TYPE.caption, { color: C.inkMut }]}>{a.lens}</Text>
               </View>
               <View style={{ backgroundColor: tint(c, 0.14), borderRadius: RADIUS.chip, paddingHorizontal: SP.sm, paddingVertical: SP.xs }}>

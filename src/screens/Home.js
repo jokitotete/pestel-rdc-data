@@ -185,7 +185,7 @@ export default function Home({ ed, onOpen, feed = [], triage = [], onOpenEvent, 
       })() : null}
 
       {filter.type === 'follow' ? (
-        <FilteredList items={followedItems(ed, follows)} emptyLabel={'Rien de vos sujets suivis dans cette édition.\nSuivez un axe ou un secteur pour peupler « Pour vous ».'} isRubrique={false} onOpen={onOpen} ed={ed} />
+        <FilteredList items={followedItems(ed, follows)} emptyLabel={'Aucun article de vos sujets suivis dans cette édition.'} isRubrique={false} onOpen={onOpen} ed={ed} />
       ) : filter.type === 'divers' ? (
         <DiversList items={triage} />
       ) : isEvents ? (

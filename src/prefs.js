@@ -31,7 +31,12 @@ const KEY_PREFS = 'ntongo.prefs.v1';
 // élément par élément (FAIL-CLOSED : on jette les entrées non conformes au lieu de crasher au rendu),
 // on force les types string, on ne garde l'URL source que si https sûre, on déduplique par id, on PLAFONNE.
 export const MAX_FAVS = 200;
+// Bornes de LONGUEUR des chaînes relues (symétriques à MAX_RECENT_LEN) : un favori est RENDU (NewsCard) →
+// un titre/texte géant planté dans le stockage ferait mesurer un nœud de plusieurs Mo à Yoga = gel de l'écran.
+// Plafonner le NOMBRE (MAX_FAVS) ne suffit pas : il faut aussi plafonner chaque chaîne.
+const MAX_FAV = { id: 64, code: 32, edDate: 16, axisName: 64, title: 200, text: 600, name: 120, host: 120, rel: 32 };
 const isObj = (o) => o && typeof o === 'object' && !Array.isArray(o);
+const cut = (x, n) => (typeof x === 'string' ? x.slice(0, n) : '');
 // RS3 (défense en profondeur) : l'axis ne peut être qu'une clé d'axe/rubrique CONNUE (ou '?') — cela
 // empêche de STOCKER une clé héritée du prototype (`constructor`/`toString`…) qui, même si pick() la rend
 // inoffensive au rendu, n'a rien à faire dans un favori. Liste blanche alignée sur AX_ORDER ∪ RUBRIQUES.
@@ -44,17 +49,17 @@ export function sanitizeFavs(a) {
     if (seen.has(f.id)) continue;
     seen.add(f.id);
     const s = isObj(f.source) ? {
-      name: typeof f.source.name === 'string' ? f.source.name : '',
-      host: typeof f.source.host === 'string' ? f.source.host : '',
-      url: isSafeUrl(f.source.url) ? f.source.url : null,
+      name: cut(f.source.name, MAX_FAV.name),
+      host: cut(f.source.host, MAX_FAV.host),
+      url: isSafeUrl(f.source.url) ? f.source.url : null,   // isSafeUrl borne déjà la forme (https, sans userinfo)
     } : null;
     out.push({
-      id: f.id, edDate: f.edDate, code: f.code,
+      id: cut(f.id, MAX_FAV.id), edDate: cut(f.edDate, MAX_FAV.edDate), code: cut(f.code, MAX_FAV.code),
       axis: ALLOWED_AXES.has(f.axis) ? f.axis : '?',   // liste blanche (jamais une clé de prototype)
-      axisName: typeof f.axisName === 'string' ? f.axisName : '',
-      title: typeof f.title === 'string' ? f.title : '',
-      text: typeof f.text === 'string' ? f.text : '',
-      reliability: typeof f.reliability === 'string' ? f.reliability : undefined,
+      axisName: cut(f.axisName, MAX_FAV.axisName),
+      title: cut(f.title, MAX_FAV.title),
+      text: cut(f.text, MAX_FAV.text),
+      reliability: typeof f.reliability === 'string' ? f.reliability.slice(0, MAX_FAV.rel) : undefined,
       source: s,
     });
     if (out.length >= MAX_FAVS) break;

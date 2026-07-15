@@ -78,7 +78,7 @@ export default function MapScreen({ ed, onOpen, seed, onSeedApplied }) {
         <View style={{ marginTop: SP.gutter }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm, marginBottom: SP.sm2 }}>
             <Icon name="map-pin" size={16} color={C.cobalt} />
-            <Text style={[TYPE.serifLead, { color: C.ink, flex: 1 }]}>{sel}</Text>
+            <Text style={[TYPE.subtitle, { color: C.ink, flex: 1 }]}>{sel}</Text>
             <TouchableOpacity onPress={() => setSel(null)} hitSlop={HIT.lg} accessibilityRole="button" accessibilityLabel="Fermer la province"><Icon name="close" size={18} color={C.inkMut} /></TouchableOpacity>
           </View>
           {selItems.length ? selItems.map((it) => (

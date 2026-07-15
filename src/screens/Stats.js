@@ -37,7 +37,7 @@ export default function Stats() {
             {/* En-tête secteur */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm, marginBottom: SP.md }}>
               <View style={{ width: 7, height: 7, borderRadius: RADIUS.xs, backgroundColor: C.inkMut }} />
-              <Text style={[TYPE.serifLead, { color: C.ink }]}>{t.label}</Text>
+              <Text style={[TYPE.subtitle, { color: C.ink }]}>{t.label}</Text>
             </View>
 
             {/* KPI (indicateurs) */}

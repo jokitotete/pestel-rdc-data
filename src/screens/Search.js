@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Text, View, ScrollView, TextInput, TouchableOpacity } from 'react-native';
-import { C, AX, AXT, pick, tint, SP, TYPE, RADIUS, HIT } from '../theme';
+import { C, AX, AXT, pick, tint, SP, TYPE, RADIUS, HIT, TOUCH } from '../theme';
 import { Card, RelBadge, Icon, AxisGlyph, SourceLine, StateView } from '../ui';
 import { searchAll, getEdition, primarySource } from '../store';
 import { loadRecent, pushRecent, clearRecent } from '../prefs';
@@ -51,13 +51,15 @@ export default function Search({ onOpen }) {
             <View style={{ marginBottom: SP.xl }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SP.md }}>
                 <Text style={[TYPE.overline, { color: C.inkMut, flex: 1 }]}>RECHERCHES RÉCENTES</Text>
-                <TouchableOpacity onPress={() => { clearRecent(); setRecent([]); }} hitSlop={HIT.md} accessibilityRole="button" accessibilityLabel="Effacer les recherches récentes">
+                <TouchableOpacity onPress={() => { clearRecent(); setRecent([]); }} hitSlop={HIT.md}
+                  accessibilityRole="button" accessibilityLabel="Effacer les recherches récentes"
+                  style={{ minHeight: TOUCH.min, justifyContent: 'center', paddingHorizontal: SP.xs }}>
                   <Text style={[TYPE.caption, { color: C.cobalt }]}>Effacer</Text>
                 </TouchableOpacity>
               </View>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SP.sm }}>
                 {recent.map((r) => (
-                  <TouchableOpacity key={r} onPress={() => setQ(r)}
+                  <TouchableOpacity key={r} onPress={() => setQ(r)} hitSlop={HIT.sm}
                     accessibilityRole="button" accessibilityLabel={`Rechercher ${r}`}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs, minHeight: 36, paddingHorizontal: SP.md, backgroundColor: C.panel, borderWidth: 1, borderColor: C.border, borderRadius: RADIUS.chip }}>
                     <Icon name="search" size={13} color={C.inkMut} />

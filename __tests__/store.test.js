@@ -1,4 +1,5 @@
 import { parseWhen, upcomingEvents, sectorItems, findItem, getEdition, latestDate, allItems, primarySource, searchAll, followedItems } from '../src/store';
+import { SECTORS, itemInSector } from '../src/sectors';
 
 describe('store.parseWhen — fuzz', () => {
   it('parse les formats datés réels', () => {
@@ -116,6 +117,31 @@ describe('store.followedItems — Pour vous', () => {
     expect(followedItems(ed, [])).toEqual([]);
     expect(followedItems(ed, null)).toEqual([]);
     expect(followedItems(null, [{ type: 'axis', key: 'P' }])).toEqual([]);
+  });
+
+  // F2 (QA v1.1) — PROMESSE TENUE. « Suivre ce sujet » n'est proposé QUE sous un filtre de secteur (Home.js),
+  // et la liste affichée à cet instant est le match FAIBLE (itemInSector, corps du texte inclus). « Pour vous »
+  // doit donc restituer EXACTEMENT cette liste. L'implémentation initiale utilisait le match FORT
+  // (itemInSectorStrong), réservé à la Lentille qui PROMEUT en tête de Une : l'utilisateur suivait ce qu'il
+  // voyait (N items) et n'en retrouvait qu'un sous-ensemble. Ce test échoue si l'on revient au match fort.
+  it('secteur suivi : rend EXACTEMENT la liste que le filtre montrait au moment du clic (match FAIBLE)', () => {
+    for (const s of SECTORS) {
+      const vu = [];                                     // ce que Home affiche sous le filtre `sector`
+      const seen = new Set();
+      for (const it of allItems(ed)) {
+        if (itemInSector(it, s) && !seen.has(it.code)) { seen.add(it.code); vu.push(it.code); }
+      }
+      expect(followedItems(ed, [{ type: 'sector', key: s.key }]).map((i) => i.code)).toEqual(vu);
+    }
+  });
+
+  // Corollaire : le SUIVI (rappel) est toujours au moins aussi large que la LENTILLE (précision). Ancre la
+  // relation entre les deux prédicats — si quelqu'un les réunifie un jour, ce test le dit.
+  it('le suivi englobe la Lentille (faible ⊇ fort), qui promeut en Une et exige la précision', () => {
+    for (const s of SECTORS) {
+      const suivi = new Set(followedItems(ed, [{ type: 'sector', key: s.key }]).map((i) => i.code));
+      for (const it of sectorItems(ed, s.key)) expect(suivi.has(it.code)).toBe(true);
+    }
   });
 });
 

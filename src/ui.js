@@ -1,8 +1,8 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { Text, View, TouchableOpacity, Platform, Animated, AccessibilityInfo } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Text, View, TouchableOpacity, Platform, AccessibilityInfo } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Glyph, AxisGlyph, SectorGlyph } from './icons';
-import { C, F, AX, AXT, REL, RELT, TOUCH, tint, pick, relFr, relIsOk, HERO_GRAD, SP, TYPE, RADIUS, HIT, ELEV, STATE, DUR } from './theme';
+import { C, F, AX, AXT, REL, RELT, TOUCH, tint, pick, relFr, relIsOk, HERO_GRAD, SP, TYPE, RADIUS, HIT, ELEV, STATE } from './theme';
 
 // RS1-16 — préférence système « réduire les animations » (WCAG 2.3.3). Hook partagé : les composants animés
 // (ScreenFade, Welcome, press-scale) le lisent et suppriment translate/scale si activé.
@@ -196,7 +196,7 @@ export const ModalHeader = ({ eyebrow, title, onClose, closeLabel = 'Fermer' }) 
   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SP.md2, paddingVertical: SP.sm2, borderBottomWidth: 1, borderBottomColor: C.border2 }}>
     <View style={{ flex: 1 }}>
       {eyebrow ? <Text style={[TYPE.caption, { color: C.inkMut }]} numberOfLines={1}>{eyebrow}</Text> : null}
-      {title ? <Text style={[TYPE.serifLead, { color: C.ink }]} numberOfLines={1}>{title}</Text> : null}
+      {title ? <Text style={[TYPE.subtitle, { color: C.ink }]} numberOfLines={1}>{title}</Text> : null}
     </View>
     <TouchableOpacity onPress={onClose} hitSlop={HIT.lg} accessibilityRole="button" accessibilityLabel={closeLabel}
       style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs, minHeight: 44, justifyContent: 'center', paddingLeft: SP.sm }}>
@@ -225,26 +225,11 @@ export const StateView = ({ glyph = 'triage', title, body, action, tone = C.inkM
   </View>
 );
 
-// RS1-17 — SQUELETTES de chargement (perception de vitesse au cold start). Pulsation respectant reduce-motion.
-export const Skeleton = ({ w = '100%', h = 14, style }) => {
-  const op = useRef(new Animated.Value(0.4)).current;
-  const reduce = useReduceMotion();
-  useEffect(() => {
-    if (reduce) { op.setValue(0.6); return undefined; }
-    const loop = Animated.loop(Animated.sequence([
-      Animated.timing(op, { toValue: 0.9, duration: DUR.pulse, useNativeDriver: true }),
-      Animated.timing(op, { toValue: 0.4, duration: DUR.pulse, useNativeDriver: true }),
-    ]));
-    loop.start();
-    return () => loop.stop();
-  }, [reduce]);
-  return <Animated.View style={[{ width: w, height: h, borderRadius: RADIUS.sm, backgroundColor: C.border2, opacity: op }, style]} />;
-};
-export const SkeletonCard = () => (
-  <View style={{ backgroundColor: C.panel, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: C.border, padding: SP.lg, marginBottom: SP.md }}>
-    <Skeleton w={90} h={12} style={{ marginBottom: SP.md }} />
-    <Skeleton h={16} style={{ marginBottom: SP.sm }} />
-    <Skeleton w="70%" h={16} style={{ marginBottom: SP.md }} />
-    <Skeleton w={120} h={10} />
-  </View>
-);
+// RS1-17 — Squelettes de chargement : RETIRÉS (QA v1.1). Ils étaient construits mais rendus NULLE PART, et
+// l'analyse montre qu'ils ne pouvaient pas l'être honnêtement : les données sont EMBARQUÉES dans le bundle
+// (store.js importe statiquement ./data/pestel) → au premier rendu de Home elles sont déjà là, synchrones ;
+// il n'existe aucun instant « écran sans données ». L'état `net === 'loading'` désigne le RAFRAÎCHISSEMENT
+// réseau d'une édition plus récente, pendant lequel l'app affiche l'édition embarquée : y substituer un
+// squelette remplacerait du contenu RÉEL par du placeholder (régression). La fenêtre de démarrage est déjà
+// couverte par le Welcome (plancher 4 s). Les câbler aurait exigé d'INVENTER un état de chargement pour
+// justifier du code déjà écrit. À rétablir si un jour les données deviennent asynchrones (fetch au boot).

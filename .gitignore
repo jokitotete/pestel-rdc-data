@@ -7,3 +7,6 @@ web-build/
 
 # APK builds (artefacts)
 *.apk
+
+# Videos de demo (artefacts livres, comme les APK — jamais dans l historique git)
+*.mp4

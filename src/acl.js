@@ -12,6 +12,10 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 // un TypeError (.split/.map) = DoS distant PERSISTANT que l'ErrorBoundary ne guérit pas (le store muté
 // re-crashe à chaque rendu). Autorise string/number/booléen/absent ; rejette objet et tableau.
 const isScalar = (x) => x == null || typeof x !== 'object';
+// Feuille sur laquelle le RENDU appelle une méthode de STRING (ex. charts : unit.trim()) : « scalaire » ne
+// suffit pas (un number passerait puis .trim planterait) — il faut string-ou-absent. Même logique que les
+// feuilles .split/.map traitées en RS3.3 : on type au niveau de la frontière, pas seulement au rendu.
+const isStr = (x) => x == null || typeof x === 'string';
 
 // Prédicats de contenu — typent EXHAUSTIVEMENT tout champ RENDU comme enfant React OU sur lequel le
 // store/les écrans/les graphes appellent une méthode. Dérivés du schéma RÉEL (public/pestel-data.json,
@@ -42,7 +46,7 @@ const okSeries = (s) => isObj(s) && isScalar(s.name) && Array.isArray(s.values);
 const okChartDatum = (d) => isObj(d) && isScalar(d.label) && isScalar(d.value);                  // BarChart/DonutChart : {d.label}
 const okTrend = (tr) => isObj(tr)
   && isScalar(tr.type) && isScalar(tr.title) && isScalar(tr.note)
-  && isScalar(tr.centerV) && isScalar(tr.centerL) && isScalar(tr.unit)
+  && isScalar(tr.centerV) && isScalar(tr.centerL) && isStr(tr.unit)   // unit : .trim() au rendu → string stricte
   && okKV(tr.src)
   && (tr.labels == null || (Array.isArray(tr.labels) && tr.labels.every(isScalar)))             // LineChart : {l}
   && (tr.series == null || (Array.isArray(tr.series) && tr.series.every(okSeries)))

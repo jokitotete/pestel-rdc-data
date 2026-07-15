@@ -109,6 +109,25 @@ describe('acl.validateData — fail-closed', () => {
     expect(validateData(b)).toBe(true);
   });
 
+  // SEC-01 charts (QA v1.1) — « scalaire » ne suffit pas là où le RENDU appelle une méthode de STRING.
+  // ChartCard fait `unit.trim()` : un NOMBRE passait isScalar, puis .trim() levait un TypeError au rendu de
+  // l'onglet Données = DoS distant PERSISTANT (le store muté re-crashe à chaque rendu, l'ErrorBoundary ne
+  // guérit pas). Même classe que les feuilles .split/.map : on type à la FRONTIÈRE, pas au rendu.
+  it('SEC-01 : rejette une `unit` de graphe NON-string (le rendu y appelle .trim())', () => {
+    for (const bad of [42, true, {}, [], 3.14]) {
+      const d = base();
+      d.stats.trends = [{ type: 'bar', title: 'T', unit: bad, data: [{ label: 'a', value: 1 }] }];
+      expect(validateData(d)).toBe(false);
+    }
+  });
+  it('SEC-01 : accepte une `unit` string ou absente (la garde ne sur-rejette pas le cas réel)', () => {
+    for (const good of ['%', 'M USD', undefined, null]) {
+      const d = base();
+      d.stats.trends = [{ type: 'bar', title: 'T', unit: good, data: [{ label: 'a', value: 1 }] }];
+      expect(validateData(d)).toBe(true);
+    }
+  });
+
   it('rejette la pollution de prototype (chemin réel JSON.parse)', () => {
     const evil = JSON.parse(
       '{"editions":{"__proto__":{"axes":[],"headline":[],"sources":[]},"2026-07-13":{"axes":[],"headline":[],"sources":[]}},"manifest":[{"date":"2026-07-13","label":"x"}],"stats":{"themes":[],"trends":[]}}'

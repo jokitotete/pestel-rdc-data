@@ -61,7 +61,10 @@ export default function App() {
   const [navSeed, setNavSeed] = useState(null);
   const seedRef = useRef(0);
   const goTo = ({ tab, filter, province, edition }) => {
+    // Une intention de navigation quitte TOUTES les surfaces modales, pas seulement la fiche : sans cela un
+    // lien croisé ouvert depuis la loupe naviguait DERRIÈRE la Recherche restée montée (RS1-10) → tap mort.
     closeDetail();
+    setSearchOpen(false);
     if (edition) chooseDate(edition);
     if (province) { setTab('map'); setNavSeed({ tab: 'map', province, n: ++seedRef.current }); return; }
     if (tab) setTab(tab);
@@ -194,7 +197,7 @@ export default function App() {
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: SP.gutter, paddingVertical: SP.md, borderBottomWidth: 1, borderBottomColor: C.border2 }}>
           <Image source={require('./assets/ntongo/icon.png')} style={{ width: 34, height: 34, borderRadius: RADIUS.md, marginRight: SP.sm2 }} />
           <View style={{ flex: 1 }}>
-            <Text style={[TYPE.serifLead, { color: C.ink }]}>
+            <Text style={[TYPE.wordmark, { color: C.ink }]}>
               Ntongo <Text style={{ color: C.cobalt }}>· RDC</Text>
             </Text>
             <FreshnessTag net={net} ed={ed} isLatest={date === latestDate()} />
@@ -412,7 +415,7 @@ function EditionSheet({ open, date, onClose, onPick }) {
           <View style={{ alignItems: 'center', paddingVertical: SP.xs2 }}>
             <View style={{ width: 40, height: 4, borderRadius: RADIUS.half(4), backgroundColor: C.border }} />
           </View>
-          <Text style={[TYPE.serifLead, { color: C.ink, paddingHorizontal: SP.xl, paddingVertical: SP.sm2 }]}>Choisir l'édition</Text>
+          <Text style={[TYPE.subtitle, { color: C.ink, paddingHorizontal: SP.xl, paddingVertical: SP.sm2 }]}>Choisir l'édition</Text>
           <ScrollView>
             {list.map((e) => {
               const on = e.date === date;

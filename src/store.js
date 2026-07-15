@@ -2,7 +2,7 @@
 import { EDITIONS, MANIFEST, STATS } from './data/pestel';
 import * as DATA from './data/pestel';
 import { validateData, safeAssign } from './acl';
-import { itemInSectorStrong, sectorByKey } from './sectors';
+import { itemInSectorStrong, itemInSector, sectorByKey } from './sectors';
 import { hostOf } from './safeUrl';
 
 // Fils de collecte (étage 1). Défensifs : fonctionnent que data/pestel.js exporte FEED/TRIAGE ou non
@@ -128,6 +128,11 @@ export const search = (ed, q) => {
 const normTitle = (s) => (typeof s === 'string' ? s : '')
   .normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
 // RS1-23 — items de l'édition correspondant aux sujets SUIVIS (axe et/ou secteur). Alimente « Pour vous ».
+// PRÉDICAT : match FAIBLE (itemInSector), le MÊME que la liste de secteur d'où l'utilisateur a lancé le suivi
+// (Home/Axes/Favoris). Arbitrage : le match FORT (itemInSectorStrong) existe pour ne pas PRÉSUMER un secteur
+// (ancienne lentille auto, exigence PO) — ici l'utilisateur a CHOISI explicitement après avoir vu la liste,
+// donc « Pour vous » doit contenir exactement ces articles. Utiliser le fort ici rendait « Pour vous » VIDE
+// après avoir suivi un secteur visiblement peuplé (ex. Assurances : 1 article affiché, 0 en fort).
 export const followedItems = (ed, follows) => {
   if (!ed || !Array.isArray(follows) || !follows.length) return [];
   const axes = new Set(follows.filter((f) => f.type === 'axis').map((f) => f.key));
@@ -135,7 +140,7 @@ export const followedItems = (ed, follows) => {
   const out = [], seen = new Set();
   for (const it of allItems(ed)) {
     let match = axes.has(it.axis);
-    if (!match) { for (const s of sectors) if (itemInSectorStrong(it, s)) { match = true; break; } }
+    if (!match) { for (const s of sectors) if (itemInSector(it, s)) { match = true; break; } }
     if (match && !seen.has(it.code)) { seen.add(it.code); out.push(it); }
   }
   return out;

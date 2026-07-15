@@ -74,7 +74,7 @@ function BarChart({ data, unit = '', width, height = 150 }) {
           </React.Fragment>
         );
       })}
-      {unit ? <Text style={[TYPE.caption, { position: 'absolute', right: 2, top: 2, color: C.inkMut }]}>{unit.trim()}</Text> : null}
+      {unit ? <Text style={[TYPE.caption, { position: 'absolute', right: 2, top: 2, color: C.inkMut }]}>{String(unit).trim()}</Text> : null}
     </View>
   );
 }
