@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, View, TouchableOpacity } from 'react-native';
 import Svg, { Rect, Circle, Line, Polyline, G } from 'react-native-svg';
-import { C, F, AX, SP, TYPE, RADIUS } from './theme';
+import { C, AX, SP, TYPE, RADIUS } from './theme';
 import { Icon } from './ui';
 import { confirmOpenURL } from './safeUrl';
 

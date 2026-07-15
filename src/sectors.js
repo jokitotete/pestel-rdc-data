@@ -20,11 +20,8 @@ export const itemInSector = (it, sector) => {
   return sector.kw.some((k) => hay.indexOf(k) >= 0);
 };
 
-// Match FORT (anti faux-positif — exigence PO) : uniquement le TITRE et l'ANALYSE, pas le corps du
-// texte. Évite qu'un simple mot tangentiel dans le corps promeuve un item au rang « de votre secteur ».
-export const itemInSectorStrong = (it, sector) => {
-  const hay = `${it.title || ''} ${it.analysis || ''}`.toLowerCase();
-  return sector.kw.some((k) => hay.indexOf(k) >= 0);
-};
+// (itemInSectorStrong — match FORT, titre+analyse seulement — RETIRÉ : QA v1.2. Il servait la « Lentille »
+// qui PROMOUVAIT automatiquement un article au rang « de votre secteur » ; cette promotion exigeait la
+// précision. La Lentille supprimée (filtre explicite, exigence PO), il n'avait plus de raison d'être.)
 
 export const sectorByKey = (key) => SECTORS.find((s) => s.key === key) || null;

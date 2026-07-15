@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, View, ScrollView, TouchableOpacity, Share } from 'react-native';
-import { C, F, AX, AXT, AX_SHORT, tint, pick, relFr, relIsOk, TYPE, SP, RADIUS, HIT } from '../theme';
-import { RelBadge, SrcDot, Icon, Rule, AxisGlyph, StateView } from '../ui';
+import { C, AX, AXT, AX_SHORT, tint, pick, TYPE, SP, RADIUS, HIT } from '../theme';
+import { RelBadge, SrcDot, Icon, AxisGlyph, StateView } from '../ui';
 import { findItem, sourcesFor, primarySource } from '../store';
 import { itemProvinces } from '../geo';
 import { confirmOpenURL, hostOf, isSafeUrl } from '../safeUrl';

@@ -2,20 +2,10 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { loadSector, saveSector, sanitizeFavs, MAX_FAVS, loadPrefs, savePrefs, loadFollows, saveFollows, loadRecent, pushRecent } from '../src/prefs';
+import { sanitizeFavs, MAX_FAVS, loadPrefs, savePrefs, loadFollows, saveFollows, loadRecent, pushRecent } from '../src/prefs';
 
-describe('prefs — persistance du secteur (Lentille)', () => {
-  it('save puis load restaure le secteur choisi', async () => {
-    await saveSector('banques');
-    expect(await loadSector()).toBe('banques');
-  });
-  it('saveSector(null) efface le secteur (retour au national)', async () => {
-    await saveSector('mines');
-    expect(await loadSector()).toBe('mines');
-    await saveSector(null);
-    expect(await loadSector()).toBeNull();
-  });
-});
+// (Tests de persistance du secteur retirés — QA v1.2 : loadSector/saveSector étaient orphelins depuis le
+// remplacement de la « Lentille » par le filtre explicite. Ils testaient du code que plus personne n'appelait.)
 
 // RS_Sec (campagne 2026-07-14) : la frontière de STOCKAGE est une frontière de confiance. Le blob favoris
 // relu d'AsyncStorage (adb / terminal compromis / malware) peut être corrompu ou hostile → assaini

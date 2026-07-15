@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Text, View, TouchableOpacity, Platform, AccessibilityInfo } from 'react-native';
+import { Text, View, TouchableOpacity, AccessibilityInfo } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Glyph, AxisGlyph, SectorGlyph } from './icons';
-import { C, F, AX, AXT, REL, RELT, TOUCH, tint, pick, relFr, relIsOk, HERO_GRAD, SP, TYPE, RADIUS, HIT, ELEV, STATE } from './theme';
+import { C, F, AX, AXT, REL, RELT, TOUCH, tint, pick, relFr, relIsOk, HERO_GRAD, SP, TYPE, RADIUS, HIT, ELEV } from './theme';
 
 // RS1-16 — préférence système « réduire les animations » (WCAG 2.3.3). Hook partagé : les composants animés
 // (ScreenFade, Welcome, press-scale) le lisent et suppriment translate/scale si activé.
@@ -82,12 +82,6 @@ export const SrcDot = ({ rel }) => {
 };
 
 // Tag d'axe : glyphe duotone + libellé court (texte en jeton AA AXT).
-export const AxisTag = ({ axis, label }) => (
-  <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs2 }}>
-    <AxisGlyph axis={axis} size={15} />
-    <Text style={[TYPE.label, { color: pick(AXT, axis, C.ink) }]}>{label}</Text>
-  </View>
-);
 
 // En-tête de section : glyphe optionnel + titre serif + « loupe » (sous-titre interprétatif).
 export const SectionHead = ({ title, lens, icon }) => (

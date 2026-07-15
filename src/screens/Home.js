@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Text, View, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
-import { C, F, AX, AXT, AX_SHORT, AX_ORDER, RUBRIQUES, tint, pick, SP, TYPE, RADIUS, HIT, isFollowableAxis } from '../theme';
+import { C, AX, AXT, AX_SHORT, AX_ORDER, RUBRIQUES, tint, pick, SP, TYPE, RADIUS, HIT, isFollowableAxis } from '../theme';
 import { Card, SectionHead, Pill, Icon, Rule, AxisGlyph, SectorGlyph, NewsCard, PageHeader, SourceLine } from '../ui';
 import { allItems, upcomingEvents, primarySource, findItem, followedItems } from '../store';
 import { SECTORS, itemInSector } from '../sectors';

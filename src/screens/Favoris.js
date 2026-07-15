@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Text, View, ScrollView } from 'react-native';
+import { Text, ScrollView } from 'react-native';
 import { C, TYPE, SP, AX_SHORT, AX_ORDER, RUBRIQUES } from '../theme';
 import { Pill, NewsCard, PageHeader, StateView } from '../ui';
 import { SECTORS, itemInSector } from '../sectors';

@@ -42,8 +42,12 @@ export const DARK = {
   press: 'rgba(255,255,255,0.08)',
 };
 
-// RS1-15 : jetons d'ÉTAT partagés (feedback/erreurs/focus, Bastien & Scapin + WCAG 2.4.7).
-export const STATE = { disabledOpacity: 0.4, focusWidth: 2, pressScale: 0.98 };
+// RS1-15 — jetons d'ÉTAT : RETIRÉS (QA v1.2). Déclarés puis consommés NULLE PART (0 usage de STATE.*).
+// Le retour tactile du pressé EXISTE bel et bien : il est rendu par `activeOpacity` de TouchableOpacity
+// (mécanisme natif RN) sur chaque surface pressable — c'étaient les JETONS qui étaient morts, pas la
+// fonction. Les garder laissait croire, à la lecture du thème, à un jeu d'états gouverné qui n'existait
+// pas : une promesse faite au lecteur du code. À rétablir le jour où l'on tokenisera vraiment
+// activeOpacity — et alors il faudra les CÂBLER, pas seulement les déclarer.
 export const C = { ...LIGHT };                    // palette active (mutée par applyTheme)
 
 // Cible tactile (jeton) — HIG 44 px / WCAG 2.2 AA 2.5.8 ≥ 24 px. Pilote tous les hitSlop (aucun littéral).
@@ -174,7 +178,8 @@ export const SP = {
 export const RADIUS = { xs: 4, sm: 6, md: 10, lg: 16, chip: 22, dock: 24, pill: 999, half: (s) => s / 2 };
 
 // ── MOTION — durées (ms) + courbes. Réutilisées par ScreenFade / Welcome / micro-interactions.
-export const DUR = { instant: 0, fast: 120, base: 230, slow: 320, splashIn: 480, splashLogo: 520, pulse: 700 };
+// `pulse` retiré (QA v1.2) : Skeleton en était l'unique consommateur — sa suppression (F5) l'a rendu orphelin.
+export const DUR = { instant: 0, fast: 120, base: 230, slow: 320, splashIn: 480, splashLogo: 520 };
 export const EASE = { standard: Easing.out(Easing.cubic), inOut: Easing.inOut(Easing.ease) };
 
 // ── CIBLES TACTILES (hitSlop) — dérivées de TOUCH.min. Plus aucun hitSlop littéral.
@@ -255,10 +260,4 @@ export const tint = (hex, a = 0.14) => {
 export const relFr = (r) => (r === 'established' ? 'établi' : 'à confirmer');
 export const relIsOk = (r) => r === 'established';
 
-const MOIS = ['jan.', 'fév.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
-export const fmtDateCourt = (iso) => {
-  // "2026-07-10" -> "10 juil."
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
-  if (!m) return iso || '';
-  return `${parseInt(m[3], 10)} ${MOIS[parseInt(m[2], 10) - 1]}`;
-};
+// (fmtDateCourt retiré — QA v1.2 : aucun consommateur ; les dates sont rendues par les libellés d'édition.)

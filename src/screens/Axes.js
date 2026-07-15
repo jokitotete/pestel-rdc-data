@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Text, View, ScrollView, TouchableOpacity } from 'react-native';
-import { C, F, AX, AXT, AX_SHORT, AX_ORDER, RUBRIQUES, tint, pick, SP, TYPE, RADIUS } from '../theme';
+import { C, AX, AXT, AX_SHORT, AX_ORDER, RUBRIQUES, tint, pick, SP, TYPE, RADIUS } from '../theme';
 import { Card, RelBadge, Pill, AxisGlyph, PageHeader, SourceLine, Icon } from '../ui';
 import { SECTORS, itemInSector } from '../sectors';
 import { upcomingEvents, primarySource } from '../store';

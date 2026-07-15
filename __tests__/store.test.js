@@ -1,4 +1,4 @@
-import { parseWhen, upcomingEvents, sectorItems, findItem, getEdition, latestDate, allItems, primarySource, searchAll, followedItems } from '../src/store';
+import { parseWhen, upcomingEvents, findItem, getEdition, latestDate, allItems, primarySource, searchAll, followedItems } from '../src/store';
 import { SECTORS, itemInSector } from '../src/sectors';
 
 describe('store.parseWhen — fuzz', () => {
@@ -134,27 +134,7 @@ describe('store.followedItems — Pour vous', () => {
       expect(followedItems(ed, [{ type: 'sector', key: s.key }]).map((i) => i.code)).toEqual(vu);
     }
   });
-
-  // Corollaire : le SUIVI (rappel) est toujours au moins aussi large que la LENTILLE (précision). Ancre la
-  // relation entre les deux prédicats — si quelqu'un les réunifie un jour, ce test le dit.
-  it('le suivi englobe la Lentille (faible ⊇ fort), qui promeut en Une et exige la précision', () => {
-    for (const s of SECTORS) {
-      const suivi = new Set(followedItems(ed, [{ type: 'sector', key: s.key }]).map((i) => i.code));
-      for (const it of sectorItems(ed, s.key)) expect(suivi.has(it.code)).toBe(true);
-    }
-  });
 });
 
-describe('store.sectorItems — Lentille (match fort)', () => {
-  const ed = getEdition(latestDate());
-  it('gère les cas limites sans crash', () => {
-    expect(sectorItems(null, 'banques')).toEqual([]);
-    expect(sectorItems(ed, 'inexistant')).toEqual([]);
-    expect(sectorItems(ed, null)).toEqual([]);
-    expect(Array.isArray(sectorItems(ed, 'banques'))).toBe(true);
-  });
-  it('ne retourne que des items de l’édition (sous-ensemble)', () => {
-    const codes = allItems(ed).map((i) => i.code);
-    for (const it of sectorItems(ed, 'mines')) expect(codes).toContain(it.code);
-  });
-});
+// (Tests de sectorItems retirés — QA v1.2 : la « Lentille » n'existe plus depuis 0bac2d0. Ces tests
+// étaient le DERNIER consommateur du code : du code mort qui se testait lui-même, donc semblait vivant.)

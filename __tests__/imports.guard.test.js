@@ -104,11 +104,25 @@ describe('imports.guard — aucun identifiant fantôme (portée + croisement imp
   for (let i = 0; i < ABS.length; i++) {
     it(`${FILES[i]} : [portée] tout identifiant référencé est lié`, () => {
       let libres = [];
+      const jsxLibres = [];
       traverse(parse(ABS[i]), {
         Program(p) { libres = Object.keys(p.scope.globals).filter((g) => !GLOBALS.has(g)).sort(); },
+        // A-bis (QA v1.2) — LA LISTE BLANCHE PEUT MASQUER UN COMPOSANT. `Map` est une globale ECMAScript
+        // légitime (`new Map()`)… et AUSSI le nom de src/screens/Map.js : `<Map />` sans import passait la
+        // garde en VERT — le bug HIT, réintroduit par la garde censée le tuer (prouvé par mutation).
+        // Clé : un ÉLÉMENT JSX n'est JAMAIS une globale du runtime. Aucune globale JS ne s'écrit `<Nom />`.
+        // On contrôle donc les identifiants JSX en IGNORANT TOTALEMENT la liste blanche — précis, et cela
+        // referme le danger que la liste elle-même créait. (`new Map()` reste ambigu et reste couvert par A.)
+        JSXOpeningElement(p) {
+          let n = p.node.name;
+          while (n.type === 'JSXMemberExpression') n = n.object;      // <A.B /> → on remonte à `A`
+          if (n.type !== 'JSXIdentifier') return;
+          if (!/^[A-Z]/.test(n.name)) return;                          // minuscule = élément intrinsèque
+          if (!p.scope.getBinding(n.name)) jsxLibres.push(n.name);
+        },
       });
       // Un nom ici = import oublié (le bug HIT), typo, ou globale runtime à déclarer dans GLOBALS.
-      expect(libres).toEqual([]);
+      expect([...libres, ...[...new Set(jsxLibres)].sort()]).toEqual([]);
     });
   }
 

@@ -2,26 +2,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isSafeUrl } from './safeUrl';
 import { AX_ORDER, RUBRIQUES, isFollowableAxis } from './theme';
 
-// Préférences persistées (best-effort). Aujourd'hui : la LENTILLE sectorielle (P1) — le secteur
-// choisi survit aux relances (exigence Product Owner : état persistant, corrigible, jamais deviné).
-const KEY_SECTOR = 'ntongo.sector.v1';
-
-export async function loadSector() {
-  try {
-    return (await AsyncStorage.getItem(KEY_SECTOR)) || null;
-  } catch (e) {
-    return null;   // pas de persistance dispo → national par défaut (dégradation sûre)
-  }
-}
-
-export async function saveSector(key) {
-  try {
-    if (key) await AsyncStorage.setItem(KEY_SECTOR, key);
-    else await AsyncStorage.removeItem(KEY_SECTOR);
-  } catch (e) {
-    /* best-effort : l'app reste fonctionnelle sans persistance */
-  }
-}
+// (loadSector/saveSector — persistance du secteur de la « Lentille » — RETIRÉS : QA v1.2. Orphelins depuis
+// que l'audit RS1 a remplacé la Lentille par le filtre explicite (0bac2d0) : aucun écran ne les importait.
+// Le filtre est TRANSITOIRE par décision produit — l'utilisateur choisit à chaque session, l'app ne présume
+// rien —, il n'y a donc plus de secteur à persister. La clé 'ntongo.sector.v1' éventuellement laissée sur
+// les terminaux v1.0/v1.1 devient inerte : plus personne ne la lit.)
 
 // Préférences génériques (blob JSON fusionné) — { lastSeen, notifOn, mode, favs:[snapshots] }.
 const KEY_PREFS = 'ntongo.prefs.v1';

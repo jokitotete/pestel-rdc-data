@@ -2,7 +2,7 @@
 import { EDITIONS, MANIFEST, STATS } from './data/pestel';
 import * as DATA from './data/pestel';
 import { validateData, safeAssign } from './acl';
-import { itemInSectorStrong, itemInSector, sectorByKey } from './sectors';
+import { itemInSector, sectorByKey } from './sectors';
 import { hostOf } from './safeUrl';
 
 // Fils de collecte (étage 1). Défensifs : fonctionnent que data/pestel.js exporte FEED/TRIAGE ou non
@@ -60,12 +60,10 @@ export const primarySource = (ed, it) => {
   return { name: outlet, host, url };
 };
 
-// Lentille sectorielle (P1) — items de l'édition correspondant FORTEMENT au secteur (titre/analyse).
-export const sectorItems = (ed, sectorKey) => {
-  const sector = sectorByKey(sectorKey);
-  if (!ed || !sector) return [];
-  return allItems(ed).filter((it) => itemInSectorStrong(it, sector));
-};
+// (sectorItems — « Lentille sectorielle » — RETIRÉE : QA v1.2. Elle promouvait automatiquement les articles
+// du secteur préféré sous l'essentiel national. L'audit design RS1 l'a remplacée par le FILTRE EXPLICITE
+// (exigence PO : l'utilisateur CHOISIT, l'app ne PRÉSUME pas) au commit 0bac2d0 — plus aucun écran ne
+// l'importait depuis. Son seul consommateur restant était un test : du code mort qui se testait lui-même.)
 
 // Parse un « quand » d'agenda ("05/07/2026" ou "Août 2026") → timestamp (ou null).
 const MOIS = { jan: 0, janv: 0, fév: 1, fev: 1, mars: 2, avr: 3, mai: 4, juin: 5, juil: 6, aou: 7, aoû: 7, sep: 8, oct: 9, nov: 10, déc: 11, dec: 11 };
@@ -117,13 +115,7 @@ export const upcomingEvents = (windowDays = 21, cap = 12) => {
 };
 
 // Recherche plein-texte dans les items de l'édition.
-export const search = (ed, q) => {
-  const t = (q || '').trim().toLowerCase();
-  if (t.length < 2) return [];
-  return allItems(ed).filter((it) =>
-    `${it.code} ${it.title} ${it.text} ${it.analysis || ''}`.toLowerCase().includes(t)
-  );
-};
+// (search mono-édition retirée — QA v1.2 : remplacée par searchAll (RS1-09) ; plus aucun consommateur.)
 
 // RS1-09 — Recherche MULTI-ÉDITIONS : la veille devient longitudinale. Cherche dans TOUTES les éditions
 // chargées (clés PROPRES d'EDITIONS, plus récente d'abord), enrichit chaque résultat de son édition source
@@ -132,11 +124,12 @@ export const search = (ed, q) => {
 const normTitle = (s) => (typeof s === 'string' ? s : '')
   .normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
 // RS1-23 — items de l'édition correspondant aux sujets SUIVIS (axe et/ou secteur). Alimente « Pour vous ».
-// PRÉDICAT : match FAIBLE (itemInSector), le MÊME que la liste de secteur d'où l'utilisateur a lancé le suivi
-// (Home/Axes/Favoris). Arbitrage : le match FORT (itemInSectorStrong) existe pour ne pas PRÉSUMER un secteur
-// (ancienne lentille auto, exigence PO) — ici l'utilisateur a CHOISI explicitement après avoir vu la liste,
-// donc « Pour vous » doit contenir exactement ces articles. Utiliser le fort ici rendait « Pour vous » VIDE
-// après avoir suivi un secteur visiblement peuplé (ex. Assurances : 1 article affiché, 0 en fort).
+// PRÉDICAT : match FAIBLE (itemInSector) — le MÊME que celui de la liste d'où l'utilisateur a lancé le suivi.
+// « Suivre ce sujet » n'est offert QUE sous un filtre de secteur (Home.js), dont la liste est FAIBLE : « Pour
+// vous » doit donc rendre EXACTEMENT ce que l'utilisateur a vu au moment du clic. Le match FORT rendait
+// « Pour vous » VIDE après avoir suivi un secteur visiblement peuplé (Assurances : 1 article affiché, 0 en fort).
+// NB (QA v1.2) : le commentaire d'origine justifiait cet arbitrage par la « Lentille », qui n'existe PLUS
+// depuis 0bac2d0 — une justification appuyée sur un consommateur disparu. Le match FORT a donc été retiré.
 export const followedItems = (ed, follows) => {
   if (!ed || !Array.isArray(follows) || !follows.length) return [];
   const axes = new Set(follows.filter((f) => f.type === 'axis').map((f) => f.key));
