@@ -193,36 +193,50 @@ export default function App() {
     <SafeAreaProvider>
       <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
       <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right']}>
-        {/* En-tête de marque — logomark « aube cobalt » + wordmark Ntongo + fraîcheur des données */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: SP.gutter, paddingVertical: SP.md, borderBottomWidth: 1, borderBottomColor: C.border2 }}>
-          <Image source={require('./assets/ntongo/icon.png')} style={{ width: 34, height: 34, borderRadius: RADIUS.md, marginRight: SP.sm2 }} />
-          <View style={{ flex: 1 }}>
-            <Text style={[TYPE.wordmark, { color: C.ink }]}>
+        {/* En-tête de marque — DEUX RANGÉES (QA v1.1 · F7). Une seule rangée ne laissait que ~83 dp au
+            logotype (375 dp utiles − 292 dp de contrôles fixes) là où « Ntongo · RDC » en réclame ~114 :
+            la marque se brisait sur deux lignes (« Ntongo · » / « RDC ») et la fraîcheur était tronquée
+            (« à jour · en … »). Défaut PRÉSENT dans les APK v1.0 et v1.1 livrés — jamais vu parce que les
+            audits regardaient le contenu, jamais le chrome. Aucun jeton ne pouvait le corriger : l'en-tête
+            mélangeait deux NATURES de choses sur une rangée saturée. On les sépare :
+              rangée 1 = IDENTITÉ + actions  ·  rangée 2 = CONTEXTE TEMPOREL (fraîcheur ↔ édition, indissociables).
+            Coût vertical ~nul : l'ancien en-tête occupait déjà 3 lignes (logotype cassé en 2 + fraîcheur).
+            Aucune fonction perdue : les 4 contrôles restent au même niveau d'accès (≤ 1 tap). */}
+        <View style={{ paddingHorizontal: SP.gutter, paddingVertical: SP.md, borderBottomWidth: 1, borderBottomColor: C.border2, gap: SP.sm }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Image source={require('./assets/ntongo/icon.png')} style={{ width: 34, height: 34, borderRadius: RADIUS.md, marginRight: SP.sm2 }} />
+            {/* numberOfLines={1} : garde-fou de MARQUE — si l'en-tête se resature un jour, le logotype
+                doit dégrader proprement, jamais se briser en deux lignes comme en v1.0/v1.1. */}
+            <Text style={[TYPE.wordmark, { color: C.ink, flex: 1 }]} numberOfLines={1}>
               Ntongo <Text style={{ color: C.cobalt }}>· RDC</Text>
             </Text>
-            <FreshnessTag net={net} ed={ed} isLatest={date === latestDate()} />
+            <TouchableOpacity activeOpacity={0.7} onPress={toggleNotif} hitSlop={HIT.sm}
+              accessibilityRole="button" accessibilityLabel={notifOn ? 'Briefing du matin activé' : 'Activer le briefing du matin'}
+              style={{ width: 36, height: 36, borderRadius: RADIUS.half(36), alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name={notifOn ? 'bell-on' : 'bell'} size={19} color={notifOn ? C.cobalt : C.inkDim} />
+            </TouchableOpacity>
+            <TouchableOpacity activeOpacity={0.7} onPress={toggleTheme} hitSlop={HIT.sm}
+              accessibilityRole="button" accessibilityLabel={mode === 'dark' ? 'Passer en thème clair' : 'Passer en thème sombre'}
+              style={{ width: 36, height: 36, borderRadius: RADIUS.half(36), alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name={mode === 'dark' ? 'sun' : 'moon'} size={18} color={C.inkDim} />
+            </TouchableOpacity>
+            <TouchableOpacity activeOpacity={0.7} onPress={() => setSearchOpen(true)} hitSlop={HIT.sm}
+              accessibilityRole="button" accessibilityLabel="Rechercher"
+              style={{ width: 38, height: 38, borderRadius: RADIUS.half(38), alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name="search" size={20} color={C.inkDim} />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity activeOpacity={0.7} onPress={toggleNotif} hitSlop={HIT.sm}
-            accessibilityRole="button" accessibilityLabel={notifOn ? 'Briefing du matin activé' : 'Activer le briefing du matin'}
-            style={{ width: 36, height: 36, borderRadius: RADIUS.half(36), alignItems: 'center', justifyContent: 'center' }}>
-            <Icon name={notifOn ? 'bell-on' : 'bell'} size={19} color={notifOn ? C.cobalt : C.inkDim} />
-          </TouchableOpacity>
-          <TouchableOpacity activeOpacity={0.7} onPress={toggleTheme} hitSlop={HIT.sm}
-            accessibilityRole="button" accessibilityLabel={mode === 'dark' ? 'Passer en thème clair' : 'Passer en thème sombre'}
-            style={{ width: 36, height: 36, borderRadius: RADIUS.half(36), alignItems: 'center', justifyContent: 'center' }}>
-            <Icon name={mode === 'dark' ? 'sun' : 'moon'} size={18} color={C.inkDim} />
-          </TouchableOpacity>
-          <TouchableOpacity activeOpacity={0.7} onPress={() => setSearchOpen(true)} hitSlop={HIT.sm}
-            accessibilityRole="button" accessibilityLabel="Rechercher"
-            style={{ width: 38, height: 38, borderRadius: RADIUS.half(38), alignItems: 'center', justifyContent: 'center', marginRight: SP.xs }}>
-            <Icon name="search" size={20} color={C.inkDim} />
-          </TouchableOpacity>
-          <TouchableOpacity activeOpacity={0.8} onPress={() => setSheet(true)} hitSlop={{ top: 7, bottom: 7, left: 4, right: 4 }}
-            accessibilityRole="button" accessibilityLabel={`Changer d'édition, actuellement ${ed.label}`}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs2, backgroundColor: C.panel, borderWidth: 1, borderColor: C.border, borderRadius: RADIUS.chip, paddingHorizontal: SP.md, paddingVertical: SP.sm }}>
-            <Icon name="calendar" size={14} color={C.cobalt} />
-            <Text style={[TYPE.label, { color: C.ink }]}>{ed.label}</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm }}>
+            <View style={{ flex: 1 }}>
+              <FreshnessTag net={net} ed={ed} isLatest={date === latestDate()} />
+            </View>
+            <TouchableOpacity activeOpacity={0.8} onPress={() => setSheet(true)} hitSlop={{ top: 7, bottom: 7, left: 4, right: 4 }}
+              accessibilityRole="button" accessibilityLabel={`Changer d'édition, actuellement ${ed.label}`}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs2, backgroundColor: C.panel, borderWidth: 1, borderColor: C.border, borderRadius: RADIUS.chip, paddingHorizontal: SP.md, paddingVertical: SP.sm }}>
+              <Icon name="calendar" size={14} color={C.cobalt} />
+              <Text style={[TYPE.label, { color: C.ink }]}>{ed.label}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Fraîcheur des données — bandeau persistant quand on tourne hors ligne (P2, anti-ARCA) */}
