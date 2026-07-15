@@ -1,4 +1,4 @@
-import { pick, tint, AX, mapLevel, MAP_RAMP, MAP_CATS, isFollowableAxis, AX_ORDER, RUBRIQUES, SYNTHETIC_AXES } from '../src/theme';
+import { pick, tint, AX, mapLevel, MAP_RAMP, MAP_CATS, isFollowableAxis, AX_ORDER, RUBRIQUES, SYNTHETIC_AXES, fmtJour } from '../src/theme';
 
 // RS3 (campagne 2026-07-14) : `MAP[cléNonFiable]` résout aussi les propriétés HÉRITÉES du prototype
 // (constructor/__proto__/toString…) — toutes truthy — donc `MAP[clé] || fallback` ne se replie pas et une
@@ -65,5 +65,29 @@ describe('theme.isFollowableAxis — ce qu on peut suivre (fermeture de la class
   });
   it('tout axe synthetique est bien declare dans la taxonomie (coherence interne)', () => {
     for (const k of SYNTHETIC_AXES) expect(AX_ORDER.concat(RUBRIQUES)).toContain(k);
+  });
+});
+
+// QA v1.4 — la date d un item de fil. Le fascicule promet « affiche, DATE, avec sa source » ; l ecran
+// n affichait AUCUNE date alors que 30/30 items en portent une. fmtDateCourt avait ete retire en v1.2
+// comme code mort — il l etait ; il ne l est plus.
+describe('theme.fmtJour — dater ce que la veille a capte', () => {
+  it('rend une date ISO reelle du fil', () => {
+    expect(fmtJour('2026-07-13T19:35:28.000Z')).toBe('13 juil.');
+    expect(fmtJour('2026-01-01T00:00:00.000Z')).toBe('1 janv.');
+    expect(fmtJour('2026-12-31T23:59:59.000Z')).toBe('31 déc.');
+  });
+  it('rend vide sur tout ce qui n est pas une date (fail-closed, jamais de crash)', () => {
+    for (const v of ['', null, undefined, 42, {}, [], 'hier', '13/07/2026', '2026-13-01T00:00:00Z']) {
+      expect(fmtJour(v)).toBe('');
+    }
+  });
+  it('date TOUS les items du fil REEL — la promesse « date » doit tenir sur la donnee reelle', () => {
+    const { FEED } = require('../src/store');
+    expect(FEED.length).toBeGreaterThan(0);
+    for (const f of FEED) {
+      // si l item porte une date, l ecran DOIT pouvoir la rendre
+      if (f.publishedAt) expect(fmtJour(f.publishedAt)).not.toBe('');
+    }
   });
 });

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Text, View, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
-import { C, AX, AXT, AX_SHORT, AX_ORDER, RUBRIQUES, tint, pick, SP, TYPE, RADIUS, HIT, isFollowableAxis } from '../theme';
+import { C, AX, AXT, AX_SHORT, AX_ORDER, RUBRIQUES, tint, pick, SP, TYPE, RADIUS, HIT, isFollowableAxis , fmtJour} from '../theme';
 import { Card, SectionHead, Pill, Icon, Rule, AxisGlyph, SectorGlyph, NewsCard, PageHeader, SourceLine } from '../ui';
 import { allItems, upcomingEvents, primarySource, findItem, followedItems } from '../store';
 import { SECTORS, itemInSector } from '../sectors';
@@ -19,12 +19,28 @@ const FilterRow = ({ label, children }) => (
 
 // Fil « À traiter » (collecte étage 1) : infos captées du jour, pas encore décryptées. Rend l'OMISSION
 // VISIBLE. On n'affiche que les items à URL https sûre ; ouverture via confirmOpenURL (domaine + confirm).
+// Plafond d'affichage : au-delà, la carte devient un mur. On PLAFONNE le rendu — on ne JETTE rien,
+// et on écrit combien reste dessous (cf. ci-dessous : c'était le mensonge le plus grave du fascicule).
+const CAP_A_TRAITER = 12;
+
 function ToTreatSection({ feed }) {
-  const items = (feed || []).filter((f) => f && f.title && isSafeUrl(f.url)).slice(0, 12);
-  if (!items.length) return null;
+  // QA v1.4 — « Rien n'est écarté en silence » (fascicule commercial) était FAUX, et vérifié faux :
+  //   • `.slice(0, 12)` jetait 18 des 30 captées SANS le dire ;
+  //   • `isSafeUrl` écarte les liens non-https, aussi en silence.
+  // La page qui vend « nous vous montrons nos trous » avait son propre trou, et le cachait. C'est le
+  // pire échec possible pour CE produit : montrer l'omission est le seul attribut qu'un concurrent
+  // gratuit ne peut pas copier. On corrige le CODE, pas la promesse — affaiblir la phrase aurait
+  // sacrifié la valeur du produit pour couvrir une paresse d'implémentation.
+  const sains = (feed || []).filter((f) => f && f.title);
+  const ouvrables = sains.filter((f) => isSafeUrl(f.url));
+  const nonOuvrables = sains.length - ouvrables.length;     // lien non https : montré, jamais effacé
+  const items = ouvrables.slice(0, CAP_A_TRAITER);
+  const enPlus = ouvrables.length - items.length;           // plafonnées pour tenir l'écran, PAS jetées
+  if (!sains.length) return null;
   return (
     <View style={{ marginTop: SP.xl2 }}>
-      <SectionHead title="À traiter" icon="triage" lens="capté aujourd’hui · à décrypter" />
+      <SectionHead title="À traiter" icon="triage"
+        lens={`${sains.length} captée${sains.length > 1 ? 's' : ''} · à décrypter`} />
       <Card style={{ paddingVertical: SP.xs }}>
         {items.map((f, i, arr) => {
           const ct = pick(AXT, f.axis, C.inkDim);   // RS3 : prototype-safe (f.axis vient du feed NON FIABLE)
@@ -37,6 +53,11 @@ function ToTreatSection({ feed }) {
                   {f.axis && f.axis !== '?' ? <AxisGlyph axis={f.axis} size={13} /> : null}
                   <Text style={[TYPE.mono, { color: ct }]}>{f.axisLabel || 'à trier'}</Text>
                   <View style={{ flex: 1 }} />
+                  {/* La DATE de parution — 30/30 items la portent en donnée, aucun ne l'affichait.
+                      Elle rend visible la péremption du fil (le 15/07, il servait des items du 13/07). */}
+                  {fmtJour(f.publishedAt) ? (
+                    <Text style={[TYPE.mono, { color: C.inkMut }]}>{fmtJour(f.publishedAt)}</Text>
+                  ) : null}
                   <View style={{ backgroundColor: tint(C.gold, 0.16), borderRadius: RADIUS.chip, paddingHorizontal: SP.sm, paddingVertical: SP.hair }}>
                     <Text style={[TYPE.mono, { color: C.goldText }]}>à traiter</Text>
                   </View>
@@ -48,6 +69,25 @@ function ToTreatSection({ feed }) {
             </View>
           );
         })}
+        {/* CE QUI N'EST PAS MONTRÉ — le pied qui rend la phrase « rien n'est écarté en silence » VRAIE.
+            Sans lui, 18 captées sur 30 disparaissaient sans trace. */}
+        {enPlus || nonOuvrables ? (
+          <>
+            <Rule style={{ marginHorizontal: SP.md2 }} />
+            <View style={{ paddingVertical: SP.md, paddingHorizontal: SP.md2 }}>
+              {enPlus ? (
+                <Text style={[TYPE.bodySm, { color: C.inkMut }]}>
+                  {`+ ${enPlus} autre${enPlus > 1 ? 's' : ''} captée${enPlus > 1 ? 's' : ''} aujourd’hui, non affichée${enPlus > 1 ? 's' : ''} ici.`}
+                </Text>
+              ) : null}
+              {nonOuvrables ? (
+                <Text style={[TYPE.bodySm, { color: C.goldText, marginTop: enPlus ? SP.xs : 0 }]}>
+                  {`${nonOuvrables} captée${nonOuvrables > 1 ? 's' : ''} non ouvrable${nonOuvrables > 1 ? 's' : ''} : lien non sécurisé (http).`}
+                </Text>
+              ) : null}
+            </View>
+          </>
+        ) : null}
       </Card>
     </View>
   );

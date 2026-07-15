@@ -260,4 +260,17 @@ export const tint = (hex, a = 0.14) => {
 export const relFr = (r) => (r === 'established' ? 'établi' : 'à confirmer');
 export const relIsOk = (r) => r === 'established';
 
-// (fmtDateCourt retiré — QA v1.2 : aucun consommateur ; les dates sont rendues par les libellés d'édition.)
+// Date courte d'un item de fil : « 2026-07-13T19:35:28.000Z » → « 13 juil. ».
+// RÉTABLI (QA v1.4) : fmtDateCourt avait été retiré en v1.2 comme code mort — il l'ÉTAIT, à raison.
+// Il ne l'est plus : la section « À traiter » DOIT dater chaque item. Le fascicule promet « affiché,
+// daté, avec sa source » et l'écran n'affichait AUCUNE date, alors que 30/30 items en portent une en
+// donnée. La date n'est pas décorative : le fil servi le 15/07 contenait des items du 13/07 — sans
+// date à l'écran, cette péremption était invisible pour le lecteur.
+const MOIS_COURT = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+export const fmtJour = (iso) => {
+  const m = (typeof iso === 'string' ? iso : '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return '';
+  const mo = +m[2] - 1;
+  if (mo < 0 || mo > 11) return '';
+  return parseInt(m[3], 10) + ' ' + MOIS_COURT[mo];
+};
