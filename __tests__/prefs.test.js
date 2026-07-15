@@ -2,7 +2,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { loadSector, saveSector, sanitizeFavs, MAX_FAVS, loadPrefs, savePrefs, loadFollows, saveFollows } from '../src/prefs';
+import { loadSector, saveSector, sanitizeFavs, MAX_FAVS, loadPrefs, savePrefs, loadFollows, saveFollows, loadRecent, pushRecent } from '../src/prefs';
 
 describe('prefs — persistance du secteur (Lentille)', () => {
   it('save puis load restaure le secteur choisi', async () => {
@@ -58,6 +58,29 @@ describe('prefs.sanitizeFavs — frontière de stockage (fail-closed)', () => {
 
 // RS3 : savePrefs sérialise les écritures via un cache RAM (source de vérité) → deux patches de clés
 // DIFFÉRENTES non attendus ne se perdent plus (l'ancien read-modify-write disque en écrasait un).
+// RS_Sec (v1.1) : requêtes récentes — la frontière de stockage borne le NOMBRE **et** la LONGUEUR (une chaîne
+// géante relue serait RENDUE en puce → mesure Yoga d'un nœud de plusieurs Mo = gel de l'écran Recherche).
+describe('prefs recent — bornes nombre ET longueur (anti-DoS de rendu)', () => {
+  beforeEach(async () => { await AsyncStorage.clear(); });
+  it('loadRecent tronque une chaîne géante plantée dans le stockage', async () => {
+    await AsyncStorage.setItem('ntongo.recent.v1', JSON.stringify(['A'.repeat(500000), 'ok']));
+    const r = await loadRecent();
+    expect(r[0].length).toBeLessThanOrEqual(120);
+    expect(r[1]).toBe('ok');
+  });
+  it('loadRecent plafonne le nombre et jette les non-strings', async () => {
+    await AsyncStorage.setItem('ntongo.recent.v1', JSON.stringify(['a1', 'b2', 'c3', 'd4', 'e5', 'f6', 42, null]));
+    const r = await loadRecent();
+    expect(r.length).toBeLessThanOrEqual(5);
+    for (const x of r) expect(typeof x).toBe('string');
+  });
+  it('pushRecent borne aussi à l’écriture', async () => {
+    await pushRecent('B'.repeat(400));
+    const r = await loadRecent();
+    expect(r[0].length).toBeLessThanOrEqual(120);
+  });
+});
+
 // RS1-23 : sujets suivis — persistance locale assainie (type liste blanche, key string, dédup, plafond).
 describe('prefs follows — Suivre (local, fail-closed)', () => {
   beforeEach(async () => { await AsyncStorage.clear(); });

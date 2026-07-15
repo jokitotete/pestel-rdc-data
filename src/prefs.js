@@ -97,16 +97,22 @@ export function savePrefs(patch) {
 // l'appareil, posture cybersécurité), assaini à la relecture (que des strings), plafonné à 5.
 const KEY_RECENT = 'ntongo.recent.v1';
 const MAX_RECENT = 5;
+// RS_Sec (v1.1) : borner aussi la LONGUEUR, pas seulement le NOMBRE. Une chaîne géante plantée dans le
+// stockage (terminal compromis) survivait au filtre `typeof string` puis était RENDUE en puce → Yoga devait
+// mesurer un nœud texte de plusieurs Mo sur le thread principal = gel de l'écran Recherche (DoS persistant).
+const MAX_RECENT_LEN = 120;
 export async function loadRecent() {
   try {
     const raw = await AsyncStorage.getItem(KEY_RECENT);
     const a = raw ? JSON.parse(raw) : [];
-    return Array.isArray(a) ? a.filter((x) => typeof x === 'string').slice(0, MAX_RECENT) : [];
+    return Array.isArray(a)
+      ? a.filter((x) => typeof x === 'string').map((x) => x.slice(0, MAX_RECENT_LEN)).slice(0, MAX_RECENT)
+      : [];
   } catch (e) { return []; }
 }
 export async function pushRecent(q) {
   try {
-    const s = (q || '').trim();
+    const s = (q || '').trim().slice(0, MAX_RECENT_LEN);   // borne à l'écriture aussi
     if (s.length < 2) return null;
     const cur = await loadRecent();
     const next = [s, ...cur.filter((x) => x.toLowerCase() !== s.toLowerCase())].slice(0, MAX_RECENT);
@@ -129,7 +135,9 @@ export async function loadFollows() {
     if (!Array.isArray(a)) return [];
     const seen = new Set(), out = [];
     for (const f of a) {
-      if (!isObj(f) || !FOLLOW_TYPES.has(f.type) || typeof f.key !== 'string') continue;   // fail-closed
+      // fail-closed : type en liste blanche + key string BORNÉE (cohérent avec recent/favs — jamais de
+      // chaîne non bornée relue du stockage, même inerte).
+      if (!isObj(f) || !FOLLOW_TYPES.has(f.type) || typeof f.key !== 'string' || !f.key || f.key.length > 64) continue;
       const id = f.type + ':' + f.key;
       if (seen.has(id)) continue;
       seen.add(id);

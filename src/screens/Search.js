@@ -61,7 +61,8 @@ export default function Search({ onOpen }) {
                     accessibilityRole="button" accessibilityLabel={`Rechercher ${r}`}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs, minHeight: 36, paddingHorizontal: SP.md, backgroundColor: C.panel, borderWidth: 1, borderColor: C.border, borderRadius: RADIUS.chip }}>
                     <Icon name="search" size={13} color={C.inkMut} />
-                    <Text style={[TYPE.label, { color: C.inkDim }]}>{r}</Text>
+                    {/* Défense en profondeur : jamais de nœud texte non borné au layout (cf. RS_Sec loadRecent). */}
+                    <Text style={[TYPE.label, { color: C.inkDim, maxWidth: 220 }]} numberOfLines={1}>{r}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
