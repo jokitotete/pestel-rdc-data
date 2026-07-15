@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Text, View, TouchableOpacity, Modal, ScrollView, Animated, Image, AppState, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,7 +8,8 @@ import { Fraunces_600SemiBold, Fraunces_700Bold } from '@expo-google-fonts/fraun
 import { IBMPlexSans_400Regular, IBMPlexSans_500Medium, IBMPlexSans_600SemiBold, IBMPlexSans_700Bold } from '@expo-google-fonts/ibm-plex-sans';
 import { IBMPlexMono_400Regular, IBMPlexMono_500Medium, IBMPlexMono_600SemiBold } from '@expo-google-fonts/ibm-plex-mono';
 
-import { C, F, applyTheme, tint, SP, TYPE, RADIUS, DUR, HIT } from './src/theme';
+import { C, F, applyTheme, tint, SP, TYPE, RADIUS, DUR, HIT, TOUCH } from './src/theme';
+import { monthGrid, monthsOf, parseISO, toISO, libelleMois, JOURS_FR, MOIS_FR } from './src/calendar';
 import { Icon, shadow, useReduceMotion, ModalHeader } from './src/ui';
 import { getEdition, findItem, latestDate, editionsList, applyRemote, getFeed, getTriage } from './src/store';
 import { fetchRemoteData } from './src/remote';
@@ -424,31 +425,116 @@ function TabBar({ tab, setTab }) {
   );
 }
 
+// Sélecteur d'édition — CALENDRIER (v1.3) plutôt qu'une liste déroulante. Même langage que la carte : on met
+// en SURBRILLANCE ce qui porte de la donnée, le reste reste visible mais inerte. Une liste oblige à lire 13
+// libellés un par un pour répondre à « qu'est-ce qui existe autour du 9 ? » ; une grille répond d'un coup d'œil,
+// et rend visible ce que la liste cachait : les TROUS de la veille (un jour sans édition se voit).
+//
+// CONTRASTE — mesuré, jamais jugé à l'œil (cf. contrast.test.js). Sur le fond de la feuille (C.bg), du texte
+// cobalt sur tint(cobalt, 0.14) donne 4,47:1 en thème CLAIR : il rate l'AA de 0,03. À 0.1 il passe (4,73 clair
+// / 5,04 sombre). Le `0.1` qu'on retrouve partout dans l'app n'est pas une habitude : c'est la limite de sécurité.
 function EditionSheet({ open, date, onClose, onPick }) {
   const insets = useSafeAreaInsets();
   const list = editionsList();
+  const dispo = useMemo(() => {
+    const m = {};
+    for (const e of list) m[e.date] = e.label;
+    return m;
+  }, [list]);
+  const mois = useMemo(() => monthsOf(list.map((e) => e.date)), [list]);
+  const sel = parseISO(date);
+  // On ouvre sur le mois de l'édition affichée ; à défaut, le mois le plus récent qui porte de la donnée.
+  const [curseur, setCurseur] = useState(0);
+  useEffect(() => {
+    if (!open) return;
+    const i = sel ? mois.findIndex((x) => x.y === sel.y && x.m === sel.m) : -1;
+    setCurseur(i >= 0 ? i : 0);
+  }, [open, date]);
+
+  if (!mois.length) return null;
+  const m = mois[Math.min(curseur, mois.length - 1)];
+  const semaines = monthGrid(m.y, m.m);
+  // `mois` est trié du plus RÉCENT au plus ancien : « précédent » avance dans le tableau.
+  const precedent = curseur < mois.length - 1 ? () => setCurseur(curseur + 1) : null;
+  const suivant = curseur > 0 ? () => setCurseur(curseur - 1) : null;
+  const nDansMois = list.filter((e) => { const p = parseISO(e.date); return p && p.y === m.y && p.m === m.m; }).length;
+
+  const Fleche = ({ nom, onPress, label }) => (
+    <TouchableOpacity onPress={onPress || undefined} disabled={!onPress} hitSlop={HIT.md}
+      accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: !onPress }}
+      style={{ width: TOUCH.min, height: TOUCH.min, alignItems: 'center', justifyContent: 'center', opacity: onPress ? 1 : 0.3 }}>
+      <Icon name={nom} size={18} color={C.ink} />
+    </TouchableOpacity>
+  );
+
   return (
     <Modal visible={open} animationType="slide" transparent onRequestClose={onClose}>
       <TouchableOpacity activeOpacity={1} onPress={onClose} style={{ flex: 1, backgroundColor: C.scrim, justifyContent: 'flex-end' }}>
-        <TouchableOpacity activeOpacity={1} style={{ backgroundColor: C.bg, borderTopLeftRadius: RADIUS.chip, borderTopRightRadius: RADIUS.chip, paddingTop: SP.sm2, paddingBottom: SP.sm2 + insets.bottom, maxHeight: '70%' }}>
+        <TouchableOpacity activeOpacity={1} style={{ backgroundColor: C.bg, borderTopLeftRadius: RADIUS.chip, borderTopRightRadius: RADIUS.chip, paddingTop: SP.sm2, paddingBottom: SP.md + insets.bottom }}>
           <View style={{ alignItems: 'center', paddingVertical: SP.xs2 }}>
             <View style={{ width: 40, height: 4, borderRadius: RADIUS.half(4), backgroundColor: C.border }} />
           </View>
-          <Text style={[TYPE.subtitle, { color: C.ink, paddingHorizontal: SP.xl, paddingVertical: SP.sm2 }]}>Choisir l'édition</Text>
-          <ScrollView>
-            {list.map((e) => {
-              const on = e.date === date;
-              return (
-                <TouchableOpacity key={e.date} onPress={() => onPick(e.date)}
-                  accessibilityRole="button" accessibilityState={{ selected: on }}
-                  accessibilityLabel={on ? `${e.label}, édition affichée` : e.label}
-                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SP.xl, paddingVertical: SP.md2 }}>
-                  <Text style={[TYPE.body, { fontFamily: on ? F.bodySemi : F.body, color: on ? C.cobalt : C.ink }]}>{e.label}</Text>
-                  {on ? <Icon name="checkmark" size={18} color={C.cobalt} /> : null}
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+          <Text style={[TYPE.subtitle, { color: C.ink, paddingHorizontal: SP.xl, paddingTop: SP.sm2 }]}>Choisir l'édition</Text>
+          <Text style={[TYPE.caption, { color: C.inkMut, paddingHorizontal: SP.xl, paddingBottom: SP.md }]}>
+            {list.length} édition{list.length > 1 ? 's' : ''} · touchez un jour en surbrillance
+          </Text>
+
+          {/* Navigation de mois — bornée aux mois qui PORTENT de la donnée (jamais de mois vide). */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: SP.md2, marginBottom: SP.sm }}>
+            <Fleche nom="back" onPress={precedent} label="Mois précédent" />
+            <View style={{ flex: 1, alignItems: 'center' }}>
+              <Text style={[TYPE.label, { color: C.ink }]}>{libelleMois(m.y, m.m)}</Text>
+              <Text style={[TYPE.caption, { color: C.inkMut }]}>{nDansMois} édition{nDansMois > 1 ? 's' : ''}</Text>
+            </View>
+            <Fleche nom="chevron" onPress={suivant} label="Mois suivant" />
+          </View>
+
+          {/* En-tête des jours (semaine française, lundi d'abord) — décoratif : masqué aux lecteurs d'écran,
+              qui reçoivent la date complète sur chaque case. */}
+          <View style={{ flexDirection: 'row', paddingHorizontal: SP.md2 }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+            {JOURS_FR.map((j, i) => (
+              <Text key={i} style={[TYPE.caption, { flex: 1, textAlign: 'center', color: C.inkMut, paddingVertical: SP.xs }]}>{j}</Text>
+            ))}
+          </View>
+
+          <View style={{ paddingHorizontal: SP.md2 }}>
+            {semaines.map((sem, si) => (
+              <View key={si} style={{ flexDirection: 'row' }}>
+                {sem.map((d, di) => {
+                  if (d == null) return <View key={di} style={{ flex: 1, height: TOUCH.min }} />;
+                  const iso = toISO(m.y, m.m, d);
+                  const a = Object.prototype.hasOwnProperty.call(dispo, iso);   // RS3 : jamais une clé du prototype
+                  const on = iso === date;
+                  return (
+                    <TouchableOpacity key={di} disabled={!a} onPress={() => a && onPick(iso)}
+                      accessibilityRole={a ? 'button' : 'text'}
+                      accessibilityState={{ selected: on, disabled: !a }}
+                      accessibilityLabel={a ? `${dispo[iso]}${on ? ', édition affichée' : ', édition disponible'}` : `${d} ${MOIS_FR[m.m]}, aucune édition`}
+                      style={{ flex: 1, height: TOUCH.min, alignItems: 'center', justifyContent: 'center', padding: SP.hair }}>
+                      <View style={{
+                        width: 38, height: 38, borderRadius: RADIUS.half(38), alignItems: 'center', justifyContent: 'center',
+                        backgroundColor: on ? C.actionFill : a ? tint(C.cobalt, 0.1) : 'transparent',
+                      }}>
+                        <Text style={[TYPE.label, { color: on ? C.onAction : a ? C.cobalt : C.inkMut }]}>{d}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            ))}
+          </View>
+
+          {/* Légende — comme la carte : jamais l'information par la seule couleur (WCAG 1.4.1). */}
+          <View style={{ flexDirection: 'row', gap: SP.lg, paddingHorizontal: SP.xl, paddingTop: SP.md2 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs2 }}>
+              <View style={{ width: 12, height: 12, borderRadius: RADIUS.half(12), backgroundColor: tint(C.cobalt, 0.1), borderWidth: 1, borderColor: C.border }} />
+              <Text style={[TYPE.caption, { color: C.inkMut }]}>édition disponible</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs2 }}>
+              <View style={{ width: 12, height: 12, borderRadius: RADIUS.half(12), backgroundColor: C.actionFill }} />
+              <Text style={[TYPE.caption, { color: C.inkMut }]}>affichée</Text>
+            </View>
+          </View>
         </TouchableOpacity>
       </TouchableOpacity>
     </Modal>

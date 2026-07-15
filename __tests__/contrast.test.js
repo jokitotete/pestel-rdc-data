@@ -73,3 +73,29 @@ describe('RS1-07 contraste WCAG — jetons GRAPHIQUES ≥ 3:1 (point/pastille, c
     });
   }
 });
+
+// v1.3 — CALENDRIER de selection d'edition. Le jour PORTEUR de donnee est du texte cobalt sur tint(cobalt, 0.1)
+// pose sur le fond de la feuille (C.bg) ; le jour AFFICHE est onAction sur actionFill ; le jour sans edition
+// est inkMut sur bg. MESURE, jamais juge a l'oeil : sur C.bg en theme CLAIR, tint 0.14 donne 4,47:1 — il rate
+// l'AA de 0,03. C'est pourquoi le `0.1` de l'app n'est pas une habitude esthetique mais la LIMITE de securite.
+describe('v1.3 contraste — calendrier de selection d edition', () => {
+  for (const t of [{ n: 'clair', P: LIGHT }, { n: 'sombre', P: DARK }]) {
+    it(`${t.n} : jour DISPONIBLE (cobalt sur tint(cobalt,0.1) pose sur bg) >= 4,5:1`, () => {
+      const fond = over(tint(t.P.cobalt, 0.1), t.P.bg);
+      const hex = 'rgb(' + fond.slice(0, 3).map(Math.round).join(',') + ')';
+      expect(ratio(t.P.cobalt, hex)).toBeGreaterThanOrEqual(4.5);
+    });
+    it(`${t.n} : jour AFFICHE (onAction sur actionFill) >= 4,5:1`, () => {
+      expect(ratio(t.P.onAction, t.P.actionFill)).toBeGreaterThanOrEqual(4.5);
+    });
+    it(`${t.n} : jour SANS edition (inkMut sur bg) >= 4,5:1 — il reste LISIBLE, il n est pas efface`, () => {
+      expect(ratio(t.P.inkMut, t.P.bg)).toBeGreaterThanOrEqual(4.5);
+    });
+    it(`${t.n} : tint 0.14 sur bg ECHOUE — ancre la raison du choix de 0.1`, () => {
+      const fond = over(tint(t.P.cobalt, 0.14), t.P.bg);
+      const hex = 'rgb(' + fond.slice(0, 3).map(Math.round).join(',') + ')';
+      const r = ratio(t.P.cobalt, hex);
+      if (t.n === 'clair') expect(r).toBeLessThan(4.5);   // 4,47 : la marge est de 0,03
+    });
+  }
+});

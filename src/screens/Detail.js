@@ -2,7 +2,7 @@ import React from 'react';
 import { Text, View, ScrollView, TouchableOpacity, Share } from 'react-native';
 import { C, AX, AXT, AX_SHORT, tint, pick, TYPE, SP, RADIUS, HIT } from '../theme';
 import { RelBadge, SrcDot, Icon, AxisGlyph, StateView } from '../ui';
-import { findItem, sourcesFor, primarySource } from '../store';
+import { findItem, sourcesFor, primarySource , normalizeActors} from '../store';
 import { itemProvinces } from '../geo';
 import { confirmOpenURL, hostOf, isSafeUrl } from '../safeUrl';
 
@@ -108,18 +108,29 @@ export default function Detail({ ed, code, onOpen, isFav, onToggleFav, onGoTo })
         </Block>
       ) : null}
 
-      {/* Acteurs — rendu défensif : texte, tableau de textes, ou tableau d'objets {name, role}. */}
-      {z.actors ? (
-        <Block title="Acteurs">
-          <Text style={[TYPE.body, { color: C.inkDim }]}>
-            {(Array.isArray(z.actors) ? z.actors : [z.actors])
-              .map((a) => (typeof a === 'string' ? a
-                : a && a.name ? (a.role ? `${a.name} — ${a.role}` : a.name)
-                : (a && (a.text || a.acteur)) || ''))
-              .filter(Boolean).join(' · ')}
-          </Text>
-        </Block>
-      ) : null}
+      {/* ACTEURS EN PRÉSENCE — aligné sur le portail (source de vérité) : l'acteur en semi-gras, sa position
+          en texte atténué, séparés par un filet. Le portail les met en deux colonnes (42 % / reste) ; sur
+          mobile on EMPILE (une colonne de 42 % sur 375 dp couperait chaque nom) — même hiérarchie, autre support.
+          normalizeActors couvre la structure {a,p} ET la prose des éditions antérieures ; s'il ne reste rien
+          d'exploitable, on n'affiche RIEN : jamais un titre suivi de vide (c'était le bug). */}
+      {(() => {
+        const acteurs = normalizeActors(z.actors);
+        if (!acteurs.length) return null;
+        return (
+          <Block title="Acteurs en présence">
+            {acteurs.map((a, i) => (
+              <View key={i} style={{ paddingVertical: SP.sm2, borderTopWidth: i ? 1 : 0, borderTopColor: C.border2 }}>
+                {a.nom ? (
+                  <Text style={[TYPE.label, { color: C.ink, marginBottom: a.position ? SP.xs : 0 }]}>{a.nom}</Text>
+                ) : null}
+                {a.position ? (
+                  <Text style={[a.nom ? TYPE.bodySm : TYPE.body, { color: C.inkDim }]}>{a.position}</Text>
+                ) : null}
+              </View>
+            ))}
+          </Block>
+        );
+      })()}
 
       {/* Perspectives */}
       {z.outlook ? (

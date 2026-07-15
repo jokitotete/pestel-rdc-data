@@ -65,6 +65,36 @@ export const primarySource = (ed, it) => {
 // (exigence PO : l'utilisateur CHOISIT, l'app ne PRÉSUME pas) au commit 0bac2d0 — plus aucun écran ne
 // l'importait depuis. Son seul consommateur restant était un test : du code mort qui se testait lui-même.)
 
+// ACTEURS d'un item — la forme a CHANGÉ le 15/07/2026 (commit de données b18014b) : le portail est passé
+// de la PROSE à une STRUCTURE, sans que l'app suive. Les deux coexistent, et coexisteront : la veille est
+// LONGITUDINALE — on lit encore l'édition du 3 juillet.
+//   • [{ a, p }]              → structure canonique du portail : a = acteur, p = position (éditions ≥ 15/07)
+//   • "texte"                 → prose (éditions antérieures)
+//   • [{name, role|note}] / [{text}] / [{acteur}] → formes historiques, tolérées
+// Renvoie [] si rien d'exploitable : l'écran doit alors NE RIEN AFFICHER plutôt qu'un titre suivi de vide.
+// C'était exactement le bug : le rendu « défensif » mappait {a,p} sur '' puis filtrait — il n'a pas planté,
+// il a échoué EN SILENCE. Trois campagnes de QA ne l'ont pas vu ; un utilisateur l'a vu en une lecture.
+const premiereChaine = (...vals) => {
+  for (const v of vals) if (typeof v === 'string' && v.trim()) return v.trim();
+  return null;
+};
+export const normalizeActors = (actors) => {
+  if (!actors) return [];
+  const out = [];
+  for (const x of (Array.isArray(actors) ? actors : [actors])) {
+    if (typeof x === 'string') {
+      const s = x.trim();
+      if (s) out.push({ nom: null, position: s });          // prose : pas de nom, tout est « position »
+      continue;
+    }
+    if (!x || typeof x !== 'object' || Array.isArray(x)) continue;
+    const nom = premiereChaine(x.a, x.name, x.acteur);
+    const position = premiereChaine(x.p, x.role, x.note, x.text);
+    if (nom || position) out.push({ nom, position });
+  }
+  return out;
+};
+
 // Parse un « quand » d'agenda ("05/07/2026" ou "Août 2026") → timestamp (ou null).
 const MOIS = { jan: 0, janv: 0, fév: 1, fev: 1, mars: 2, avr: 3, mai: 4, juin: 5, juil: 6, aou: 7, aoû: 7, sep: 8, oct: 9, nov: 10, déc: 11, dec: 11 };
 const monthIdx = (w) => MOIS[w.slice(0, 4).toLowerCase()] ?? MOIS[w.slice(0, 3).toLowerCase()] ?? null;

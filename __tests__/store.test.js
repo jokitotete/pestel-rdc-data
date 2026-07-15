@@ -1,4 +1,4 @@
-import { parseWhen, upcomingEvents, findItem, getEdition, latestDate, allItems, primarySource, searchAll, followedItems } from '../src/store';
+import { parseWhen, upcomingEvents, findItem, getEdition, latestDate, allItems, primarySource, searchAll, followedItems, normalizeActors } from '../src/store';
 import { SECTORS, itemInSector } from '../src/sectors';
 
 describe('store.parseWhen — fuzz', () => {
@@ -138,3 +138,52 @@ describe('store.followedItems — Pour vous', () => {
 
 // (Tests de sectorItems retirés — QA v1.2 : la « Lentille » n'existe plus depuis 0bac2d0. Ces tests
 // étaient le DERNIER consommateur du code : du code mort qui se testait lui-même, donc semblait vivant.)
+
+// BUG UTILISATEUR (15/07) : « les acteurs sont vides sur les articles ». Cause : le portail est passe de la
+// PROSE a la structure {a, p} au commit de donnees b18014b, et le rendu « defensif » de Detail ne connaissait
+// que {name, role} / {text} / {acteur} -> chaque acteur retombait sur '', le filter(Boolean) les supprimait
+// tous, et le bloc « Acteurs » s'affichait AVEC DU VIDE dessous. Il n'a pas plante : il a echoue EN SILENCE.
+describe('store.normalizeActors — les DEUX formes reelles (la veille est longitudinale)', () => {
+  it('structure {a, p} du portail (editions >= 15/07) — LE bug signale', () => {
+    const r = normalizeActors([
+      { a: 'États-Unis (Marco Rubio)', p: "Parrain de l'accord ; crédibilité engagée." },
+      { a: 'AFC/M23', p: 'Contrôle le site.' },
+    ]);
+    expect(r).toEqual([
+      { nom: 'États-Unis (Marco Rubio)', position: "Parrain de l'accord ; crédibilité engagée." },
+      { nom: 'AFC/M23', position: 'Contrôle le site.' },
+    ]);
+  });
+  it('prose des editions anterieures (<= 14/07) — ne doit PAS regresser', () => {
+    expect(normalizeActors('OMS : coordination. Autorités RDC : centres de traitement.'))
+      .toEqual([{ nom: null, position: 'OMS : coordination. Autorités RDC : centres de traitement.' }]);
+  });
+  it('formes historiques tolerees {name, role} / {text} / {acteur}', () => {
+    expect(normalizeActors([{ name: 'X', role: 'r' }])).toEqual([{ nom: 'X', position: 'r' }]);
+    expect(normalizeActors([{ text: 'brut' }])).toEqual([{ nom: null, position: 'brut' }]);
+    expect(normalizeActors([{ acteur: 'Y' }])).toEqual([{ nom: 'Y', position: null }]);
+  });
+  it('renvoie [] sur tout ce qui n est pas exploitable -> l ecran n affiche RIEN (pas un titre vide)', () => {
+    for (const v of [null, undefined, '', '   ', [], [{}], [42], [null], [{ zz: 1 }], [[1, 2]]]) {
+      expect(normalizeActors(v)).toEqual([]);
+    }
+  });
+  it('ne plante sur AUCUNE donnee reelle des 13 editions, et rend ce qui existe', () => {
+    let rendus = 0, avecActeurs = 0;
+    for (const d of Object.keys(require('../src/data/pestel').EDITIONS)) {
+      const ed = getEdition(d);
+      for (const it of allItems(ed)) {
+        const a = it.zoom && it.zoom.actors;
+        if (a == null) continue;
+        avecActeurs++;
+        const r = normalizeActors(a);
+        expect(Array.isArray(r)).toBe(true);
+        if (r.length) rendus++;
+      }
+    }
+    // Le coeur du bug : AVANT le correctif, les items du 15/07 comptaient dans `avecActeurs`
+    // mais rendaient du VIDE. On exige desormais que TOUT item porteur d acteurs en rende.
+    expect(avecActeurs).toBeGreaterThan(0);
+    expect(rendus).toBe(avecActeurs);
+  });
+});
