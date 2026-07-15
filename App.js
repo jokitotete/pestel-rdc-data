@@ -206,8 +206,13 @@ export default function App() {
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Image source={require('./assets/ntongo/icon.png')} style={{ width: 34, height: 34, borderRadius: RADIUS.md, marginRight: SP.sm2 }} />
             {/* numberOfLines={1} : garde-fou de MARQUE — si l'en-tête se resature un jour, le logotype
-                doit dégrader proprement, jamais se briser en deux lignes comme en v1.0/v1.1. */}
-            <Text style={[TYPE.wordmark, { color: C.ink, flex: 1 }]} numberOfLines={1}>
+                doit dégrader proprement, jamais se briser en deux lignes comme en v1.0/v1.1.
+                allowFontScaling={false} (QA v1.2) : un LOGOTYPE n'est pas du contenu — il n'a pas à suivre la
+                préférence de lecture. Sans ce plafond, au curseur de police Android à 200 %, « Ntongo · RDC »
+                (120,8 dp mesurés sur le vrai Fraunces_700Bold) passe à 241,6 dp pour une boîte de 221 dp :
+                numberOfLines transformait la casse en TRONCATURE (« Ntongo · RD… ») — la marque, mangée
+                autrement. Sur un écran 360 dp, elle cassait dès 150 %, un cran atteignable au curseur stock. */}
+            <Text style={[TYPE.wordmark, { color: C.ink, flex: 1 }]} numberOfLines={1} allowFontScaling={false}>
               Ntongo <Text style={{ color: C.cobalt }}>· RDC</Text>
             </Text>
             <TouchableOpacity activeOpacity={0.7} onPress={toggleNotif} hitSlop={HIT.sm}

@@ -28,13 +28,15 @@ const okZoom = (z) => z == null || (isObj(z)
 const okItem = (x) => isObj(x)
   && typeof x.code === 'string' && typeof x.title === 'string'                      // code = clé de résolution ; title = enfant Text
   && isScalar(x.text) && isScalar(x.analysis) && isScalar(x.reliability)            // rendus par NewsCard/Detail
+  && (x.sources == null || Array.isArray(x.sources))                                // QA v1.2 : sourcesFor fait ids.map → Array-ou-absent
   && okZoom(x.zoom);
 const okAxis = (a) => isObj(a) && typeof a.key === 'string'                         // key = pick(AX,…) + résolution
   && isScalar(a.name) && isScalar(a.short) && isScalar(a.lens)                      // axisName = short||name ; lens rendus
   && Array.isArray(a.items) && a.items.every(okItem);
 const okSource = (s) => isObj(s)
-  && isScalar(s.name) && isScalar(s.type) && isScalar(s.date) && isScalar(s.url);   // name : primarySource.split ; type/date/url rendus/traités
-const okAgenda = (a) => isObj(a) && isScalar(a.when) && isScalar(a.what) && isScalar(a.code);   // Home « À suivre »
+  && isScalar(s.name) && isScalar(s.type) && isScalar(s.date) && isScalar(s.url)    // name : primarySource.split ; type/date/url rendus/traités
+  && isScalar(s.reliability);                                                       // QA v1.2 : SrcDot rend {rel} en enfant Text
+const okAgenda = (a) => isObj(a) && isScalar(a.when) && isStr(a.what) && isScalar(a.code);   // Home « À suivre » ; what : .trim() dans upcomingEvents
 const okListOfObj = (v) => Array.isArray(v) && v.every((x) => isObj(x) && isScalar(x.title) && isScalar(x.axisLabel));   // feed/triage : title + axisLabel rendus
 
 // Stats — feuilles rendues par l'onglet Données (KPI + graphes).
@@ -75,7 +77,12 @@ export function validateData(raw) {
     if (DANGER.has(k) || !DATE_RE.test(k)) return false;
     const e = editions[k];
     if (!isObj(e) || !Array.isArray(e.axes) || !Array.isArray(e.headline) || !Array.isArray(e.sources)) return false;
-    if (!isScalar(e.label) || !isScalar(e.date)) return false;   // RS3.4 : ed.label rendu (en-tête/bandeaux) ; ed.date → favId
+    if (!isScalar(e.label)) return false;                        // RS3.4 : ed.label est un simple libellé RENDU (en-tête/bandeaux)
+    // QA v1.2 : e.date n'est PAS un libellé, c'est une IDENTITÉ. Detail construit `edDate: ed.date` BRUT dans le
+    // snapshot de favori ; un e.date NUMÉRIQUE passait isScalar, l'étoile s'allumait… puis sanitizeFavs jetait le
+    // favori au relancement (typeof f.edDate !== 'string') → PERTE SILENCIEUSE d'une action utilisateur, pilotée à
+    // distance. Une clé doit tenir le contrat de la clé : même DATE_RE que les clés d'éditions ci-dessus.
+    if (typeof e.date !== 'string' || !DATE_RE.test(e.date)) return false;
     // RS3.3 : typer EXHAUSTIVEMENT les feuilles rendues/déréférencées — headline & items (code/title/text/
     // analysis/zoom), axes (key/short/name/lens), sources (name/type/date/url), agenda (when/what/code).
     if (!e.headline.every(okItem)) return false;

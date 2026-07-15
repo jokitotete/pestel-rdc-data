@@ -50,7 +50,8 @@ export default function Stats() {
                       {ind.unit ? <Text style={[TYPE.label, { color: C.inkDim }]}>{ind.unit}</Text> : null}
                     </View>
                     <Text style={[TYPE.label, { color: C.ink, marginTop: SP.xs }]}>{ind.label}</Text>
-                    {ind.note ? <Text style={[TYPE.caption, { color: C.inkMut, marginTop: SP.xs }]} numberOfLines={2}>{ind.note}</Text> : null}
+                    {/* QA v1.2 : rôle de PROSE (noteSm, sans) — `caption` (mono) coupait ~31 % de la note. */}
+                    {ind.note ? <Text style={[TYPE.noteSm, { color: C.inkMut, marginTop: SP.xs }]} numberOfLines={2}>{ind.note}</Text> : null}
                     {ind.src && ind.src.u ? (
                       <TouchableOpacity onPress={() => confirmOpenURL(ind.src.u)} accessibilityRole="link"
                         style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs, marginTop: SP.xs2 }}>

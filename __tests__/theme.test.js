@@ -1,4 +1,4 @@
-import { pick, tint, AX, mapLevel, MAP_RAMP, MAP_CATS } from '../src/theme';
+import { pick, tint, AX, mapLevel, MAP_RAMP, MAP_CATS, isFollowableAxis, AX_ORDER, RUBRIQUES, SYNTHETIC_AXES } from '../src/theme';
 
 // RS3 (campagne 2026-07-14) : `MAP[cléNonFiable]` résout aussi les propriétés HÉRITÉES du prototype
 // (constructor/__proto__/toString…) — toutes truthy — donc `MAP[clé] || fallback` ne se replie pas et une
@@ -43,5 +43,27 @@ describe('theme.tint — jamais de crash sur couleur non-string', () => {
   });
   it('teinte correctement un hex normal', () => {
     expect(tint('#ffffff', 0.5)).toBe('rgba(255,255,255,0.5)');
+  });
+});
+
+// QA v1.2 — « suivable » : UN SEUL PREDICAT, DEUX CONSOMMATEURS (l'OFFRE dans Home, le STOCKAGE dans
+// prefs.loadFollows). Le bug F2 est ne d'un predicat dedouble ; ce test ancre la source de verite unique.
+describe('theme.isFollowableAxis — ce qu on peut suivre (fermeture de la classe F2)', () => {
+  it('un axe PESTEL et une rubrique REELLE sont suivables', () => {
+    for (const k of AX_ORDER) expect(isFollowableAxis(k)).toBe(true);
+    expect(isFollowableAxis('C')).toBe(true);    // Culture & Arts : des items portent axis:'C'
+    expect(isFollowableAxis('Sp')).toBe(true);   // Sports : idem
+  });
+  it('un axe SYNTHETIQUE n est PAS suivable — « Pour vous » ne pourrait jamais rien en rendre', () => {
+    // « Events » affiche 12 rendez-vous (agregat temporel des agendas) mais AUCUN item ne porte axis:'Ev' :
+    // offrir « Suivre » y promettait une liste qui serait restee vide a perpetuite.
+    expect(SYNTHETIC_AXES).toContain('Ev');
+    expect(isFollowableAxis('Ev')).toBe(false);
+  });
+  it('une cle inconnue ou hostile n est pas suivable (fail-closed)', () => {
+    for (const k of ['', 'ZZ', '__proto__', 'constructor', 'toString']) expect(isFollowableAxis(k)).toBe(false);
+  });
+  it('tout axe synthetique est bien declare dans la taxonomie (coherence interne)', () => {
+    for (const k of SYNTHETIC_AXES) expect(AX_ORDER.concat(RUBRIQUES)).toContain(k);
   });
 });

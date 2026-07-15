@@ -164,7 +164,8 @@ function DonutChart({ data, centerV, centerL }) {
         </Svg>
         <View style={{ position: 'absolute', width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
           {centerV != null ? <Text style={[TYPE.data, { color: C.ink }]}>{centerV}</Text> : null}
-          {centerL ? <Text style={[TYPE.caption, { color: C.inkMut }]}>{centerL}</Text> : null}
+          {/* QA v1.2 : rôle DÉDIÉ (donutLabel 9 px) — `caption` (11 px mono) débordait sur l'anneau. */}
+          {centerL ? <Text style={[TYPE.donutLabel, { color: C.inkMut }]} numberOfLines={1}>{centerL}</Text> : null}
         </View>
       </View>
       <View style={{ flex: 1, gap: SP.xs2 }}>

@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isSafeUrl } from './safeUrl';
-import { AX_ORDER, RUBRIQUES } from './theme';
+import { AX_ORDER, RUBRIQUES, isFollowableAxis } from './theme';
 
 // Préférences persistées (best-effort). Aujourd'hui : la LENTILLE sectorielle (P1) — le secteur
 // choisi survit aux relances (exigence Product Owner : état persistant, corrigible, jamais deviné).
@@ -143,6 +143,10 @@ export async function loadFollows() {
       // fail-closed : type en liste blanche + key string BORNÉE (cohérent avec recent/favs — jamais de
       // chaîne non bornée relue du stockage, même inerte).
       if (!isObj(f) || !FOLLOW_TYPES.has(f.type) || typeof f.key !== 'string' || !f.key || f.key.length > 64) continue;
+      // QA v1.2 — MÊME prédicat que l'offre (theme.isFollowableAxis) : un suivi d'axe SYNTHÉTIQUE ne peut rien
+      // rendre. Purge aussi les suivis « Ev » déjà PERSISTÉS par les APK v1.0/v1.1, où l'offre existait à tort :
+      // sans cela la pastille « Pour vous » resterait proposée et éternellement vide après mise à jour.
+      if (f.type === 'axis' && !isFollowableAxis(f.key)) continue;
       const id = f.type + ':' + f.key;
       if (seen.has(id)) continue;
       seen.add(id);

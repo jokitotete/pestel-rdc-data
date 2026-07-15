@@ -3,7 +3,7 @@ import { applyRemote, getFeed, getTriage } from '../src/store';
 
 // Payload minimal valide ; `extra` permet d'injecter un feed.
 const base = (extra = {}) => ({
-  editions: { '2026-07-13': { axes: [{ key: 'P', items: [] }], headline: [], sources: [] } },
+  editions: { '2026-07-13': { date: '2026-07-13', label: '13 juillet 2026', axes: [{ key: 'P', items: [] }], headline: [], sources: [] } },
   manifest: [{ date: '2026-07-13', label: '13 juillet 2026' }],
   stats: { themes: [], trends: [] },
   ...extra,

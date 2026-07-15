@@ -117,6 +117,19 @@ describe('prefs follows — Suivre (local, fail-closed)', () => {
       { type: 'bad', key: 'x' }, { type: 'axis', key: 5 }, 'nope', null]);
     expect(await loadFollows()).toEqual([{ type: 'axis', key: 'P' }, { type: 'sector', key: 'banques' }]);
   });
+  // QA v1.2 — MIGRATION. Les APK v1.0/v1.1 offraient « Suivre » sur la rubrique Events (axe SYNTHÉTIQUE) :
+  // un suivi {type:'axis', key:'Ev'} a donc pu être PERSISTÉ. Il passe FOLLOW_TYPES et le contrôle de longueur.
+  // Sans purge à la relecture, la pastille « Pour vous » resterait proposée après mise à jour — et vide à
+  // perpétuité, puisque aucun item ne porte axis:'Ev'. Le stockage applique le MÊME prédicat que l'offre.
+  it('purge un suivi d’axe SYNTHÉTIQUE hérité de v1.0/v1.1 (migration)', async () => {
+    await saveFollows([{ type: 'axis', key: 'Ev' }, { type: 'axis', key: 'E' }, { type: 'sector', key: 'mines' }]);
+    expect(await loadFollows()).toEqual([{ type: 'axis', key: 'E' }, { type: 'sector', key: 'mines' }]);
+  });
+  it('un suivi UNIQUEMENT « Ev » se relit vide → aucune pastille « Pour vous » fantôme', async () => {
+    await saveFollows([{ type: 'axis', key: 'Ev' }]);
+    expect(await loadFollows()).toEqual([]);
+  });
+
   it('vide par défaut / sur blob corrompu', async () => {
     expect(await loadFollows()).toEqual([]);
     await saveFollows('x');

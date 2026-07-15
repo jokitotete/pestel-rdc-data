@@ -40,8 +40,11 @@ export const findItem = (ed, code) => {
 };
 
 // Résout des ids de sources en objets source.
+// QA v1.2 (défense en profondeur) : `ids || []` laissait passer toute valeur TRUTHY non-tableau (une string,
+// un objet) puis .map plantait. L'ACL type désormais item.sources en Array-ou-absent — mais on ne parie pas
+// la survie de l'écran Dossier sur un seul rempart : Array.isArray ou rien.
 export const sourcesFor = (ed, ids) =>
-  (ids || []).map((id) => ed.sources.find((s) => s.id === id)).filter(Boolean);
+  (Array.isArray(ids) ? ids : []).map((id) => ed.sources.find((s) => s.id === id)).filter(Boolean);
 
 // Source PRINCIPALE d'un item, pour l'afficher sur la carte (« {name} · {host} »). App d'agrégation :
 // on cite systématiquement d'où vient l'info. Renvoie {name, host, url} ou null si aucune source résolue.
@@ -100,7 +103,8 @@ export const upcomingEvents = (windowDays = 21, cap = 12) => {
     for (const a of (ed && Array.isArray(ed.agenda) ? ed.agenda : [])) {
       const t = parseWhen(a.when);
       if (t == null || t < lo || t > hi) continue;
-      const key = t + '|' + (a.code || (a.what || '').trim().toLowerCase());
+      // QA v1.2 : String(...) — `(a.what || '')` laissait passer un NOMBRE (42 est truthy) puis .trim plantait.
+      const key = t + '|' + (a.code || String(a.what || '').trim().toLowerCase());
       if (seen.has(key)) continue;
       seen.add(key);
       // Intégrité référentielle : un `code` qui ne résout PAS vers un item de SON édition est NEUTRALISÉ

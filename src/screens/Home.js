@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Text, View, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
-import { C, F, AX, AXT, AX_SHORT, AX_ORDER, RUBRIQUES, tint, pick, SP, TYPE, RADIUS, HIT } from '../theme';
+import { C, F, AX, AXT, AX_SHORT, AX_ORDER, RUBRIQUES, tint, pick, SP, TYPE, RADIUS, HIT, isFollowableAxis } from '../theme';
 import { Card, SectionHead, Pill, Icon, Rule, AxisGlyph, SectorGlyph, NewsCard, PageHeader, SourceLine } from '../ui';
 import { allItems, upcomingEvents, primarySource, findItem, followedItems } from '../store';
 import { SECTORS, itemInSector } from '../sectors';
@@ -171,8 +171,12 @@ export default function Home({ ed, onOpen, feed = [], triage = [], onOpenEvent, 
         ))}
       </FilterRow>
 
-      {/* RS1-23 : « Suivre » un axe/secteur filtré — bascule locale qui alimente « Pour vous ». */}
-      {onToggleFollow && (filter.type === 'axis' || filter.type === 'sector') ? (() => {
+      {/* RS1-23 : « Suivre » un axe/secteur filtré — bascule locale qui alimente « Pour vous ».
+          QA v1.2 : n'offrir le suivi QUE là où « Pour vous » saura rendre quelque chose. Events (axe synthétique)
+          affichait 12 rendez-vous et proposait « Suivre » — mais aucun item ne porte axis:'Ev', donc « Pour vous »
+          restait vide À PERPÉTUITÉ alors que le bouton affichait « Suivi ». Signature F2 exacte : offrir une action
+          dont le résultat est calculé par un prédicat DIFFÉRENT de celui qui a produit la liste affichée. */}
+      {onToggleFollow && ((filter.type === 'axis' && isFollowableAxis(filter.key)) || filter.type === 'sector') ? (() => {
         const following = isFollowing && isFollowing(filter.type, filter.key);
         return (
           <TouchableOpacity onPress={() => onToggleFollow(filter.type, filter.key)} accessibilityRole="button"

@@ -2,7 +2,9 @@ import { validateData, safeAssign } from '../src/acl';
 import { EDITIONS, MANIFEST, STATS } from '../src/data/pestel';
 
 const base = () => ({
-  editions: { '2026-07-13': { axes: [{ key: 'P', items: [] }], headline: [], sources: [] } },
+  // `date` : le contrat REEL la porte toujours (12/12 editions, bundle ET distant) et l'app en depend
+  // (Detail construit favId = `${ed.date}:${it.code}`). La fixture doit refleter le contrat, pas l'inverse.
+  editions: { '2026-07-13': { date: '2026-07-13', label: '13 juillet 2026', axes: [{ key: 'P', items: [] }], headline: [], sources: [] } },
   manifest: [{ date: '2026-07-13', label: '13 juillet 2026' }],
   stats: { themes: [], trends: [] },
 });
@@ -126,6 +128,52 @@ describe('acl.validateData — fail-closed', () => {
       d.stats.trends = [{ type: 'bar', title: 'T', unit: good, data: [{ label: 'a', value: 1 }] }];
       expect(validateData(d)).toBe(true);
     }
+  });
+
+  // QA v1.2 — la classe « feuille non typée » que RS3.3 déclarait CLOSE ne l'était pas. Quatre feuilles
+  // manquaient encore. Leçon : « exhaustif » ne se décrète pas, il se DÉRIVE du code qui consomme chaque
+  // feuille. Chaque cas ci-dessous est un DoS distant PERSISTANT (le store muté re-crashe à chaque rendu).
+  it('QA v1.2 : item.sources doit être un tableau (sourcesFor fait ids.map)', () => {
+    for (const bad of ['P-1', 5, {}, true]) {
+      const d = base();
+      d.editions['2026-07-13'].headline = [{ code: 'X-1', title: 'T', sources: bad }];
+      expect(validateData(d)).toBe(false);
+    }
+    const ok = base();
+    ok.editions['2026-07-13'].headline = [{ code: 'X-1', title: 'T', sources: [1, 2] }];
+    expect(validateData(ok)).toBe(true);
+    const absent = base();
+    absent.editions['2026-07-13'].headline = [{ code: 'X-1', title: 'T' }];   // sources optionnel
+    expect(validateData(absent)).toBe(true);
+  });
+
+  it('QA v1.2 : agenda.what doit être une string (upcomingEvents fait .trim())', () => {
+    const d = base();
+    d.editions['2026-07-13'].agenda = [{ when: '05/07/2026', what: 42 }];   // code omis → `(42 || '')` → 42
+    expect(validateData(d)).toBe(false);
+    const ok = base();
+    ok.editions['2026-07-13'].agenda = [{ when: '05/07/2026', what: 'Forum' }];
+    expect(validateData(ok)).toBe(true);
+  });
+
+  it('QA v1.2 : source.reliability doit être scalaire (SrcDot le rend en enfant Text)', () => {
+    const d = base();
+    d.editions['2026-07-13'].sources = [{ id: 1, name: 'N', reliability: {} }];
+    expect(validateData(d)).toBe(false);
+    const ok = base();
+    ok.editions['2026-07-13'].sources = [{ id: 1, name: 'N', reliability: 'B' }];
+    expect(validateData(ok)).toBe(true);
+  });
+
+  it('QA v1.2 : edition.date est une IDENTITÉ (string ISO), pas un libellé — sinon favoris perdus', () => {
+    for (const bad of [20260714, null, '14/07/2026', {}]) {
+      const d = base();
+      d.editions['2026-07-13'].date = bad;
+      expect(validateData(d)).toBe(false);
+    }
+    const ok = base();
+    ok.editions['2026-07-13'].date = '2026-07-13';
+    expect(validateData(ok)).toBe(true);
   });
 
   it('rejette la pollution de prototype (chemin réel JSON.parse)', () => {

@@ -80,6 +80,18 @@ export const AX_ORDER = ['P', 'E', 'S', 'T', 'Env', 'L'];
 // Events est placé à côté de Sports (événements ouverts : forums, salons, sommets — distinct de l'agenda « À suivre »).
 export const RUBRIQUES = ['C', 'Sp', 'Ev'];
 
+// QA v1.2 — Axes SYNTHÉTIQUES : ils portent une pastille mais AUCUN item ne porte leur clé. « Events » n'est pas
+// un axe de contenu : c'est un agrégat TEMPOREL des agendas de toutes les éditions (store.upcomingEvents), rendu
+// par EventsView et non par la liste d'items. On ne peut donc pas le SUIVRE — « Pour vous » filtre les items par
+// `it.axis` et n'en trouverait jamais aucun : le suivi afficherait « Suivi » et resterait vide à perpétuité.
+//
+// UN SEUL PRÉDICAT, DEUX CONSOMMATEURS (fermeture de la classe F2) : l'OFFRE (Home) et le STOCKAGE
+// (prefs.loadFollows) s'y réfèrent tous les deux. Le bug F2 est né d'un prédicat dédoublé — la surface qui
+// offre et celle qui rend suivaient deux règles ; on refuse de recréer ce risque en corrigeant un seul côté.
+export const SYNTHETIC_AXES = ['Ev'];
+export const isFollowableAxis = (k) =>
+  (AX_ORDER.indexOf(k) >= 0 || RUBRIQUES.indexOf(k) >= 0) && SYNTHETIC_AXES.indexOf(k) < 0;
+
 // Marque « Ntongo » — slogan affiché (baseline produit).
 export const SLOGAN = 'La RDC qui vous concerne, chaque jour.';
 
@@ -196,6 +208,14 @@ export const TYPE = {
   bodySm:    { fontFamily: F.body,        fontSize: 13.5, lineHeight: 19.5, letterSpacing: 0 },   // corps de carte / listes
   label:     { fontFamily: F.bodySemi,    fontSize: 12.5, lineHeight: 16, letterSpacing: 0 },     // libellés, pills, chips
   caption:   { fontFamily: F.mono,        fontSize: 11,   lineHeight: 15, letterSpacing: 0 },     // méta, source, dates
+  // QA v1.2 — deux rôles extraits de `caption` (« méta, source, dates » = chiffres/dates COURTS). La migration
+  // v1.1 les y avait agrégés ; or ces deux surfaces ne sont pas contraintes par une colonne de texte :
+  noteSm:    { fontFamily: F.body,        fontSize: 10.5, lineHeight: 14, letterSpacing: 0 },     // note de KPI : de la PROSE sur 2 lignes.
+  // `caption` est MONOSPACE (IBM Plex Mono, chasse 0,6 em) → ~31 % de caractères en moins qu'une sans à
+  // surface égale : la note « Lobito — clôture financière » perdait « 450 km », le chiffre même qu'elle porte.
+  donutLabel: { fontFamily: F.mono,       fontSize: 9,    lineHeight: 12, letterSpacing: 0 },     // centre d'anneau : contraint par un CERCLE.
+  // Le trou de l'anneau ne laisse que ~74 dp de large à la hauteur du libellé : à 11 px mono, 13 caractères
+  // (« besoin d'aide ») font 85,8 dp et DÉBORDENT sur le tracé coloré. À 9 px : 70,2 dp — ça tient.
   overline:  { fontFamily: F.mono,        fontSize: 10.5, lineHeight: 14, letterSpacing: 1.0 },   // eyebrows / kickers (majuscules)
   mono:      { fontFamily: F.monoSemi,    fontSize: 11,   lineHeight: 15, letterSpacing: 0 },     // valeurs mono accentuées
   data:      { fontFamily: F.displayBold, fontSize: 21,   lineHeight: 24, letterSpacing: 0 },     // chiffres KPI
