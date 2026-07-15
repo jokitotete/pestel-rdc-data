@@ -10,3 +10,6 @@ web-build/
 
 # Videos de demo (artefacts livres, comme les APK — jamais dans l historique git)
 *.mp4
+
+# Scripts de narration des demos (livrables, pas du code)
+*_NARRATION.md
