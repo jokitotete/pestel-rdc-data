@@ -34,10 +34,14 @@ export default function Axes({ ed, onOpen, triage = [], onOpenEvent, seed, onSee
       : filter.type === 'divers' ? 'Divers' : null;
   const isRubrique = filter.type === 'axis' && RUBRIQUES.indexOf(filter.key) >= 0;
   const isEvents = filter.type === 'axis' && filter.key === 'Ev';   // Events = agrégat 3 semaines (P3)
+  // TCK-025 : le sous-titre suit la catégorie du filtre actif (axe PESTEL / rubrique / secteur).
+  const axesSubtitle = filter.type === 'sector' ? 'décrypter l’actualité, secteurs par secteurs'
+    : isRubrique ? 'décrypter l’actualité, rubriques par rubriques'
+      : 'décrypter l’actualité, axe par axe';
 
   return (
     <ScrollView contentContainerStyle={{ padding: SP.gutter, paddingBottom: SP.huge }} showsVerticalScrollIndicator={false}>
-      <PageHeader eyebrow="PESTEL" title="Axes" subtitle="décrypter l’actualité, axe par axe" />
+      <PageHeader eyebrow="PESTEL" title="Axes" subtitle={axesSubtitle} />
       {/* Groupe 1 : Axes PESTEL */}
       <FilterRow label="AXES PESTEL">
         <Pill label="Tous" active={filter.type === 'all'} onPress={() => setFilter({ type: 'all' })} />
@@ -68,7 +72,7 @@ export default function Axes({ ed, onOpen, triage = [], onOpenEvent, seed, onSee
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm, marginTop: SP.xs, marginBottom: SP.md2 }}>
           <Text style={[TYPE.label, { color: filter.type === 'divers' ? C.ink : pick(AXT, filter.key, C.cobalt) }]}>{activeLabel}</Text>
           {filter.type === 'sector' ? <Text style={[TYPE.caption, { color: C.inkMut }]}>tous axes confondus</Text>
-            : filter.type === 'divers' ? <Text style={[TYPE.caption, { color: C.inkMut }]}>capté automatiquement, hors classement</Text> : null}
+            : filter.type === 'divers' ? <Text style={[TYPE.caption, { color: C.inkMut }]}>actualités du jour captées à trier PESTEL</Text> : null}
         </View>
       ) : null}
 

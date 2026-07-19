@@ -24,9 +24,13 @@ import Search from './src/screens/Search';
 import Favoris from './src/screens/Favoris';
 import Detail from './src/screens/Detail';
 import Welcome from './src/screens/Welcome';
+import About from './src/screens/About';
 
-// On garde le splash natif AFFICHÉ jusqu'à ce que l'écran d'accueil animé prenne le relais (pas de flash).
-SplashScreen.preventAutoHideAsync().catch(() => {});
+// v1.4 : on NE bloque PLUS l'auto-masquage du splash natif. Sur certains builds/émulateurs, hideAsync()
+// ne parvient pas à masquer le splash Android 12+ → il restait figé indéfiniment. En laissant l'auto-hide,
+// le splash natif se retire dès le 1er rendu et l'écran d'accueil animé (Welcome) prend le relais. Filet
+// conservé (hideAsync sur onLayout + timeout) pour les plateformes qui l'honorent.
+// SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const TABS = [
   { key: 'home', label: 'À la une', icon: 'home' },
@@ -37,11 +41,21 @@ const TABS = [
 ];
 
 export default function App() {
-  const [loaded] = useFonts({
+  const [fontsLoaded] = useFonts({
     Fraunces_600SemiBold, Fraunces_700Bold,
     IBMPlexSans_400Regular, IBMPlexSans_500Medium, IBMPlexSans_600SemiBold, IBMPlexSans_700Bold,
     IBMPlexMono_400Regular, IBMPlexMono_500Medium, IBMPlexMono_600SemiBold,
   });
+  // Robustesse v1.4 : ne JAMAIS bloquer l'app indéfiniment si le chargement des polices cale (observé sur
+  // certains builds natifs) — au bout de 3 s on rend avec les polices système en repli (app utilisable), et
+  // on masque le splash natif quoi qu'il arrive (filet en plus de onWelcomeLayout). Un splash figé = pire qu'une police de repli.
+  const [fontTimeout, setFontTimeout] = useState(false);
+  const loaded = fontsLoaded || fontTimeout;
+  useEffect(() => {
+    const t1 = setTimeout(() => setFontTimeout(true), 3000);
+    const t2 = setTimeout(() => { SplashScreen.hideAsync().catch(() => {}); }, 3500);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []);
   const [date, setDate] = useState(latestDate());
   const followLatestRef = useRef(true);   // l'utilisateur suit-il la dernière édition ? (sinon on ne le déplace pas)
   const chooseDate = (d) => { followLatestRef.current = d === latestDate(); setDate(d); };  // choix EXPLICITE d'édition
@@ -73,6 +87,7 @@ export default function App() {
   };
   const [sheet, setSheet] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);   // TCK-015 : page « À propos » (bouton ? de l'en-tête)
   const [net, setNet] = useState('loading');      // 'loading' | 'online' | 'offline' — fraîcheur des données (P2, anti-ARCA)
   const [, setDataVer] = useState(0);             // bump → re-rendu après application des données en ligne
   const [mode, setMode] = useState('light');      // thème clair (défaut) / sombre
@@ -181,7 +196,11 @@ export default function App() {
     }
   });
 
-  if (!loaded) return null;   // polices en cours : le splash natif reste affiché (preventAutoHide)
+  // v1.4 (fix splash natif) : on NE bloque PLUS le rendu sur les polices. `return null` ne dessine AUCUNE
+  // frame opaque → la starting window Android 12 n'a rien à révéler et reste figée (contenu « hidden by
+  // parent », wallpaper visible). On rend TOUJOURS : Welcome (opaque) prend l'écran dès la 1ʳᵉ frame → la
+  // starting window se retire ; les polices arrivent en repli système puis se substituent sans blocage.
+  // `loaded` / onWelcomeLayout restent utilisés pour masquer explicitement le splash là où c'est honoré.
   const ed = getEdition(date) || getEdition(latestDate());   // RS3 : jamais null au rendu (cf. effet de re-calage)
   const dEd = detailEd || ed;   // l'item du détail peut venir d'une autre édition (Event)
   // RS3.2 : ouvrir un item CAPTURE son édition d'origine (comme Favoris/Events) — la fiche survit à un
@@ -214,7 +233,7 @@ export default function App() {
                 numberOfLines transformait la casse en TRONCATURE (« Ntongo · RD… ») — la marque, mangée
                 autrement. Sur un écran 360 dp, elle cassait dès 150 %, un cran atteignable au curseur stock. */}
             <Text style={[TYPE.wordmark, { color: C.ink, flex: 1 }]} numberOfLines={1} allowFontScaling={false}>
-              Ntongo <Text style={{ color: C.cobalt }}>· RDC</Text>
+              Ntongo <Text style={{ color: C.cobalt }}>· RDC News</Text>
             </Text>
             <TouchableOpacity activeOpacity={0.7} onPress={toggleNotif} hitSlop={HIT.sm}
               accessibilityRole="button" accessibilityLabel={notifOn ? 'Briefing du matin activé' : 'Activer le briefing du matin'}
@@ -230,6 +249,12 @@ export default function App() {
               accessibilityRole="button" accessibilityLabel="Rechercher"
               style={{ width: 38, height: 38, borderRadius: RADIUS.half(38), alignItems: 'center', justifyContent: 'center' }}>
               <Icon name="search" size={20} color={C.inkDim} />
+            </TouchableOpacity>
+            {/* TCK-015 : « ? » À propos, à côté de la loupe */}
+            <TouchableOpacity activeOpacity={0.7} onPress={() => setAboutOpen(true)} hitSlop={HIT.sm}
+              accessibilityRole="button" accessibilityLabel="À propos, version et mentions"
+              style={{ width: 34, height: 34, borderRadius: RADIUS.half(34), alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name="help" size={18} color={C.inkDim} />
             </TouchableOpacity>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm }}>
@@ -271,6 +296,14 @@ export default function App() {
           <ModalHeader title="Recherche" onClose={() => setSearchOpen(false)} />
           {/* onOpen(code, edDate) = openEvent : ouvre le résultat dans SON édition source, sans fermer la recherche */}
           <Search onOpen={openEvent} />
+        </SafeAreaView>
+      </Modal>
+
+      {/* À propos (TCK-015) — ouverte par le « ? » de l'en-tête : version, nouveautés, contact, mentions. */}
+      <Modal visible={aboutOpen} animationType="slide" onRequestClose={() => setAboutOpen(false)}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right', 'bottom']}>
+          <ModalHeader title="À propos" onClose={() => setAboutOpen(false)} />
+          <About />
         </SafeAreaView>
       </Modal>
 

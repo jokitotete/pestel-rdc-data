@@ -9,6 +9,8 @@ import { C, AX, AXT, pick } from './theme';
 // Paramétrées par couleur (tokenisé) : `currentColor` = trait, `__F__` = teinte de remplissage.
 const S = 'stroke="currentColor"';
 const ICONS = {
+  // ── UI : aide / À propos (monoline neutre) ──
+  help: `<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" ${S} stroke-width="1.7"/><path d="M9.2 9.2 C9.2 7.2 10.6 6.2 12 6.2 C13.6 6.2 14.9 7.1 14.9 8.7 C14.9 10.9 12 10.7 12 13" ${S} stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="16.2" r="1.05" fill="currentColor"/></svg>`,
   // ── Axes PESTEL (duotone) ──
   P: `<svg viewBox="0 0 24 24" fill="none"><path d="M12 3.2 L3 8.3 L21 8.3 Z" fill="__F__" fill-opacity="0.2"/><path d="M12 3.2 L3 8.3 L21 8.3" ${S} stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/><path d="M5.2 8.9 V17.2 M9.4 8.9 V17.2 M14.6 8.9 V17.2 M18.8 8.9 V17.2" ${S} stroke-width="1.8" stroke-linecap="round"/><path d="M3.4 17.6 H20.6 M4.7 20.4 H19.3" ${S} stroke-width="1.8" stroke-linecap="round"/></svg>`,
   E: `<svg viewBox="0 0 24 24" fill="none"><rect x="3.6" y="13" width="4" height="6.8" rx="1" fill="__F__" fill-opacity="0.2" ${S} stroke-width="1.6"/><rect x="10" y="9" width="4" height="10.8" rx="1" fill="__F__" fill-opacity="0.2" ${S} stroke-width="1.6"/><rect x="16.4" y="4.8" width="4" height="15" rx="1" fill="__F__" fill-opacity="0.2" ${S} stroke-width="1.6"/></svg>`,

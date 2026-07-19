@@ -36,7 +36,7 @@ export default function Detail({ ed, code, onOpen, isFav, onToggleFav, onGoTo })
   // signature. Aucune donnée perso ; hors-ligne OK (intent système).
   const onShare = () => {
     const url = psrc && psrc.url && isSafeUrl(psrc.url) ? psrc.url : null;
-    const msg = [it.title, psrc && psrc.name ? `— ${psrc.name}` : null, url, 'via Ntongo · RDC'].filter(Boolean).join('\n');
+    const msg = [it.title, psrc && psrc.name ? `— ${psrc.name}` : null, url, 'via Ntongo · RDC News'].filter(Boolean).join('\n');
     Share.share({ message: msg, title: it.title }).catch(() => {});
   };
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Text, View, Image, Animated, StyleSheet, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import Constants from 'expo-constants';
 import { SLOGAN, SP, RADIUS, DUR, EASE, SPLASH, SPLASH_TYPE } from '../theme';
 import { useReduceMotion } from '../ui';
 
@@ -66,7 +67,7 @@ export default function Welcome({ onDone, onLayout }) {
             <Image source={require('../../assets/ntongo/icon.png')} style={styles.logo} />
           </Animated.View>
           <Animated.View style={{ opacity: textOp, transform: [{ translateY: textTy }], alignItems: 'center' }}>
-            <Text style={styles.wordmark}>Ntongo <Text style={{ color: SPLASH.gold }}>· RDC</Text></Text>
+            <Text style={styles.wordmark}>Ntongo <Text style={{ color: SPLASH.gold }}>· RDC News</Text></Text>
             <Text style={styles.slogan}>{SLOGAN}</Text>
             {/* QW 14/07 : drapeau 🇨🇩 et boussole retirés — accueil épuré, seuls slogan + accroche portent la promesse. */}
             <Text style={styles.accrocheTxt}>{ACCROCHE}</Text>
@@ -79,6 +80,8 @@ export default function Welcome({ onDone, onLayout }) {
         {/* RS3 : affordance VISIBLE que l'écran est skippable (sinon la barre se lit comme « chargement, attendre »). */}
         <Text style={styles.skipHint}>Toucher pour passer</Text>
         <Text style={styles.foot}>2iD Consulting</Text>
+        {/* TCK-019 : version de l'application, sous « 2iD Consulting » (proposition du commanditaire). */}
+        <Text style={styles.version}>{'version ' + (Constants.expoConfig?.version || '1.4.0')}</Text>
       </LinearGradient>
       </Pressable>
     </Animated.View>
@@ -97,4 +100,6 @@ const styles = StyleSheet.create({
   skipHint: { ...SPLASH_TYPE.hint, position: 'absolute', bottom: 58, left: 0, right: 0, textAlign: 'center', color: SPLASH.hint },
   barFill: { height: 3, borderRadius: RADIUS.xs, backgroundColor: SPLASH.gold },
   foot: { ...SPLASH_TYPE.foot, position: 'absolute', bottom: 34, left: 0, right: 0, textAlign: 'center', color: SPLASH.foot },
+  // TCK-019 : version sous « 2iD Consulting » — typo « hint » + jeton couleur (zéro littéral, RS1-06).
+  version: { ...SPLASH_TYPE.hint, position: 'absolute', bottom: 18, left: 0, right: 0, textAlign: 'center', color: SPLASH.foot },
 });

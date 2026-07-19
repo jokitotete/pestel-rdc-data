@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Text, View, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { C, AX, AXT, AX_SHORT, AX_ORDER, RUBRIQUES, tint, pick, SP, TYPE, RADIUS, HIT, isFollowableAxis , fmtJour} from '../theme';
 import { Card, SectionHead, Pill, Icon, Rule, AxisGlyph, SectorGlyph, NewsCard, PageHeader, SourceLine } from '../ui';
-import { allItems, upcomingEvents, primarySource, findItem, followedItems } from '../store';
+import { allItems, upcomingEvents, primarySource, findItem, followedItems, latestDate } from '../store';
 import { SECTORS, itemInSector } from '../sectors';
 import { confirmOpenURL, hostOf, isSafeUrl } from '../safeUrl';
 import { DiversList } from './Triage';
@@ -174,20 +174,28 @@ export default function Home({ ed, onOpen, feed = [], triage = [], onOpenEvent, 
   // En-tête de page (bandeau cobalt unifié) : CONTEXTE de l'écran, SANS fraîcheur (déjà dans l'en-tête Ntongo)
   // ni compteur technique (retours user). Le secteur porte son glyphe ; sinon kicker « Édition/Axe/Rubrique ».
   const header = filter.type === 'sector'
-    ? { eyebrow: 'Votre Une', title: sector ? sector.label : 'Secteur', subtitle: 'les actualités de votre secteur', sector: true }
+    ? { eyebrow: 'Votre Une', title: sector ? sector.label : 'Secteur', subtitle: 'les faits qui comptent aujourd’hui', sector: true }
     : filter.type === 'divers'
-      ? { eyebrow: 'En vrac', title: 'Divers', subtitle: 'capté automatiquement, hors classement PESTEL' }
+      ? { eyebrow: 'Votre Une', title: 'Divers', subtitle: 'actualités du jour captées à trier PESTEL' }
       : filter.type === 'follow'
-        ? { eyebrow: 'Le Réveil', title: 'Pour vous', subtitle: 'les axes et secteurs que vous suivez' }
+        ? { eyebrow: 'Votre Une', title: 'Pour vous', subtitle: 'les axes, rubriques, et secteurs que vous suivez' }
         : filter.type === 'axis'
-          ? { eyebrow: isRubrique ? 'Rubrique' : 'Axe PESTEL', title: AX_SHORT[filter.key], subtitle: isEvents ? 'rendez-vous à venir · 3 semaines' : 'les faits de cet axe' }
-          : { eyebrow: 'Aujourd’hui', title: 'À la une', subtitle: 'les faits qui comptent aujourd’hui' };
+          // TCK-021/022/023 : « Votre Une » + logo pour tout filtre actif (axe/rubrique) ; Events garde sa vue.
+          ? { eyebrow: isEvents ? 'Axe PESTEL' : 'Votre Une', title: AX_SHORT[filter.key], subtitle: isEvents ? 'rendez-vous à venir · 3 semaines' : 'les faits qui comptent aujourd’hui' }
+          // TCK-020 : « Aujourd’hui » seulement sur l’édition la plus récente ; sinon le libellé de l’édition affichée.
+          : { eyebrow: (ed && ed.date === latestDate()) ? 'Aujourd’hui' : (ed && ed.label ? ed.label : 'Édition'), title: 'À la une', subtitle: 'les faits qui comptent aujourd’hui' };
 
   return (
     <ScrollView contentContainerStyle={{ padding: SP.gutter, paddingBottom: SP.huge }} showsVerticalScrollIndicator={false}
       refreshControl={onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={C.cobalt} colors={[C.cobalt]} /> : undefined}>
       <PageHeader eyebrow={header.eyebrow} title={header.title} subtitle={header.subtitle}
-        glyph={header.sector && sector ? <SectorGlyph sectorKey={sector.key} size={16} active /> : undefined} />
+        glyph={
+          filter.type === 'sector' && sector ? <SectorGlyph sectorKey={sector.key} size={16} active />
+            : filter.type === 'divers' ? <Icon name="triage" size={16} color={C.cobalt} />
+              : filter.type === 'follow' ? <Icon name="star" size={16} color={C.cobalt} />
+                : (filter.type === 'axis' && !isEvents) ? <AxisGlyph axis={filter.key} size={16} active />
+                  : undefined
+        } />
 
       {/* Filtres — identiques à « Axes » (+ « Pour vous » RS1-23 si des sujets sont suivis) */}
       <FilterRow label="AXES PESTEL">

@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Ntongo · RDC",
+    "name": "Ntongo · RDC News",
     "slug": "pestel-rdc",
-    "version": "1.0.0",
+    "version": "1.4.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "backgroundColor": "#f4f1ea",
@@ -16,7 +16,7 @@
     },
     "android": {
       "package": "consulting.twoid.pestelrdc",
-      "versionCode": 1,
+      "versionCode": 4,
       "adaptiveIcon": {
         "foregroundImage": "./assets/ntongo/adaptive-icon.png",
         "backgroundImage": "./assets/ntongo/adaptive-background.png",
@@ -27,16 +27,7 @@
       "favicon": "./assets/ntongo/favicon.png"
     },
     "plugins": [
-      "expo-font",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/ntongo/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#0A1330"
-        }
-      ]
+      "expo-font"
     ],
     "extra": {
       "eas": {

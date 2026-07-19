@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Text, ScrollView } from 'react-native';
-import { C, TYPE, SP, AX_SHORT, AX_ORDER, RUBRIQUES } from '../theme';
+import { Text, View, ScrollView } from 'react-native';
+import { C, TYPE, SP, AX_SHORT, AX_ORDER, RUBRIQUES, AXT, pick } from '../theme';
 import { Pill, NewsCard, PageHeader, StateView } from '../ui';
 import { SECTORS, itemInSector } from '../sectors';
 
@@ -26,6 +26,14 @@ export default function Favoris({ favs = [], onOpen, onToggleFav, onSearch }) {
     if (filter.type === 'sector') return sector && itemInSector({ title: f.title, text: f.text, analysis: '' }, sector);
     return true;
   });
+
+  // TCK-027 : favoris REGROUPÉS par axe (blocs Politique / Économie / Social… comme « Axes »), fini le vrac.
+  const GROUP_ORDER = [...AX_ORDER, ...RUBRIQUES];
+  const groups = GROUP_ORDER
+    .map((k) => ({ key: k, label: AX_SHORT[k], color: pick(AXT, k, C.cobalt), items: list.filter((f) => f.axis === k) }))
+    .filter((g) => g.items.length > 0);
+  const autres = list.filter((f) => GROUP_ORDER.indexOf(f.axis) < 0);   // axe inconnu → bloc « Autres » (défensif)
+  if (autres.length) groups.push({ key: '_autres', label: 'Autres', color: C.inkMut, items: autres });
 
   return (
     <ScrollView contentContainerStyle={{ padding: SP.gutter, paddingBottom: SP.huge }} showsVerticalScrollIndicator={false}>
@@ -58,9 +66,14 @@ export default function Favoris({ favs = [], onOpen, onToggleFav, onSearch }) {
             ))}
           </FilterRow>
 
-          {list.length ? list.map((f) => (
-            <NewsCard key={f.id} axis={f.axis} title={f.title} text={f.text} reliability={f.reliability}
-              source={f.source} onStar={() => onToggleFav && onToggleFav(f)} starred onPress={() => onOpen(f)} titleLines={3} />
+          {list.length ? groups.map((g) => (
+            <View key={g.key} style={{ marginBottom: SP.sm }}>
+              <Text style={[TYPE.overline, { color: g.color, marginLeft: SP.hair, marginTop: SP.xs, marginBottom: SP.sm }]}>{g.label}</Text>
+              {g.items.map((f) => (
+                <NewsCard key={f.id} axis={f.axis} title={f.title} text={f.text} reliability={f.reliability}
+                  source={f.source} onStar={() => onToggleFav && onToggleFav(f)} starred onPress={() => onOpen(f)} titleLines={3} />
+              ))}
+            </View>
           )) : (
             <Text style={[TYPE.bodySm, { color: C.inkMut, paddingVertical: SP.xl, textAlign: 'center' }]}>
               Aucun favori dans ce filtre.

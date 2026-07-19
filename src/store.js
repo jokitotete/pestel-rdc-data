@@ -113,6 +113,13 @@ export const parseWhen = (when) => {
   return null;
 };
 
+// TCK-016 — l'agenda ne doit contenir que de VRAIS rendez-vous (forums, sessions, marches, matchs, missions),
+// pas des ÉCHÉANCES / conséquences d'une actualité en cours (grève, ultimatum, primes de la riposte) qui, bien
+// que datées, se lisent comme des « actualités » dans Events (retour user 19/07). Garde-fou de RENDU en attendant
+// que la veille produise un agenda propre (règle gravée dans le skill veille-pestel-rdc). Volontairement étroit :
+// ne vise que le registre « crise/échéance », jamais un événement légitime (un forum/match ne matche pas).
+const EVENT_EXCLUDE = /ultimatum|grève|primes? de la riposte|paiement des primes|payer les primes/i;
+
 // Events (P3, NB1) — rendez-vous « à venir » agrégés sur une fenêtre glissante (défaut 3 semaines),
 // à partir des AGENDAS RÉELS de toutes les éditions (sourcés via `code`, non fabriqués), dédupliqués
 // et triés par date. Référence temporelle = édition la plus récente.
@@ -131,6 +138,7 @@ export const upcomingEvents = (windowDays = 21, cap = 12) => {
     for (const a of (ed && Array.isArray(ed.agenda) ? ed.agenda : [])) {
       const t = parseWhen(a.when);
       if (t == null || t < lo || t > hi) continue;
+      if (EVENT_EXCLUDE.test(a.what || '')) continue;   // TCK-016 : écarte les échéances-actualité de l'agenda
       // QA v1.2 : String(...) — `(a.what || '')` laissait passer un NOMBRE (42 est truthy) puis .trim plantait.
       const key = t + '|' + (a.code || String(a.what || '').trim().toLowerCase());
       if (seen.has(key)) continue;
