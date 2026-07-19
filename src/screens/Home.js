@@ -247,7 +247,7 @@ export default function Home({ ed, onOpen, feed = [], triage = [], onOpenEvent, 
       ) : (
         <>
           {ed.headline.map((h, i) => (
-            <NewsCard key={h.code} axis={h.axis} rank={String(i + 1).padStart(2, '0')}
+            <NewsCard key={h.code} axis={h.axis} rank={(i < 9 ? '0' : '') + (i + 1)}
               title={h.title} text={h.text} reliability={h.reliability} cta="Approfondir"
               source={primarySource(ed, findItem(ed, h.code) || h)} onPress={() => onOpen(h.code)} titleLines={3} />
           ))}
