@@ -188,6 +188,16 @@ describe('LOT-F/H · écran « À la une » — non-régression et masquage de l
     expect(r.textes).toContain('Environnement 0');
   });
 
+  // La répartition doit décrire LE FIL, pas l'écran : calculée sur les 12 cartes plafonnées, elle
+  // sommerait à 12 sous un en-tête annonçant 20 — un total qui ment par troncature (famille TCK-050).
+  it('la répartition compte le FIL ENTIER, pas seulement les cartes qui tiennent à l’écran', () => {
+    const gros = Array.from({ length: 20 }, (_, i) => ({ title: 'c' + i, url: 'https://acp.cd/' + i, source: 'ACP', axis: 'E' }));
+    const r = rendre(<Home ed={ed} onOpen={() => {}} feed={gros} triage={[]} />);
+    expect(r.textes).toContain('20 informations captées');
+    expect(r.textes).toContain('Économie 20');         // 20, pas 12
+    expect(r.textes).toContain('+ 8 autres captées');  // et le plafond est déclaré à côté
+  });
+
   // Le filtre d'axe est SEMÉ par la navigation croisée (prop `seed`, RS1-19/20) : c'est le chemin réel
   // de l'application, pas une manipulation d'état inventée pour le test.
   it('filtre sur un axe SANS captée : le bloc vide est AFFICHÉ, il n’emprunte pas à un autre axe', () => {

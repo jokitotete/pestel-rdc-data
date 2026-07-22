@@ -29,7 +29,13 @@ function CapteesSection({ feed }) {
   const p = partitionnerN1(feed, { cap: CAP_CAPTEES, urlSure: isSafeUrl });
   // Répartition sur TOUS les axes, y compris ceux à 0 : le lecteur voit ce que la collecte n'a PAS
   // rapporté aujourd'hui, pas seulement ce qu'elle a rapporté (blocs vides assumés).
-  const repartition = repartitionParAxe(p.affiches);
+  //
+  // ELLE PORTE SUR LE FIL ENTIER (cap: 0), PAS SUR LES 12 CARTES AFFICHÉES. Calculée sur `p.affiches`,
+  // elle aurait sommé à 12 sous un en-tête annonçant 30 : le lecteur aurait lu « Politique 10 » comme
+  // le compte du jour, alors que c'eût été le compte de ce qui TIENT À L'ÉCRAN. Même famille que
+  // TCK-050 — une troncature qui se déguise en total.
+  const complet = partitionnerN1(feed, { cap: 0, urlSure: isSafeUrl });
+  const repartition = repartitionParAxe(complet.affiches);
   if (!p.sains) return null;
   return (
     <View style={{ marginTop: SP.xl2 }}>
