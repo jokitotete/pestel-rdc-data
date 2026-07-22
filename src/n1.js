@@ -33,7 +33,19 @@ const AXES_CONNUS = new Set([...AX_ORDER, ...RUBRIQUES]);
 export const AXES_N1 = [...AX_ORDER, ...RUBRIQUES];
 
 const estObjet = (o) => o !== null && typeof o === 'object' && !Array.isArray(o);
-const chaine = (x, n = 200) => (typeof x === 'string' ? x.trim().slice(0, n) : '');
+// CONTRÔLE ADVERSARIAL (famille TCK-050) — `chaine()` coupait à n points de code SANS RIEN DIRE : ni
+// marque à l'écran, ni compteur. Une chaîne coupée se lisait exactement comme une chaîne complète, y
+// compris dans l'étiquette d'accessibilité (ui.js compose l'annonce lecteur d'écran à partir de `titre`).
+// Le caractère « … » rend la coupe VISIBLE, et `compterCoupe` la rend COMPTABLE. La borne elle-même est
+// conservée (elle protège le rendu d'une chaîne distante démesurée) — c'est son silence qui était fautif.
+const ELLIPSE = '…';
+const chaine = (x, n = 200) => {
+  if (typeof x !== 'string') return '';
+  const t = x.trim();
+  return [...t].length > n ? [...t].slice(0, n).join('') + ELLIPSE : t;
+};
+/** Combien de chaînes de `champs` ont été coupées. Sert aux compteurs rendus, jamais à une décision. */
+const compterCoupe = (valeurs) => valeurs.filter((v) => typeof v === 'string' && v.endsWith(ELLIPSE)).length;
 const nombre = (x) => (typeof x === 'number' && Number.isFinite(x) ? x : null);
 // Axe AFFICHABLE : chaîne connue, sinon null. '?' (non classé du moteur) → null, assumé.
 const axeSur = (x) => (typeof x === 'string' && AXES_CONNUS.has(x) ? x : null);
@@ -121,15 +133,18 @@ export function partitionnerN1(feed, opts = {}) {
   const sains = brut.filter((f) => chaine(f.title));
   const ouvrables = sains.filter((f) => sur(f.url));
   const retenus = cap > 0 ? ouvrables.slice(0, cap) : ouvrables;
+  const affiches = retenus.map((f) => normaliserN1(f, seuil));
   return {
     total: brut.length,
     sansTitre: brut.length - sains.length,
     sains: sains.length,
     ouvrables: ouvrables.length,
     nonOuvrables: sains.length - ouvrables.length,
-    affiches: retenus.map((f) => normaliserN1(f, seuil)),
+    affiches,
     enPlus: ouvrables.length - retenus.length,
     cap,
+    // TCK-050 — le PLAFOND DE CARACTÈRES est compté au même titre que le plafond de cartes.
+    titresCoupes: compterCoupe(affiches.map((v) => v.titre)),
   };
 }
 

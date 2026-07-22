@@ -40,7 +40,17 @@ export const MAX_MAJEURS = 3;
 export const STATUTS = ['validee', 'proposee'];
 
 const estObjet = (o) => o !== null && typeof o === 'object' && !Array.isArray(o);
-const chaine = (x, n = 240) => (typeof x === 'string' ? x.trim().slice(0, n) : '');
+// CONTRÔLE ADVERSARIAL (famille TCK-050) — ce module se réclamait de « pas un slice muet de plus », mais
+// `chaine()` en portait quatre : titre 240 ×2, motif 400 ×2, libellé 80. Coupés SANS marque et SANS
+// compteur, ils se lisaient comme des textes complets — y compris par un lecteur d'écran. La borne reste
+// (elle protège d'une chaîne distante démesurée) ; c'est son silence qui est corrigé.
+const ELLIPSE = '…';
+const chaine = (x, n = 240) => {
+  if (typeof x !== 'string') return '';
+  const t = x.trim();
+  return [...t].length > n ? [...t].slice(0, n).join('') + ELLIPSE : t;
+};
+const compterCoupe = (valeurs) => valeurs.filter((v) => typeof v === 'string' && v.endsWith(ELLIPSE)).length;
 
 /** Ce que vaut un fait dont personne n'a tranché le cas. Forme NEUTRE, jamais « majeur ». */
 const NON_DESIGNE = { presente: false, majeur: false, rang: null, motif: null, statut: null, validee: false, lisible: true };
@@ -162,15 +172,22 @@ export function selectionnerMajeurs(items, opts = {}) {
     if (vus.has(r)) rangsEnDouble++; else vus.set(r, true);
   }
 
+  const vues = affiches.map((c) => ({
+    item: c.item,
+    titre: chaine(c.item.title, 240),
+    rang: c.designation.rang,
+    motif: c.designation.motif,
+    statut: c.designation.statut,
+    validee: c.designation.validee,
+  }));
   return {
-    affiches: affiches.map((c) => ({
-      item: c.item,
-      titre: chaine(c.item.title, 240),
-      rang: c.designation.rang,
-      motif: c.designation.motif,
-      statut: c.designation.statut,
-      validee: c.designation.validee,
-    })),
+    affiches: vues,
+    // TCK-050 — le plafond de CARACTÈRES est compté comme le plafond de sujets. `titres` couvre l'affiché
+    // ET l'écarté (les deux sont rendus) ; `motifs` couvre les motifs de majeur et celui de la vacance.
+    coupes: {
+      titres: compterCoupe(vues.map((v) => v.titre)) + compterCoupe(ecartes.map((e) => e.titre)),
+      motifs: compterCoupe(vues.map((v) => v.motif)) + compterCoupe([vacance.motif]),
+    },
     candidats: candidats.length,
     ecartes,
     etat,

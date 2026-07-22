@@ -16,7 +16,20 @@ const SCREENS = fs.readdirSync(path.join(ROOT, 'src', 'screens'))
   .filter((f) => f.endsWith('.js'))
   .map((f) => `src/screens/${f}`)
   .sort();
-const FILES = ['App.js', 'src/ui.js', 'src/charts.js', ...SCREENS];
+// CONTRÔLE ADVERSARIAL — le LOT-F a énuméré `src/screens/`, mais a laissé la partie `src/*.js` de la
+// liste TENUE À LA MAIN : `['App.js', 'src/ui.js', 'src/charts.js']`. Les modules ajoutés depuis
+// (n1.js, majeurs.js, copie.js, …) n'étaient donc balayés par RIEN — exactement le trou qu'`About.js`
+// avait déjà creusé côté écrans, une strate plus bas. MESURÉ au moment de la correction : 11 fichiers
+// hors balayage, 0 littéral dedans — le défaut était donc LATENT, pas actif. On énumère aussi ce dossier.
+// EXCLUSIONS DÉCLARÉES : theme.js (la source des jetons), icons.js et geo.js (géométrie SVG et couleurs
+// de tracé — arbitrage assumé, à revoir si une couleur de MARQUE y apparaît), src/data/ (données, pas style).
+const EXCLUS = new Set(['src/theme.js', 'src/icons.js', 'src/geo.js']);
+const MODULES = fs.readdirSync(path.join(ROOT, 'src'))
+  .filter((f) => f.endsWith('.js'))
+  .map((f) => `src/${f}`)
+  .filter((f) => !EXCLUS.has(f))
+  .sort();
+const FILES = ['App.js', ...MODULES, ...SCREENS];
 
 // Propriétés de STYLE qui doivent référencer un jeton (jamais un littéral numérique).
 const STYLE_PROPS = [
@@ -38,6 +51,10 @@ describe('RS1-06 tokens.guard — zéro littéral de style hors theme.js', () =>
   it('balaie bien tous les écrans (garde de la garde)', () => {
     expect(SCREENS.length).toBeGreaterThanOrEqual(10);
     expect(SCREENS).toEqual(expect.arrayContaining(['src/screens/Home.js', 'src/screens/About.js', 'src/screens/Triage.js']));
+    // Même garde sur l'énumération des MODULES : si `src/` se renomme, la liste se viderait en silence
+    // et tous les tests par fichier passeraient VIDES — une garde verte qui ne garde rien.
+    expect(MODULES.length).toBeGreaterThanOrEqual(10);
+    expect(MODULES).toEqual(expect.arrayContaining(['src/ui.js', 'src/charts.js', 'src/n1.js', 'src/majeurs.js']));
   });
 
   for (const rel of FILES) {
