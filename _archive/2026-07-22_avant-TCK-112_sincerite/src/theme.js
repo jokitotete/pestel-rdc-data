@@ -267,41 +267,10 @@ export const relIsOk = (r) => r === 'established';
 // donnée. La date n'est pas décorative : le fil servi le 15/07 contenait des items du 13/07 — sans
 // date à l'écran, cette péremption était invisible pour le lecteur.
 const MOIS_COURT = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
-const MOIS_LONG = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-// Découpe LEXICALE d'un ISO (jamais `new Date`) : un `new Date('2026-07-02T23:00Z')` rendu dans un fuseau
-// à l'ouest recule d'un jour et la fenêtre du fil se mettrait à mentir d'une journée selon le téléphone.
-// Ici la date affichée est EXACTEMENT celle que le moteur a écrite.
-export const partsJour = (iso) => {
-  const m = (typeof iso === 'string' ? iso : '').match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (!m) return null;
-  const mo = +m[2] - 1;
-  const d = +m[3];
-  if (mo < 0 || mo > 11 || d < 1 || d > 31) return null;
-  return { y: +m[1], m: mo, d, iso: `${m[1]}-${m[2]}-${m[3]}` };
-};
 export const fmtJour = (iso) => {
-  const p = partsJour(iso);
-  return p ? `${p.d} ${MOIS_COURT[p.m]}` : '';
-};
-// TCK-112 · DÉFAUT 1 — date en toutes lettres, pour ÉCRIRE la fenêtre du fil (« 22 juillet 2026 »).
-// `mois`/`annee` en option : « du 2 au 22 juillet 2026 » n'a pas à répéter le mois ni l'année à gauche.
-export const fmtJourLong = (iso, opts = {}) => {
-  const p = partsJour(iso);
-  if (!p) return '';
-  const mois = opts.mois === false ? '' : ` ${MOIS_LONG[p.m]}`;
-  const annee = opts.annee === false ? '' : ` ${p.y}`;
-  return `${p.d}${mois}${annee}`;
-};
-
-// TCK-112 · DÉFAUT 1 — « Aujourd'hui » est une AFFIRMATION DATÉE, pas un synonyme de « la plus récente ».
-// L'application écrivait « Aujourd'hui » dès que l'édition affichée était la dernière connue : un 22 juillet,
-// elle coiffait ainsi l'édition du 21. Le prédicat prend son `maintenant` — il est donc PUR, testable, et sa
-// vérité ne dépend pas du jour où on le joue. Comparaison en heure LOCALE : « aujourd'hui » est ce que le
-// lecteur appelle aujourd'hui, pas ce qu'UTC en pense.
-export const estAujourdhui = (iso, maintenant = Date.now()) => {
-  const p = partsJour(iso);
-  if (!p) return false;
-  const n = new Date(maintenant);
-  if (Number.isNaN(n.getTime())) return false;
-  return n.getFullYear() === p.y && n.getMonth() === p.m && n.getDate() === p.d;
+  const m = (typeof iso === 'string' ? iso : '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return '';
+  const mo = +m[2] - 1;
+  if (mo < 0 || mo > 11) return '';
+  return parseInt(m[3], 10) + ' ' + MOIS_COURT[mo];
 };

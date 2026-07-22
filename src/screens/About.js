@@ -18,11 +18,11 @@ const CONTACT = 'j.okitotete@2id.consulting';
 // montée de version met cette liste à jour, et n'y inscrit QUE ce qui a été constaté à l'écran sur le
 // build livré — pas ce qui a été codé, pas ce qui est prévu.
 const NOUVEAUTES = [
-  'Les sujets désignés MAJEURS par la rédaction s’affichent en tête de chaque axe, rubrique et secteur, avec leur rang et le motif écrit de la désignation.',
-  'Une désignation que la rédaction n’a pas encore tranchée est marquée « proposée · non validée » — elle n’est pas présentée comme un arbitrage acquis.',
-  'Un axe sans sujet majeur affiche sa vacance motivée : le motif écrit remplace le blanc.',
-  'Vocabulaire : la section des informations triées par le moteur s’appelle « Captées » — « captée · non rédigée » décrit un état vérifiable, pas une intention de la rédaction.',
-  'Rubrique « Divers » : les informations captées que le moteur n’a pas classées, avec le compte de ce qui est affiché et de ce qui ne l’est pas.',
+  'La section « Captées » écrit désormais la FENÊTRE du fil (« fil du 2 au 22 juillet 2026 · 21 jours couverts ») : la portée de ce que vous lisez est lisible, et les captées non affichées ne sont plus annoncées comme datant d’« aujourd’hui ».',
+  '« Aujourd’hui » ne s’écrit plus que le jour même. Une édition qui est la plus récente sans être celle du jour est présentée comme « Dernière édition », avec sa date.',
+  'Une information que le moteur n’a pas su trancher n’est plus dite « classée » : la carte écrit « le moteur penche vers <axe> · pas assez sûr pour trancher ».',
+  'La confiance affichée ne peut plus s’arrondir jusqu’à la valeur du seuil : une information sous le seuil se lit toujours sous le seuil.',
+  'Le compteur de la rubrique « Divers » se met à jour après une synchronisation, au lieu de rester figé sur le compte des données embarquées.',
 ];
 
 const MENTIONS = [

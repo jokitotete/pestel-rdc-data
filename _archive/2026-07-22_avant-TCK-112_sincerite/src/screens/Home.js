@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Text, View, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
-import { C, AX, AXT, AX_SHORT, AX_ORDER, RUBRIQUES, tint, SP, TYPE, RADIUS, HIT, isFollowableAxis, estAujourdhui } from '../theme';
+import { C, AX, AXT, AX_SHORT, AX_ORDER, RUBRIQUES, tint, SP, TYPE, RADIUS, HIT, isFollowableAxis } from '../theme';
 import { Card, SectionHead, Pill, Icon, Rule, AxisGlyph, SectorGlyph, NewsCard, PageHeader, N1Card, BlocVide } from '../ui';
 import { allItems, upcomingEvents, primarySource, findItem, followedItems, latestDate } from '../store';
 import { SECTORS, itemInSector } from '../sectors';
 import { confirmOpenURL, isSafeUrl } from '../safeUrl';
 import { DiversList } from './Triage';
-import { partitionnerN1, repartitionParAxe, instrumenterDivers, filtreEffectif, fenetreFil, CAP_CAPTEES } from '../n1';
+import { partitionnerN1, repartitionParAxe, instrumenterDivers, filtreEffectif, CAP_CAPTEES } from '../n1';
 import { noterSoupape } from '../prefs';
 import { NOTE_RUBRIQUE_VIDE, NOTE_EVENTS_VIDE } from '../copie';
 import { MajeursSection } from './Majeurs';
@@ -38,27 +38,11 @@ function CapteesSection({ feed }) {
   // TCK-050 — une troncature qui se déguise en total.
   const complet = partitionnerN1(feed, { cap: 0, urlSure: isSafeUrl });
   const repartition = repartitionParAxe(complet.affiches);
-  // TCK-112 · DÉFAUT 1 — la FENÊTRE du fil, écrite avant toute autre chose. Elle porte sur le fil ENTIER
-  // (comme la répartition par axe), jamais sur les 12 cartes qui tiennent à l'écran.
-  const fen = fenetreFil(feed);
   if (!p.sains) return null;
   return (
     <View style={{ marginTop: SP.xl2 }}>
       <SectionHead title="Captées" icon="triage"
         lens={`${p.sains} information${p.sains > 1 ? 's' : ''} captée${p.sains > 1 ? 's' : ''} et triée${p.sains > 1 ? 's' : ''} par le moteur · non rédigée${p.sains > 1 ? 's' : ''}`} />
-
-      {/* L'ENVELOPPE TEMPORELLE — la portée de ce que le lecteur a sous les yeux. Sans elle, un fil de
-          21 jours se lisait comme la moisson du matin. Rien n'est écrit si le fil ne porte aucune date :
-          on ne suppose pas une fenêtre, on se tait (et les items sans date sont comptés à côté). */}
-      {fen.libelle ? (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs, marginBottom: SP.md }}>
-          <Icon name="calendar" size={12} color={C.inkMut} />
-          <Text style={[TYPE.caption, { color: C.inkMut, flex: 1 }]}>
-            {`fil ${fen.libelle} · ${fen.jours} jour${fen.jours > 1 ? 's' : ''} couvert${fen.jours > 1 ? 's' : ''}`}
-            {fen.sansDate ? ` · ${fen.sansDate} sans date` : ''}
-          </Text>
-        </View>
-      ) : null}
 
       {/* Répartition par axe des captées AFFICHÉES — les zéros sont ÉCRITS, pas effacés. */}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SP.xs2, marginBottom: SP.md }}>
@@ -81,9 +65,7 @@ function CapteesSection({ feed }) {
         <Card style={{ paddingVertical: SP.md, paddingHorizontal: SP.md2 }}>
           {p.enPlus ? (
             <Text style={[TYPE.bodySm, { color: C.inkMut }]}>
-              {/* TCK-112 · DÉFAUT 1 — disait « aujourd’hui » d’un fil de 21 jours. La phrase nomme
-                  désormais la FENÊTRE réelle, ou reste muette sur le temps si le fil n’a pas de date. */}
-              {`+ ${p.enPlus} autre${p.enPlus > 1 ? 's' : ''} captée${p.enPlus > 1 ? 's' : ''}${fen.libelle ? ` ${fen.libelle}` : ''}, non affichée${p.enPlus > 1 ? 's' : ''} ici (plafond d’écran : ${p.cap}).`}
+              {`+ ${p.enPlus} autre${p.enPlus > 1 ? 's' : ''} captée${p.enPlus > 1 ? 's' : ''} aujourd’hui, non affichée${p.enPlus > 1 ? 's' : ''} ici (plafond d’écran : ${p.cap}).`}
             </Text>
           ) : null}
           {p.nonOuvrables ? (
@@ -108,19 +90,10 @@ function CapteesSection({ feed }) {
 function CapteesAxe({ feed, axe, label }) {
   const p = partitionnerN1(feed, { cap: 0, urlSure: isSafeUrl });
   const items = p.affiches.filter((v) => v.axe === axe);
-  // TCK-112 · DÉFAUT 1 — la fenêtre est celle du FIL ENTIER, pas celle des items de cet axe : c'est la
-  // portée de la collecte qui est en cause, et un axe pauvre ne doit pas laisser croire à une fenêtre
-  // plus étroite que celle réellement balayée.
-  const fen = fenetreFil(feed);
   return (
     <View style={{ marginTop: SP.xl }}>
       <SectionHead title="Captées" icon="triage"
         lens={`${items.length} information${items.length > 1 ? 's' : ''} captée${items.length > 1 ? 's' : ''} et classée${items.length > 1 ? 's' : ''} « ${label} » · non rédigée${items.length > 1 ? 's' : ''}`} />
-      {fen.libelle ? (
-        <Text style={[TYPE.caption, { color: C.inkMut, marginBottom: SP.md }]}>
-          {`fil ${fen.libelle} · ${fen.jours} jour${fen.jours > 1 ? 's' : ''} couvert${fen.jours > 1 ? 's' : ''}`}
-        </Text>
-      ) : null}
       {items.length === 0
         ? <BlocVide texte={`Aucune information captée pour « ${label} » dans cette collecte.\nCet axe affiche son vide : il n’emprunte rien à un autre.`} />
         : items.map((v, i) => <N1Card key={`${v.url}|${i}`} vue={v} onPress={() => confirmOpenURL(v.url)} />)}
@@ -195,7 +168,7 @@ function EventsView({ onOpenEvent }) {
 
 // « À la une » — filtres IDENTIQUES à « Axes » : 3 groupes (Axes PESTEL · Rubriques · Secteurs transversaux).
 // Sans filtre (« Tous ») : l'essentiel national + la section « Captées » (N1) + l'agenda.
-export default function Home({ ed, onOpen, feed = [], triage = [], onOpenEvent, onRefresh, refreshing, seed, onSeedApplied, follows = [], isFollowing, onToggleFollow, dataVer = 0, maintenant }) {
+export default function Home({ ed, onOpen, feed = [], triage = [], onOpenEvent, onRefresh, refreshing, seed, onSeedApplied, follows = [], isFollowing, onToggleFollow }) {
   const [filterBrut, setFilter] = useState({ type: 'all' });   // {type:'all'|'axis'|'sector'|'divers'|'follow', key}
   // RS1-19/20 : applique un filtre semé par un lien croisé (item→axe/secteur), puis le consomme (one-shot).
   useEffect(() => { if (seed && seed.filter) { setFilter(seed.filter); onSeedApplied && onSeedApplied(); } }, [seed]);
@@ -203,15 +176,7 @@ export default function Home({ ed, onOpen, feed = [], triage = [], onOpenEvent, 
   // LOT-H — la soupape « Divers » est INSTRUMENTÉE avant d'être affichée : on sait combien y tombe, d'où
   // ça vient et pourquoi. `visible` pilote À LA FOIS l'offre (la pastille) et le rendu (la vue) : UN SEUL
   // prédicat, pour ne pas recréer le défaut F2 (offrir une rubrique que la vue ne saura pas remplir).
-  //
-  // TCK-112 · DÉFAUT 3 — LE MÉMO NE PEUT PAS S'APPUYER SUR LA SEULE RÉFÉRENCE DU TABLEAU. `store.applyRemote`
-  // remplace le contenu de TRIAGE EN PLACE (`TRIAGE.length = 0` puis `push`) : après une synchro, la
-  // référence est IDENTIQUE et le contenu TOTALEMENT différent. `useMemo(..., [triage])` ne se relançait
-  // donc jamais et la pastille restait figée sur le compte des données embarquées — mesuré à l'écran :
-  // « Divers · 104 » et « 104 captées » en face de « 271 affichées », toutes deux calculées à partir du
-  // MÊME tableau, l'une mémoïsée et l'autre non. `dataVer` vient de store.dataVersion() via App : il ne
-  // bouge QUE lorsque les données ont réellement changé.
-  const divers = useMemo(() => instrumenterDivers(triage, { urlSure: isSafeUrl }), [triage, dataVer]);
+  const divers = useMemo(() => instrumenterDivers(triage, { urlSure: isSafeUrl }), [triage]);
   const filter = filtreEffectif(filterBrut, divers.visible);
 
   // PORTE PRT_SOUPA — l'observation de la soupape est ENREGISTRÉE (localement, sans compte ni réseau),
@@ -236,30 +201,17 @@ export default function Home({ ed, onOpen, feed = [], triage = [], onOpenEvent, 
 
   // En-tête de page (bandeau cobalt unifié) : CONTEXTE de l'écran, SANS fraîcheur (déjà dans l'en-tête Ntongo)
   // ni compteur technique (retours user). Le secteur porte son glyphe ; sinon kicker « Édition/Axe/Rubrique ».
-  // TCK-112 · DÉFAUT 1 — « Aujourd’hui » N'EST PLUS UN SYNONYME DE « LA PLUS RÉCENTE ». TCK-020 avait
-  // corrigé un premier défaut (ne pas coiffer une ARCHIVE d’« Aujourd’hui ») mais gardait l’équation
-  // fautive : dernière édition connue ⇒ aujourd’hui. Le 22 juillet, la dernière édition datait du 21 —
-  // et l’écran affirmait « Aujourd’hui » au-dessus d’une puce « 21 juillet 2026 ». Deux affirmations
-  // contradictoires côte à côte, dont l’une était fausse. Le mot ne s’écrit désormais QUE le jour même.
-  // Même traitement pour les sous-titres : « les faits qui comptent aujourd’hui » promettait la fraîcheur
-  // du jour à toutes les vues filtrées, y compris sur une archive du 3 juillet.
-  const jourMeme = estAujourdhui(ed && ed.date, maintenant === undefined ? Date.now() : maintenant);
-  const eyebrowEdition = jourMeme
-    ? 'Aujourd’hui'
-    : (ed && ed.date === latestDate())
-      ? 'Dernière édition'
-      : (ed && ed.label ? ed.label : 'Édition');
-  const sousTitreFaits = 'les faits qui comptent dans cette édition';
   const header = filter.type === 'sector'
-    ? { eyebrow: 'Votre Une', title: sector ? sector.label : 'Secteur', subtitle: sousTitreFaits, sector: true }
+    ? { eyebrow: 'Votre Une', title: sector ? sector.label : 'Secteur', subtitle: 'les faits qui comptent aujourd’hui', sector: true }
     : filter.type === 'divers'
       ? { eyebrow: 'Votre Une', title: 'Divers', subtitle: 'captées que le moteur n’a pas classées' }
       : filter.type === 'follow'
         ? { eyebrow: 'Votre Une', title: 'Pour vous', subtitle: 'les axes, rubriques, et secteurs que vous suivez' }
         : filter.type === 'axis'
           // TCK-021/022/023 : « Votre Une » + logo pour tout filtre actif (axe/rubrique) ; Events garde sa vue.
-          ? { eyebrow: isEvents ? 'Axe PESTEL' : 'Votre Une', title: AX_SHORT[filter.key], subtitle: isEvents ? 'rendez-vous à venir · 3 semaines' : sousTitreFaits }
-          : { eyebrow: eyebrowEdition, title: 'À la une', subtitle: `${sousTitreFaits}${ed && ed.label ? ` du ${ed.label}` : ''}` };
+          ? { eyebrow: isEvents ? 'Axe PESTEL' : 'Votre Une', title: AX_SHORT[filter.key], subtitle: isEvents ? 'rendez-vous à venir · 3 semaines' : 'les faits qui comptent aujourd’hui' }
+          // TCK-020 : « Aujourd’hui » seulement sur l’édition la plus récente ; sinon le libellé de l’édition affichée.
+          : { eyebrow: (ed && ed.date === latestDate()) ? 'Aujourd’hui' : (ed && ed.label ? ed.label : 'Édition'), title: 'À la une', subtitle: 'les faits qui comptent aujourd’hui' };
 
   return (
     <ScrollView contentContainerStyle={{ padding: SP.gutter, paddingBottom: SP.huge }} showsVerticalScrollIndicator={false}

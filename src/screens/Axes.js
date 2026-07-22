@@ -21,13 +21,15 @@ const FilterRow = ({ label, children }) => (
 );
 
 // « Décryptage » — navigation par AXE PESTEL, par RUBRIQUE (Culture & Arts, Sports) ou par SECTEUR transversal.
-export default function Axes({ ed, onOpen, triage = [], onOpenEvent, seed, onSeedApplied }) {
+export default function Axes({ ed, onOpen, triage = [], onOpenEvent, seed, onSeedApplied, dataVer = 0 }) {
   const [filterBrut, setFilter] = useState({ type: 'all' }); // {type:'all'|'axis'|'sector'|'divers', key}
   // RS1-19/20 : filtre semé par un lien croisé (item→axe/secteur depuis le Détail), consommé une fois.
   useEffect(() => { if (seed && seed.filter) { setFilter(seed.filter); onSeedApplied && onSeedApplied(); } }, [seed]);
   // LOT-H — MÊME instrumentation et MÊME prédicat de visibilité que « À la une » : la soupape ne peut pas
   // être offerte ici et masquée là-bas. Un seul calcul, deux écrans (fermeture de la classe F2).
-  const divers = useMemo(() => instrumenterDivers(triage, { urlSure: isSafeUrl }), [triage]);
+  // TCK-112 · DÉFAUT 3 — cet écran portait le MÊME mémo figé que « À la une » : corriger l'un et laisser
+  // l'autre aurait recréé la classe F2 sous une autre forme (deux écrans, deux fraîcheurs de compteur).
+  const divers = useMemo(() => instrumenterDivers(triage, { urlSure: isSafeUrl }), [triage, dataVer]);
   const filter = filtreEffectif(filterBrut, divers.visible);
   const sector = filter.type === 'sector' ? SECTORS.find((s) => s.key === filter.key) : null;
 

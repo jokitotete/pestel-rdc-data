@@ -197,14 +197,15 @@ describe('TCK-103 — la carte N1 informe au lieu de s’excuser', () => {
     expect(v.confiance).toBe(0.0725);
     expect(v.statut).toBe('faible');                    // sous le seuil 0,15 — DIT, pas caché
     expect(v.note).toBe('A');
-    expect(v.mention).toBe('classé Social · confiance faible (0,07)');
+    // TCK-112 — « classé … · confiance faible » retiré : contradiction dans la même phrase (cf. n1.js).
+    expect(v.mention).toBe('le moteur penche vers Social · pas assez sûr pour trancher (0,07)');
     expect(v.mention).not.toMatch(/non transmise/);
   });
 
   it('APRÈS : le meilleur candidat écarté est nommé quand il existe', () => {
     const v = normaliserN1(FEED_REEL[1]);
     expect(v.candidat).toEqual({ axe: 'S', label: 'Social' });
-    expect(v.mention).toBe('classé Politique · confiance faible (0,09) · autre piste : Social');
+    expect(v.mention).toBe('le moteur penche vers Politique · pas assez sûr pour trancher (0,09) · autre piste : Social');
   });
 
   it('un `runnerUp: null` explicite ne fabrique aucun candidat', () => {

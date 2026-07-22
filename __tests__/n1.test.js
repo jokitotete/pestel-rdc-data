@@ -65,10 +65,16 @@ describe('LOT-F · mention honnête plutôt qu’axe affirmé', () => {
   it('classé SANS confiance transmise : l’absence est DITE, pas comblée', () => {
     expect(normaliserN1({ title: 't', axis: 'E' }).mention).toBe('Économie · confiance non transmise');
   });
-  it('sous le seuil : « classé … · confiance faible » + meilleur candidat', () => {
+  // TCK-112 (22/07/2026) — LIBELLÉ CHANGÉ, INTENTION INCHANGÉE. Ce test attendait « classé Économie ·
+  // confiance faible » : une phrase qui se contredit elle-même, puisque le statut « faible » signifie
+  // précisément NON classé au sens du seuil calibré. La contradiction est retirée du produit, donc de
+  // l'attente. Ce qui est vérifié n'a pas bougé : l'axe n'est pas AFFIRMÉ, l'hésitation est écrite, et
+  // l'autre piste est nommée.
+  it('sous le seuil : le moteur PENCHE (il ne classe pas) + meilleur candidat', () => {
     const v = normaliserN1({ title: 't', axis: 'E', confidence: 0.09, runnerUp: { axis: 'S' } });
     expect(v.statut).toBe('faible');
-    expect(v.mention).toBe('classé Économie · confiance faible (0,09) · autre piste : Social');
+    expect(v.mention).toBe('le moteur penche vers Économie · pas assez sûr pour trancher (0,09) · autre piste : Social');
+    expect(v.mention).not.toMatch(/class[ée]/i);
   });
   it('orphelin AVEC candidat : le meilleur candidat est montré, l’axe n’est PAS affirmé', () => {
     const v = normaliserN1({ title: 't', axis: '?', runnerUp: 'E' });

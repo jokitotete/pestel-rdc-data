@@ -15,7 +15,7 @@
 //
 // CE QUE CE MODULE NE FAIT PAS : il n'invente aucun champ. Si le fil publié ne transmet pas la confiance,
 // la vue le DIT (« confiance non transmise ») au lieu d'afficher un axe nu qui se ferait passer pour sûr.
-import { AX_ORDER, RUBRIQUES, AX_SHORT, fmtJour, fmtJourLong, partsJour } from './theme';
+import { AX_ORDER, RUBRIQUES, AX_SHORT, fmtJour } from './theme';
 import { hostOf } from './safeUrl';
 
 // Seuil de confiance du moteur (lot-D, calibré et publié côté pestel-collector). Répété ici parce que
@@ -52,25 +52,7 @@ const axeSur = (x) => (typeof x === 'string' && AXES_CONNUS.has(x) ? x : null);
 const libelleAxe = (cle, fourni) => chaine(fourni, 40) || (cle && AX_SHORT[cle]) || '';
 // Confiance en français (0.42 → « 0,42 »). Deux décimales : le seuil vaut 0,15, une seule décimale
 // écraserait la différence entre 0,14 (faible) et 0,15 (classé).
-//
-// TCK-112 · DÉFAUT 2 — L'ARRONDI NE FRANCHIT JAMAIS LE SEUIL. `toFixed(2)` seul écrivait « 0,15 » — la
-// valeur EXACTE du seuil — pour une confiance de 0,1497, sur une carte qui déclare par ailleurs l'item
-// NON classé. Le lecteur lisait donc un chiffre qui contredisait l'étiquette posée à côté, et rien à
-// l'écran ne permettait de trancher lequel des deux mentait. MESURÉ sur le fil servi du 22/07 :
-// 18 items faibles sur 374 tombaient dans ce cas.
-// La règle est bornée et symétrique : on n'arrondit vers le seuil que dans le sens qui reste VRAI —
-// une valeur sous le seuil est TRONQUÉE (0,1497 → « 0,14 »), une valeur au-dessus est remontée. On perd
-// au plus un centième de précision d'affichage ; on ne perd jamais la cohérence avec l'étiquette.
-export const fmtConfiance = (c, seuil = SEUIL_CONFIANCE) => {
-  if (nombre(c) === null) return '';
-  let s = c.toFixed(2);
-  if (Number.isFinite(seuil)) {
-    const relu = Number(s);
-    if (c < seuil && relu >= seuil) s = (Math.floor(c * 100) / 100).toFixed(2);
-    else if (c >= seuil && relu < seuil) s = (Math.ceil(c * 100) / 100).toFixed(2);
-  }
-  return s.replace('.', ',');
-};
+export const fmtConfiance = (c) => (nombre(c) === null ? '' : c.toFixed(2).replace('.', ','));
 
 // STATUT d'un item N1 (vocabulaire du lot-D) :
 //   classe   — un axe est attribué et la confiance (si transmise) est au-dessus du seuil
@@ -130,14 +112,8 @@ export function mentionN1(vm) {
   if (v.statut === 'orphelin') {
     return v.candidat ? `non classé · meilleur candidat : ${v.candidat.label}` : 'non classé';
   }
-  // TCK-112 · DÉFAUT 2 — « classé <axe> · confiance faible » se contredisait DANS LA MÊME PHRASE. Le
-  // moteur ne dit pas « classé avec peu d'assurance » : il dit NON CLASSÉ au sens du seuil calibré,
-  // avec un axe en tête. Écrire « classé » là où le statut vaut « faible », c'est promettre une décision
-  // qui n'a pas été prise — et 374 items du fil servi le 22/07 étaient dans ce cas.
-  // La phrase retenue ne contient plus aucun mot de la famille « classer » et n'a pas besoin du mot
-  // « seuil » : le lecteur doit comprendre que le moteur PENCHE, sans plus.
   if (v.statut === 'faible') {
-    const base = `le moteur penche vers ${label} · pas assez sûr pour trancher${c === null ? '' : ` (${fmtConfiance(c)})`}`;
+    const base = `classé ${label} · confiance faible${c === null ? '' : ` (${fmtConfiance(c)})`}`;
     return v.candidat ? `${base} · autre piste : ${v.candidat.label}` : base;
   }
   // classé : la confiance est dite quand elle est transmise, et son ABSENCE est dite quand elle ne l'est pas.
@@ -176,57 +152,6 @@ export function partitionnerN1(feed, opts = {}) {
     // TCK-050 — le PLAFOND DE CARACTÈRES est compté au même titre que le plafond de cartes.
     titresCoupes: compterCoupe(affiches.map((v) => v.titre)),
   };
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TCK-112 · DÉFAUT 1 — LA FENÊTRE TEMPORELLE DU FIL
-// ─────────────────────────────────────────────────────────────────────────────
-// L'application affirmait « captées AUJOURD'HUI » d'un fil qui couvre 21 jours (2 → 22 juillet 2026,
-// MESURÉ sur le fichier réellement servi). Ce n'était pas une approximation : c'était une affirmation
-// FAUSSE sur la seule chose qu'un lecteur de veille doit pouvoir vérifier d'un coup d'œil — la PORTÉE
-// de ce qu'il lit. Un fil dont on ne connaît pas l'enveloppe ne peut pas être utilisé pour décider.
-//
-// CE QUE CETTE FONCTION NE FAIT PAS : elle n'invente aucune borne. Un fil vide, ou dont aucun item ne
-// porte de date, rend un libellé VIDE — l'écran n'écrit alors rien plutôt qu'une fenêtre supposée. Les
-// items sans date sont COMPTÉS à part (`sansDate`) : ils ne sont ni absorbés dans la fenêtre, ni effacés.
-//
-// Les dates sont comparées en ISO LEXICAL (chaînes « AAAA-MM-JJ »), jamais via `new Date` : un fuseau
-// à l'ouest décalerait la borne d'une journée selon le téléphone qui affiche, et la fenêtre se mettrait
-// à mentir d'un jour — reproduisant en petit le défaut qu'on corrige.
-export function fenetreFil(feed) {
-  const brut = Array.isArray(feed) ? feed.filter(estObjet) : [];
-  const jours = [];
-  for (const it of brut) {
-    const p = partsJour(it.publishedAt);
-    if (p) jours.push(p.iso);
-  }
-  jours.sort();
-  const debut = jours.length ? jours[0] : null;
-  const fin = jours.length ? jours[jours.length - 1] : null;
-  return {
-    total: brut.length,
-    dates: jours.length,
-    sansDate: brut.length - jours.length,
-    debut,
-    fin,
-    // Nombre de jours COUVERTS, bornes incluses (2 → 22 juillet = 21 jours). Différence de dates
-    // calculées à midi UTC : immunisé aux heures d'été, qui feraient rendre 20,96 jours à un naïf.
-    jours: debut && fin ? Math.round((Date.parse(fin + 'T12:00:00Z') - Date.parse(debut + 'T12:00:00Z')) / 864e5) + 1 : 0,
-    libelle: libelleFenetre(debut, fin),
-  };
-}
-
-// « le 22 juillet 2026 » · « du 2 au 22 juillet 2026 » · « du 28 juin au 3 juillet 2026 » ·
-// « du 28 décembre 2025 au 3 janvier 2026 ». On ne répète à gauche que ce qui CHANGE : répéter
-// « juillet 2026 » deux fois dans une même phrase la rend illisible, l'omettre quand il change la rend fausse.
-export function libelleFenetre(debut, fin) {
-  const a = partsJour(debut);
-  const b = partsJour(fin);
-  if (!a || !b) return '';
-  if (a.iso === b.iso) return `le ${fmtJourLong(b.iso)}`;
-  const memeAnnee = a.y === b.y;
-  const memeMois = memeAnnee && a.m === b.m;
-  return `du ${fmtJourLong(a.iso, { mois: !memeMois, annee: !memeAnnee })} au ${fmtJourLong(b.iso)}`;
 }
 
 // RÉPARTITION PAR AXE — « BLOCS VIDES ASSUMÉS ». Renvoie TOUS les axes de `ordre`, y compris ceux à 0,

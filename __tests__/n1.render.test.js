@@ -67,10 +67,12 @@ describe('LOT-F · la carte N1 ne rend RIEN qu’elle n’ait le droit de rendre
     expect(rendre(<N1Card vue={captee()} onPress={() => {}} />).textes).toContain('CAPTÉE · NON RÉDIGÉE');
   });
 
+  // TCK-112 — la phrase attendue contenait « classé », que le statut « faible » contredit. Cf. n1.test.js.
   it('sous le seuil : l’axe n’est pas affirmé, la faiblesse et l’autre piste sont ÉCRITES', () => {
     const v = captee({ confidence: 0.09, runnerUp: { axis: 'S' } });
     const r = rendre(<N1Card vue={v} onPress={() => {}} />);
-    expect(r.textes).toContain('classé Économie · confiance faible (0,09) · autre piste : Social');
+    expect(r.textes).toContain('le moteur penche vers Économie · pas assez sûr pour trancher (0,09) · autre piste : Social');
+    expect(r.textes).not.toMatch(/class[ée] Économie/i);
   });
 
   it('orphelin : « non classé » + meilleur candidat, jamais un axe inventé', () => {

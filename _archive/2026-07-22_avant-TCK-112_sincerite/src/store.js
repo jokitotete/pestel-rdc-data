@@ -21,15 +21,6 @@ if (Array.isArray(DATA.TRIAGE)) DATA.TRIAGE.forEach((x) => TRIAGE.push(x));
 export const getFeed = () => FEED;
 export const getTriage = () => TRIAGE;
 
-// TCK-112 · DÉFAUT 3 — VERSION DES DONNÉES. `applyRemote` remplace le contenu de FEED/TRIAGE EN PLACE :
-// c'est délibéré (tous les consommateurs voient les nouvelles données au prochain rendu sans re-câbler
-// de props), mais cela rend la RÉFÉRENCE du tableau inutilisable comme signal de changement. Un
-// `useMemo(..., [triage])` ne se relance donc JAMAIS après une synchro — le compteur « Divers » affichait
-// 104 pendant que la vue rendait 271 items. Le signal de changement doit être une valeur qui BOUGE :
-// c'est ce compteur, incrémenté au seul endroit qui a le droit de changer les données.
-let VERSION = 0;
-export const dataVersion = () => VERSION;
-
 export { EDITIONS, MANIFEST, STATS };
 
 // Liste des éditions, la plus récente en premier (ordre du manifeste).
@@ -233,10 +224,6 @@ export function applyRemote(d) {
     // format en ligne sans feed/triage) → on GARDE l'embarqué. Clé présente → autoritaire (même vide).
     if ('feed' in d) { FEED.length = 0; if (Array.isArray(d.feed)) d.feed.forEach((x) => FEED.push(x)); }
     if ('triage' in d) { TRIAGE.length = 0; if (Array.isArray(d.triage)) d.triage.forEach((x) => TRIAGE.push(x)); }
-    // Incrémenté ICI et nulle part ailleurs : le seul point du dépôt où le contenu des données change.
-    // Un rejet (contrat invalide, exception) N'INCRÉMENTE PAS — sinon la version affirmerait un
-    // changement qui n'a pas eu lieu, et l'écran se recalculerait sur des données identiques.
-    VERSION++;
     return true;
   } catch (e) {
     return false;

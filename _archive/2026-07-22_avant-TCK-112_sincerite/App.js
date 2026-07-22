@@ -89,12 +89,7 @@ export default function App() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);   // TCK-015 : page « À propos » (bouton ? de l'en-tête)
   const [net, setNet] = useState('loading');      // 'loading' | 'online' | 'offline' — fraîcheur des données (P2, anti-ARCA)
-  // TCK-112 · DÉFAUT 3 — cette valeur était JETÉE (`const [, setDataVer]`) : elle ne servait qu'à forcer
-  // un re-rendu. Or un re-rendu ne suffit pas quand un écran mémoïse sur la RÉFÉRENCE d'un tableau que
-  // `applyRemote` mute en place — le mémo ne se relance pas et l'écran affiche l'ancien compte sous les
-  // nouvelles données. La version est donc désormais LUE et transmise : c'est le seul signal honnête
-  // « les données ont changé » du dépôt (cf. store.dataVersion).
-  const [dataVer, setDataVer] = useState(0);
+  const [, setDataVer] = useState(0);             // bump → re-rendu après application des données en ligne
   const [mode, setMode] = useState('light');      // thème clair (défaut) / sombre
   const [, setThemeVer] = useState(0);
   const toggleTheme = () => { const m = mode === 'light' ? 'dark' : 'light'; applyTheme(m); setMode(m); setThemeVer((v) => v + 1); savePrefs({ mode: m }); };
@@ -297,8 +292,8 @@ export default function App() {
 
         {/* Écran actif (fondu + léger glissement à chaque changement d'onglet) */}
         <ScreenFade tabKey={tab}>
-          {tab === 'home' && <Home ed={ed} onOpen={openItem} feed={date === latestDate() ? getFeed() : []} triage={date === latestDate() ? getTriage() : []} dataVer={dataVer} onOpenEvent={openEvent} onRefresh={refresh} refreshing={net === 'loading'} seed={navSeed && navSeed.tab === 'home' ? navSeed : null} onSeedApplied={() => setNavSeed(null)} follows={follows} isFollowing={isFollowing} onToggleFollow={toggleFollow} />}
-          {tab === 'axes' && <Axes ed={ed} onOpen={openItem} triage={date === latestDate() ? getTriage() : []} dataVer={dataVer} onOpenEvent={openEvent} seed={navSeed && navSeed.tab === 'axes' ? navSeed : null} onSeedApplied={() => setNavSeed(null)} />}
+          {tab === 'home' && <Home ed={ed} onOpen={openItem} feed={date === latestDate() ? getFeed() : []} triage={date === latestDate() ? getTriage() : []} onOpenEvent={openEvent} onRefresh={refresh} refreshing={net === 'loading'} seed={navSeed && navSeed.tab === 'home' ? navSeed : null} onSeedApplied={() => setNavSeed(null)} follows={follows} isFollowing={isFollowing} onToggleFollow={toggleFollow} />}
+          {tab === 'axes' && <Axes ed={ed} onOpen={openItem} triage={date === latestDate() ? getTriage() : []} onOpenEvent={openEvent} seed={navSeed && navSeed.tab === 'axes' ? navSeed : null} onSeedApplied={() => setNavSeed(null)} />}
           {tab === 'map' && <MapScreen ed={ed} onOpen={openItem} seed={navSeed && navSeed.tab === 'map' ? navSeed : null} onSeedApplied={() => setNavSeed(null)} />}
           {tab === 'stats' && <Stats />}
           {tab === 'favoris' && <Favoris favs={favs} onOpen={openFav} onToggleFav={toggleFav} onSearch={() => setSearchOpen(true)} />}
