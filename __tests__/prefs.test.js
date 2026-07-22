@@ -2,7 +2,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { sanitizeFavs, MAX_FAVS, loadPrefs, savePrefs, loadFollows, saveFollows, loadRecent, pushRecent } from '../src/prefs';
+import { sanitizeFavs, MAX_FAVS, loadPrefs, savePrefs, loadFollows, saveFollows, loadRecent, pushRecent, loadSoupape, noterSoupape } from '../src/prefs';
 
 // (Tests de persistance du secteur retirés — QA v1.2 : loadSector/saveSector étaient orphelins depuis le
 // remplacement de la « Lentille » par le filtre explicite. Ils testaient du code que plus personne n'appelait.)
@@ -136,5 +136,50 @@ describe('prefs.savePrefs — écritures sérialisées, pas de lost-update', () 
     const p = await loadPrefs();
     expect(p.mode).toBe('dark');
     expect(p.notifOn).toBe(true);
+  });
+});
+
+// LOT-H (porte PRT_SOUPA) — JOURNAL D'OBSERVATION de la soupape « Divers ». La porte exige 14 éditions
+// consécutives observées avant d'envisager sa suppression : sans journal, cette exigence serait une
+// phrase invérifiable. Le journal est LOCAL, assaini à la relecture (frontière de stockage = frontière
+// de confiance, comme favs/follows/recent), borné, et IDEMPOTENT par édition.
+describe('prefs.soupape — journal d observation de « Divers » (PRT_SOUPA)', () => {
+  beforeEach(async () => { await AsyncStorage.clear(); });
+
+  it('vide par défaut ; note une édition puis la relit', async () => {
+    expect(await loadSoupape()).toEqual([]);
+    await noterSoupape('2026-07-22', 3);
+    expect(await loadSoupape()).toEqual([{ date: '2026-07-22', n: 3 }]);
+  });
+
+  it('IDEMPOTENT par édition : re-noter la MÊME date remplace, jamais deux lignes', async () => {
+    await noterSoupape('2026-07-22', 3);
+    await noterSoupape('2026-07-22', 3);
+    await noterSoupape('2026-07-22', 0);
+    const j = await loadSoupape();
+    expect(j.length).toBe(1);
+    expect(j[0].n).toBe(0);
+  });
+
+  it('trie du plus RÉCENT au plus ancien et PLAFONNE le journal', async () => {
+    for (let i = 1; i <= 35; i++) await noterSoupape(`2026-06-${String(i).padStart(2, '0')}`, i);
+    const j = await loadSoupape();
+    expect(j.length).toBeLessThanOrEqual(30);
+    expect(j[0].date > j[j.length - 1].date).toBe(true);
+  });
+
+  it('assainit un blob falsifié (types, n négatif/NaN, doublons) sans planter', async () => {
+    await AsyncStorage.setItem('ntongo.soupape.v1', JSON.stringify([
+      { date: '2026-07-22', n: -5 }, { date: '2026-07-22', n: 9 }, { date: 42, n: 1 },
+      null, 'x', { n: 3 }, { date: '2026-07-21', n: 'beaucoup' },
+    ]));
+    const j = await loadSoupape();
+    expect(j).toEqual([{ date: '2026-07-22', n: 0 }, { date: '2026-07-21', n: 0 }]);
+  });
+
+  it('une date absente ou non-string n est jamais notée', async () => {
+    expect(await noterSoupape(null, 1)).toBeNull();
+    expect(await noterSoupape('', 1)).toBeNull();
+    expect(await loadSoupape()).toEqual([]);
   });
 });

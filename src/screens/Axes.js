@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Text, View, ScrollView, TouchableOpacity } from 'react-native';
 import { C, AX, AXT, AX_SHORT, AX_ORDER, RUBRIQUES, tint, pick, SP, TYPE, RADIUS } from '../theme';
 import { Card, RelBadge, Pill, AxisGlyph, PageHeader, SourceLine, Icon } from '../ui';
 import { SECTORS, itemInSector } from '../sectors';
 import { upcomingEvents, primarySource } from '../store';
 import { DiversList } from './Triage';
+import { instrumenterDivers, filtreEffectif } from '../n1';
+import { isSafeUrl } from '../safeUrl';
 
 // Groupe de filtres étiqueté (rangée horizontale de pastilles).
 const FilterRow = ({ label, children }) => (
@@ -18,9 +20,13 @@ const FilterRow = ({ label, children }) => (
 
 // « Décryptage » — navigation par AXE PESTEL, par RUBRIQUE (Culture & Arts, Sports) ou par SECTEUR transversal.
 export default function Axes({ ed, onOpen, triage = [], onOpenEvent, seed, onSeedApplied }) {
-  const [filter, setFilter] = useState({ type: 'all' }); // {type:'all'|'axis'|'sector'|'divers', key}
+  const [filterBrut, setFilter] = useState({ type: 'all' }); // {type:'all'|'axis'|'sector'|'divers', key}
   // RS1-19/20 : filtre semé par un lien croisé (item→axe/secteur depuis le Détail), consommé une fois.
   useEffect(() => { if (seed && seed.filter) { setFilter(seed.filter); onSeedApplied && onSeedApplied(); } }, [seed]);
+  // LOT-H — MÊME instrumentation et MÊME prédicat de visibilité que « À la une » : la soupape ne peut pas
+  // être offerte ici et masquée là-bas. Un seul calcul, deux écrans (fermeture de la classe F2).
+  const divers = useMemo(() => instrumenterDivers(triage, { urlSure: isSafeUrl }), [triage]);
+  const filter = filtreEffectif(filterBrut, divers.visible);
   const sector = filter.type === 'sector' ? SECTORS.find((s) => s.key === filter.key) : null;
 
   const axes = ed.axes
@@ -57,7 +63,10 @@ export default function Axes({ ed, onOpen, triage = [], onOpenEvent, seed, onSee
         {RUBRIQUES.map((k) => (
           <Pill key={k} label={AX_SHORT[k]} axis={k} active={filter.type === 'axis' && filter.key === k} onPress={() => setFilter(filter.type === 'axis' && filter.key === k ? { type: 'all' } : { type: 'axis', key: k })} />
         ))}
-        <Pill label="Divers" icon="triage" active={filter.type === 'divers'} onPress={() => setFilter(filter.type === 'divers' ? { type: 'all' } : { type: 'divers' })} />
+        {/* LOT-H : offerte SEULEMENT si elle a du contenu (même prédicat que la vue ci-dessous). */}
+        {divers.visible ? (
+          <Pill label={`Divers · ${divers.total}`} icon="triage" active={filter.type === 'divers'} onPress={() => setFilter(filter.type === 'divers' ? { type: 'all' } : { type: 'divers' })} />
+        ) : null}
       </FilterRow>
 
       {/* Groupe 3 : Secteurs transversaux */}
@@ -72,12 +81,12 @@ export default function Axes({ ed, onOpen, triage = [], onOpenEvent, seed, onSee
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm, marginTop: SP.xs, marginBottom: SP.md2 }}>
           <Text style={[TYPE.label, { color: filter.type === 'divers' ? C.ink : pick(AXT, filter.key, C.cobalt) }]}>{activeLabel}</Text>
           {filter.type === 'sector' ? <Text style={[TYPE.caption, { color: C.inkMut }]}>tous axes confondus</Text>
-            : filter.type === 'divers' ? <Text style={[TYPE.caption, { color: C.inkMut }]}>actualités du jour captées à trier PESTEL</Text> : null}
+            : filter.type === 'divers' ? <Text style={[TYPE.caption, { color: C.inkMut }]}>captées que le moteur n’a pas classées</Text> : null}
         </View>
       ) : null}
 
       {filter.type === 'divers' ? (
-        <DiversList items={triage} />
+        <DiversList items={triage} stats={divers} />
       ) : isEvents ? (
         <EventsList onOpenEvent={onOpenEvent} />
       ) : total === 0 ? (

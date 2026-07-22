@@ -166,6 +166,70 @@ export const NewsCard = ({ axis, rank, title, text, reliability, cta, source, on
   );
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// LOT-F — CARTE N1 : une information CAPTÉE ET TRIÉE, pas une information TRAVAILLÉE
+// ─────────────────────────────────────────────────────────────────────────────
+// Elle doit être reconnaissable EN UN COUP D'ŒIL, sans lire un mot, comme n'étant pas un fait rédigé.
+// Quatre différences DÉLIBÉRÉES avec NewsCard (le fait rédigé) :
+//   1. bordure TIRETÉE (borderStyle) — le vocabulaire universel du « pas fini » ;
+//   2. surface EN RETRAIT (C.panel2, le plan de travail) au lieu de la surface d'édition (C.panel) ;
+//   3. AUCUNE barre d'accent d'axe ni pastille ronde colorée — la couleur d'axe ne PORTE plus la carte,
+//      elle qualifie seulement une ligne de texte ; rien n'affirme visuellement un axe ;
+//   4. AUCUN corps de texte : le composant n'accepte PAS de résumé (cf. n1.normaliserN1, liste blanche).
+//
+// CONTRASTE — mesuré, pas jugé à l'œil (__tests__/contrast.test.js) : sur C.panel2, un texte d'axe AXT
+// posé sur un fond TEINTÉ tint(AX,0.14) tombe à 4,16–4,49:1 en thème clair — SOUS l'AA. C'est pourquoi
+// la mention d'axe est ici du texte NU sur panel2 (4,73–5,11:1) et jamais une pastille teintée. La
+// pastille « captée » utilise, elle, C.bg (paire inkMut/bg déjà garantie AA dans les deux thèmes).
+export const N1Card = ({ vue, onPress }) => {
+  const v = vue || {};
+  // Statut « faible »/« orphelin » = signal (or, jeton TEXTE AA) ; « classé » = couleur d'axe (AA sur panel2).
+  const ct = (v.statut === 'classe' && v.axe) ? pick(AXT, v.axe, C.inkDim) : C.goldText;
+  const a11y = [v.titre, v.mention, v.source ? `source ${v.source}` : null, 'ouvrir la source']
+    .filter(Boolean).join('. ');
+  return (
+    <TouchableOpacity activeOpacity={0.85} onPress={onPress}
+      accessibilityRole="link" accessibilityLabel={a11y}
+      style={{
+        minHeight: TOUCH.min, backgroundColor: C.panel2, borderRadius: RADIUS.lg,
+        borderWidth: 1, borderColor: C.border, borderStyle: 'dashed',
+        padding: SP.md2, marginBottom: SP.sm,
+      }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs2, marginBottom: SP.xs2 }}>
+        <View style={{ backgroundColor: C.bg, borderRadius: RADIUS.sm, paddingHorizontal: SP.sm, paddingVertical: SP.hair }}>
+          <Text style={[TYPE.overline, { color: C.inkMut }]}>CAPTÉE · NON RÉDIGÉE</Text>
+        </View>
+        <View style={{ flex: 1 }} />
+        {v.date ? <Text style={[TYPE.caption, { color: C.inkMut }]}>{v.date}</Text> : null}
+        {v.note ? <SrcDot rel={v.note} /> : null}
+      </View>
+      <Text style={[TYPE.cardTitle, { color: C.ink }]} numberOfLines={2}>{v.titre}</Text>
+      {/* La MENTION remplace l'axe affirmé : « Économie · confiance 0,42 », « classé Économie ·
+          confiance faible (0,09) · autre piste : Social », « non classé · meilleur candidat : … ». */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs, marginTop: SP.xs }}>
+        {v.statut === 'classe' && v.axe ? <AxisGlyph axis={v.axe} size={12} /> : null}
+        <Text style={[TYPE.caption, { color: ct, flex: 1 }]} numberOfLines={2}>{v.mention}</Text>
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SP.sm, marginTop: SP.sm }}>
+        <SourceLine source={{ name: v.source, host: v.host }} style={{ flex: 1 }} />
+        <Text style={[TYPE.label, { color: C.cobalt }]}>ouvrir</Text>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+// BLOC VIDE ASSUMÉ (lot-F) — un axe sans rien à montrer AFFICHE son vide. Il n'emprunte pas à un autre
+// axe et il ne s'efface pas de la liste : une rubrique qui disparaît quand elle est vide laisse croire
+// qu'elle n'existe pas, et c'est une omission muette de plus.
+export const BlocVide = ({ texte }) => (
+  <View style={{
+    borderWidth: 1, borderColor: C.border2, borderStyle: 'dashed', borderRadius: RADIUS.md,
+    paddingVertical: SP.md2, paddingHorizontal: SP.md2, marginBottom: SP.sm, alignItems: 'center',
+  }}>
+    <Text style={[TYPE.caption, { color: C.inkMut, textAlign: 'center' }]}>{texte}</Text>
+  </View>
+);
+
 // Chip de filtre générique (état actif/inactif). Cible tactile pilotée par le jeton TOUCH.min (A11Y-03) :
 // minHeight 44 + centrage, au lieu de ~29 px, pour un pouce en mouvement (jeton TOUCH.min).
 export const Pill = ({ label, active, onPress, axis, sectorKey, icon }) => {

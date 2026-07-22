@@ -37,7 +37,17 @@ const okSource = (s) => isObj(s)
   && isScalar(s.name) && isScalar(s.type) && isScalar(s.date) && isScalar(s.url)    // name : primarySource.split ; type/date/url rendus/traités
   && isScalar(s.reliability);                                                       // QA v1.2 : SrcDot rend {rel} en enfant Text
 const okAgenda = (a) => isObj(a) && isScalar(a.when) && isStr(a.what) && isScalar(a.code);   // Home « À suivre » ; what : .trim() dans upcomingEvents
-const okListOfObj = (v) => Array.isArray(v) && v.every((x) => isObj(x) && isScalar(x.title) && isScalar(x.axisLabel));   // feed/triage : title + axisLabel rendus
+// feed/triage (étage N1) — LOT-F : le fil ne porte plus seulement un titre et un axe. Il peut porter la
+// CONFIANCE du classement, le MEILLEUR CANDIDAT (runnerUp) et la COTE de source (A→D), tous RENDUS par la
+// carte N1. On les type donc ici aussi, même si src/n1.js les recoerce : une frontière de confiance ne
+// délègue pas sa validation au consommateur (défense en profondeur, doctrine RS3.3 de ce fichier).
+// `runnerUp` est tolérant par contrat : chaîne ('E') OU objet {axis, axisLabel} — jamais un tableau, dont
+// personne ne saurait quoi faire, et dont l'acceptation muette masquerait un changement de format amont.
+const okRunnerUp = (r) => r == null || isScalar(r) || (isObj(r) && isScalar(r.axis) && isScalar(r.axisLabel));
+const okListOfObj = (v) => Array.isArray(v) && v.every((x) => isObj(x)
+  && isScalar(x.title) && isScalar(x.axisLabel)                                   // rendus (titre, libellé d'axe)
+  && isScalar(x.confidence) && isScalar(x.sourceGrade) && isScalar(x.statut)      // rendus par la carte N1
+  && okRunnerUp(x.runnerUp));
 
 // Stats — feuilles rendues par l'onglet Données (KPI + graphes).
 const okKV = (s) => s == null || (isObj(s) && isScalar(s.n) && isScalar(s.u));                   // src {n,u} (libellé + url)

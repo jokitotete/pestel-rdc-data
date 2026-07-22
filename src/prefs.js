@@ -114,6 +114,51 @@ export async function clearRecent() {
   try { await AsyncStorage.removeItem(KEY_RECENT); } catch (e) { /* best-effort */ }
 }
 
+// LOT-H (PRT_SOUPA) — JOURNAL D'OBSERVATION de la soupape « Divers ». La porte exige 14 éditions
+// consécutives observées avant d'envisager sa suppression : sans trace, cette exigence ne serait qu'une
+// phrase. On note donc, par ÉDITION (clé = date de l'édition, jamais deux fois la même), combien d'items
+// y sont tombés. Purement LOCAL (aucune donnée ne quitte l'appareil), assaini à la relecture, plafonné.
+// Ce journal ne DÉCIDE rien (cf. n1.analyserSoupape) : il rend l'observation mesurable.
+const KEY_SOUPAPE = 'ntongo.soupape.v1';
+const MAX_SOUPAPE = 30;          // ~2× le seuil de la porte : de quoi voir la série sans enfler le blob
+const MAX_SOUPAPE_DATE = 16;
+export async function loadSoupape() {
+  try {
+    const raw = await AsyncStorage.getItem(KEY_SOUPAPE);
+    const a = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(a)) return [];
+    const seen = new Set(), out = [];
+    for (const e of a) {
+      if (!isObj(e) || typeof e.date !== 'string' || !e.date) continue;
+      const d = e.date.slice(0, MAX_SOUPAPE_DATE);
+      if (seen.has(d)) continue;
+      seen.add(d);
+      // n : entier borné. Un nombre négatif/NaN/géant relu d'un stockage falsifié fausserait la porte.
+      const n = Number.isFinite(e.n) ? Math.max(0, Math.min(100000, Math.trunc(e.n))) : 0;
+      out.push({ date: d, n });
+      if (out.length >= MAX_SOUPAPE) break;
+    }
+    return out;
+  } catch (e) { return []; }
+}
+// Note l'observation d'UNE édition. Idempotent : re-noter la même date remplace la valeur (une édition
+// republiée dans la journée ne doit pas compter deux fois dans la série de la porte).
+export async function noterSoupape(date, n) {
+  try {
+    if (typeof date !== 'string' || !date) return null;
+    const cur = await loadSoupape();
+    const d = date.slice(0, MAX_SOUPAPE_DATE);
+    const val = Number.isFinite(n) ? Math.max(0, Math.trunc(n)) : 0;
+    const dejaIdentique = cur.some((e) => e.date === d && e.n === val);
+    if (dejaIdentique) return cur;                       // rien de neuf : pas d'écriture disque inutile
+    const next = [{ date: d, n: val }, ...cur.filter((e) => e.date !== d)]
+      .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))   // plus récent d'abord
+      .slice(0, MAX_SOUPAPE);
+    await AsyncStorage.setItem(KEY_SOUPAPE, JSON.stringify(next));
+    return next;
+  } catch (e) { return null; }
+}
+
 // RS1-23 — « SUIVRE » un sujet (axe / secteur). Rétention SANS compte ni serveur : purement LOCAL, assaini
 // à la relecture (type dans une liste blanche, key string), dédupliqué, plafonné. Alimente la vue « Pour vous ».
 const KEY_FOLLOWS = 'ntongo.follows.v1';

@@ -55,47 +55,31 @@ describe('triage « À trier » — ACL + applyRemote (captées non classées)',
   });
 });
 
-// QA v1.4 — LE TEST DE LA PROMESSE COMMERCIALE. Le fascicule (page « Ce que nous n avons pas traite »)
-// affirme : « Rien n est ecarte en silence. » C etait FAUX : `.slice(0, 12)` jetait 18 des 30 captees
-// sans le dire, et `isSafeUrl` ecarte les liens non-https, aussi en silence. La page qui vend « nous
-// montrons nos trous » avait son propre trou. Ce test grave l arithmetique de la promesse : tout item
-// sain est soit AFFICHE, soit COMPTE dans le pied. Jamais evapore.
-describe('« Rien n est ecarte en silence » — l arithmetique de la promesse vendue', () => {
-  const CAP = 12;   // doit rester aligne sur CAP_A_TRAITER (Home.js)
-  // Reproduit EXACTEMENT le calcul de ToTreatSection (Home.js).
-  const compte = (feed, sur) => {
-    const sains = (feed || []).filter((f) => f && f.title);
-    const ouvrables = sains.filter((f) => sur(f.url));
-    const affiches = Math.min(ouvrables.length, CAP);
-    return { sains: sains.length, affiches, enPlus: ouvrables.length - affiches, nonOuvrables: sains.length - ouvrables.length };
-  };
-  const https = (u) => typeof u === 'string' && u.startsWith('https://');
-
-  it('AUCUN item sain ne disparait : affiches + en-plus + non-ouvrables = total', () => {
-    const feed = Array.from({ length: 30 }, (_, i) => ({ title: 't' + i, url: 'https://a.cd/' + i }));
-    const c = compte(feed, https);
-    expect(c.affiches + c.enPlus + c.nonOuvrables).toBe(c.sains);   // l invariant de la promesse
-    expect(c.affiches).toBe(12);
-    expect(c.enPlus).toBe(18);   // <- les 18 qui disparaissaient en silence
+// LOT-F — L'ACL type aussi les champs N1 du fil (confiance, meilleur candidat, cote de source), parce
+// que la carte N1 les REND. Frontiere de confiance : on ne delegue pas la validation au consommateur.
+describe('feed N1 — ACL des champs de l etage N1 (fail-closed)', () => {
+  const item = (extra) => ({ title: 't', url: 'https://a.cd/x', axis: 'E', ...extra });
+  it('accepte les champs N1 bien formes (scalaires + runnerUp chaine ou objet)', () => {
+    expect(validateData(base({ feed: [item({ confidence: 0.42, sourceGrade: 'B', statut: 'classe' })] }))).toBe(true);
+    expect(validateData(base({ feed: [item({ runnerUp: 'S' })] }))).toBe(true);
+    expect(validateData(base({ feed: [item({ runnerUp: { axis: 'S', axisLabel: 'Social' } })] }))).toBe(true);
+    expect(validateData(base({ feed: [item({ runnerUp: null })] }))).toBe(true);
   });
-  it('un lien non-https est COMPTE, pas evapore', () => {
-    const feed = [{ title: 'a', url: 'https://a.cd/1' }, { title: 'b', url: 'http://b.cd/2' }, { title: 'c', url: 'javascript:x' }];
-    const c = compte(feed, https);
-    expect(c.affiches).toBe(1);
-    expect(c.nonOuvrables).toBe(2);
-    expect(c.affiches + c.enPlus + c.nonOuvrables).toBe(c.sains);
+  it('rejette un OBJET la ou un scalaire est rendu (crash « Objects are not valid as a React child »)', () => {
+    expect(validateData(base({ feed: [item({ confidence: {} })] }))).toBe(false);
+    expect(validateData(base({ feed: [item({ sourceGrade: ['B'] })] }))).toBe(false);
+    expect(validateData(base({ feed: [item({ statut: {} })] }))).toBe(false);
+    expect(validateData(base({ feed: [item({ runnerUp: ['S'] })] }))).toBe(false);
+    expect(validateData(base({ feed: [item({ runnerUp: { axis: {} } })] }))).toBe(false);
   });
-  it('sur le FEED REEL, l invariant tient — et le pied a bien quelque chose a dire', () => {
-    const { FEED } = require('../src/store');
-    const c = compte(FEED, https);
-    expect(c.affiches + c.enPlus + c.nonOuvrables).toBe(c.sains);
-    // si le fil depasse le plafond, le pied DOIT etre rendu (sinon la promesse retombe fausse)
-    if (c.sains > CAP) expect(c.enPlus + c.nonOuvrables).toBeGreaterThan(0);
-  });
-  it('sous le plafond, aucun pied : on n annonce pas un trou inexistant', () => {
-    const feed = [{ title: 'a', url: 'https://a.cd/1' }];
-    const c = compte(feed, https);
-    expect(c.enPlus).toBe(0);
-    expect(c.nonOuvrables).toBe(0);
+  it('meme contrat pour triage (une captee non classee reste un item N1)', () => {
+    expect(validateData(base({ triage: [{ title: 't', confidence: 0.05 }] }))).toBe(true);
+    expect(validateData(base({ triage: [{ title: 't', confidence: {} }] }))).toBe(false);
   });
 });
+
+// QA v1.4 — LE TEST DE LA PROMESSE COMMERCIALE (« Rien n est ecarte en silence ») a ete DEPLACE, pas
+// supprime : il vit desormais dans __tests__/n1.test.js, ou il s exerce sur n1.partitionnerN1 — LA
+// fonction que l ecran appelle vraiment. Ici, il RECOPIAIT le calcul de Home.js (avec le commentaire
+// « doit rester aligne sur CAP_A_TRAITER ») : un test qui recopie le code qu il teste reste vert le
+// jour ou l ecran derive. Toutes ses assertions sont conservees, plus le cas « item sans titre ».

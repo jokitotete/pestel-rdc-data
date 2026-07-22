@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Text, View, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
-import { C, AX, AXT, AX_SHORT, AX_ORDER, RUBRIQUES, tint, pick, SP, TYPE, RADIUS, HIT, isFollowableAxis , fmtJour} from '../theme';
-import { Card, SectionHead, Pill, Icon, Rule, AxisGlyph, SectorGlyph, NewsCard, PageHeader, SourceLine } from '../ui';
+import { C, AX, AXT, AX_SHORT, AX_ORDER, RUBRIQUES, tint, SP, TYPE, RADIUS, HIT, isFollowableAxis } from '../theme';
+import { Card, SectionHead, Pill, Icon, Rule, AxisGlyph, SectorGlyph, NewsCard, PageHeader, N1Card, BlocVide } from '../ui';
 import { allItems, upcomingEvents, primarySource, findItem, followedItems, latestDate } from '../store';
 import { SECTORS, itemInSector } from '../sectors';
-import { confirmOpenURL, hostOf, isSafeUrl } from '../safeUrl';
+import { confirmOpenURL, isSafeUrl } from '../safeUrl';
 import { DiversList } from './Triage';
+import { partitionnerN1, repartitionParAxe, instrumenterDivers, filtreEffectif, CAP_CAPTEES } from '../n1';
+import { noterSoupape } from '../prefs';
 
 // Groupe de filtres étiqueté (rangée horizontale de pastilles) — identique à « Axes ».
 const FilterRow = ({ label, children }) => (
@@ -17,78 +19,76 @@ const FilterRow = ({ label, children }) => (
   </>
 );
 
-// Fil « À traiter » (collecte étage 1) : infos captées du jour, pas encore décryptées. Rend l'OMISSION
-// VISIBLE. On n'affiche que les items à URL https sûre ; ouverture via confirmOpenURL (domaine + confirm).
-// Plafond d'affichage : au-delà, la carte devient un mur. On PLAFONNE le rendu — on ne JETTE rien,
-// et on écrit combien reste dessous (cf. ci-dessous : c'était le mensonge le plus grave du fascicule).
-const CAP_A_TRAITER = 12;
-
-function ToTreatSection({ feed }) {
-  // QA v1.4 — « Rien n'est écarté en silence » (fascicule commercial) était FAUX, et vérifié faux :
-  //   • `.slice(0, 12)` jetait 18 des 30 captées SANS le dire ;
-  //   • `isSafeUrl` écarte les liens non-https, aussi en silence.
-  // La page qui vend « nous vous montrons nos trous » avait son propre trou, et le cachait. C'est le
-  // pire échec possible pour CE produit : montrer l'omission est le seul attribut qu'un concurrent
-  // gratuit ne peut pas copier. On corrige le CODE, pas la promesse — affaiblir la phrase aurait
-  // sacrifié la valeur du produit pour couvrir une paresse d'implémentation.
-  const sains = (feed || []).filter((f) => f && f.title);
-  const ouvrables = sains.filter((f) => isSafeUrl(f.url));
-  const nonOuvrables = sains.length - ouvrables.length;     // lien non https : montré, jamais effacé
-  const items = ouvrables.slice(0, CAP_A_TRAITER);
-  const enPlus = ouvrables.length - items.length;           // plafonnées pour tenir l'écran, PAS jetées
-  if (!sains.length) return null;
+// LOT-F — SECTION « CAPTÉES » (étage N1). Anciennement « À traiter ». Le renommage n'est pas cosmétique :
+// « à traiter » décrit une INTENTION de la rédaction (on va s'en occuper) ; « captée · non rédigée »
+// décrit un ÉTAT VÉRIFIABLE de l'information. Le produit ne promet que ce qu'il peut prouver.
+//
+// Tout le calcul (plafond, non-ouvrables, statut, mention) vit dans src/n1.js — une seule implémentation,
+// partagée avec les tests. Ce composant ne fait que RENDRE.
+function CapteesSection({ feed }) {
+  const p = partitionnerN1(feed, { cap: CAP_CAPTEES, urlSure: isSafeUrl });
+  // Répartition sur TOUS les axes, y compris ceux à 0 : le lecteur voit ce que la collecte n'a PAS
+  // rapporté aujourd'hui, pas seulement ce qu'elle a rapporté (blocs vides assumés).
+  const repartition = repartitionParAxe(p.affiches);
+  if (!p.sains) return null;
   return (
     <View style={{ marginTop: SP.xl2 }}>
-      <SectionHead title="À traiter" icon="triage"
-        lens={`${sains.length} captée${sains.length > 1 ? 's' : ''} · à décrypter`} />
-      <Card style={{ paddingVertical: SP.xs }}>
-        {items.map((f, i, arr) => {
-          const ct = pick(AXT, f.axis, C.inkDim);   // RS3 : prototype-safe (f.axis vient du feed NON FIABLE)
-          return (
-            <View key={i}>
-              <TouchableOpacity activeOpacity={0.7} onPress={() => confirmOpenURL(f.url)}
-                accessibilityRole="link" accessibilityLabel={`Ouvrir ${hostOf(f.url)} : ${f.title}`}
-                style={{ paddingVertical: SP.md, paddingHorizontal: SP.md2 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs2, marginBottom: SP.xs }}>
-                  {f.axis && f.axis !== '?' ? <AxisGlyph axis={f.axis} size={13} /> : null}
-                  <Text style={[TYPE.mono, { color: ct }]}>{f.axisLabel || 'à trier'}</Text>
-                  <View style={{ flex: 1 }} />
-                  {/* La DATE de parution — 30/30 items la portent en donnée, aucun ne l'affichait.
-                      Elle rend visible la péremption du fil (le 15/07, il servait des items du 13/07). */}
-                  {fmtJour(f.publishedAt) ? (
-                    <Text style={[TYPE.mono, { color: C.inkMut }]}>{fmtJour(f.publishedAt)}</Text>
-                  ) : null}
-                  <View style={{ backgroundColor: tint(C.gold, 0.16), borderRadius: RADIUS.chip, paddingHorizontal: SP.sm, paddingVertical: SP.hair }}>
-                    <Text style={[TYPE.mono, { color: C.goldText }]}>à traiter</Text>
-                  </View>
-                </View>
-                <Text style={[TYPE.cardTitle, { color: C.ink }]} numberOfLines={2}>{f.title}</Text>
-                <SourceLine source={{ name: f.source, host: hostOf(f.url) }} style={{ marginTop: SP.xs }} />
-              </TouchableOpacity>
-              {i < arr.length - 1 && <Rule style={{ marginHorizontal: SP.md2 }} />}
-            </View>
-          );
-        })}
-        {/* CE QUI N'EST PAS MONTRÉ — le pied qui rend la phrase « rien n'est écarté en silence » VRAIE.
-            Sans lui, 18 captées sur 30 disparaissaient sans trace. */}
-        {enPlus || nonOuvrables ? (
-          <>
-            <Rule style={{ marginHorizontal: SP.md2 }} />
-            <View style={{ paddingVertical: SP.md, paddingHorizontal: SP.md2 }}>
-              {enPlus ? (
-                <Text style={[TYPE.bodySm, { color: C.inkMut }]}>
-                  {`+ ${enPlus} autre${enPlus > 1 ? 's' : ''} captée${enPlus > 1 ? 's' : ''} aujourd’hui, non affichée${enPlus > 1 ? 's' : ''} ici.`}
-                </Text>
-              ) : null}
-              {nonOuvrables ? (
-                <Text style={[TYPE.bodySm, { color: C.goldText, marginTop: enPlus ? SP.xs : 0 }]}>
-                  {`${nonOuvrables} captée${nonOuvrables > 1 ? 's' : ''} non ouvrable${nonOuvrables > 1 ? 's' : ''} : lien non sécurisé (http).`}
-                </Text>
-              ) : null}
-            </View>
-          </>
-        ) : null}
-      </Card>
+      <SectionHead title="Captées" icon="triage"
+        lens={`${p.sains} information${p.sains > 1 ? 's' : ''} captée${p.sains > 1 ? 's' : ''} et triée${p.sains > 1 ? 's' : ''} par le moteur · non rédigée${p.sains > 1 ? 's' : ''}`} />
+
+      {/* Répartition par axe des captées AFFICHÉES — les zéros sont ÉCRITS, pas effacés. */}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SP.xs2, marginBottom: SP.md }}>
+        {repartition.map((r) => (
+          <View key={r.cle} style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs, backgroundColor: C.panel2, borderRadius: RADIUS.sm, paddingHorizontal: SP.sm, paddingVertical: SP.hair }}>
+            {r.cle !== '?' ? <AxisGlyph axis={r.cle} size={11} /> : null}
+            <Text style={[TYPE.caption, { color: r.n ? C.inkDim : C.inkMut }]}>{`${r.label} ${r.n}`}</Text>
+          </View>
+        ))}
+      </View>
+
+      {p.affiches.map((v, i) => (
+        <N1Card key={`${v.url}|${i}`} vue={v} onPress={() => confirmOpenURL(v.url)} />
+      ))}
+
+      {/* CE QUI N'EST PAS MONTRÉ — le pied qui rend la phrase « rien n'est écarté en silence » VRAIE.
+          Sans lui, 18 captées sur 30 disparaissaient sans trace (QA v1.4). L'arithmétique est désormais
+          calculée par n1.partitionnerN1 et vérifiée par __tests__/n1.test.js sur le fil RÉEL. */}
+      {p.enPlus || p.nonOuvrables || p.sansTitre ? (
+        <Card style={{ paddingVertical: SP.md, paddingHorizontal: SP.md2 }}>
+          {p.enPlus ? (
+            <Text style={[TYPE.bodySm, { color: C.inkMut }]}>
+              {`+ ${p.enPlus} autre${p.enPlus > 1 ? 's' : ''} captée${p.enPlus > 1 ? 's' : ''} aujourd’hui, non affichée${p.enPlus > 1 ? 's' : ''} ici (plafond d’écran : ${p.cap}).`}
+            </Text>
+          ) : null}
+          {p.nonOuvrables ? (
+            <Text style={[TYPE.bodySm, { color: C.goldText, marginTop: p.enPlus ? SP.xs : SP.none }]}>
+              {`${p.nonOuvrables} captée${p.nonOuvrables > 1 ? 's' : ''} non ouvrable${p.nonOuvrables > 1 ? 's' : ''} : lien non sécurisé (http).`}
+            </Text>
+          ) : null}
+          {p.sansTitre ? (
+            <Text style={[TYPE.bodySm, { color: C.goldText, marginTop: SP.xs }]}>
+              {`${p.sansTitre} captée${p.sansTitre > 1 ? 's' : ''} sans titre exploitable : comptée${p.sansTitre > 1 ? 's' : ''}, non affichée${p.sansTitre > 1 ? 's' : ''}.`}
+            </Text>
+          ) : null}
+        </Card>
+      ) : null}
+    </View>
+  );
+}
+
+// LOT-F — captées d'UN axe (vue filtrée). BLOC VIDE ASSUMÉ : si cet axe n'a rien capté, on l'écrit.
+// On n'affiche JAMAIS ici les captées d'un autre axe pour « remplir » (règle D-11 transposée à l'UI :
+// une classe se désigne, elle ne se déduit pas d'une position dans une liste).
+function CapteesAxe({ feed, axe, label }) {
+  const p = partitionnerN1(feed, { cap: 0, urlSure: isSafeUrl });
+  const items = p.affiches.filter((v) => v.axe === axe);
+  return (
+    <View style={{ marginTop: SP.xl }}>
+      <SectionHead title="Captées" icon="triage"
+        lens={`${items.length} information${items.length > 1 ? 's' : ''} captée${items.length > 1 ? 's' : ''} et classée${items.length > 1 ? 's' : ''} « ${label} » · non rédigée${items.length > 1 ? 's' : ''}`} />
+      {items.length === 0
+        ? <BlocVide texte={`Aucune information captée pour « ${label} » dans cette collecte.\nCet axe affiche son vide : il n’emprunte rien à un autre.`} />
+        : items.map((v, i) => <N1Card key={`${v.url}|${i}`} vue={v} onPress={() => confirmOpenURL(v.url)} />)}
     </View>
   );
 }
@@ -154,11 +154,26 @@ function EventsView({ onOpenEvent }) {
 }
 
 // « À la une » — filtres IDENTIQUES à « Axes » : 3 groupes (Axes PESTEL · Rubriques · Secteurs transversaux).
-// Sans filtre (« Tous ») : l'essentiel national + le fil « À traiter » + l'agenda.
+// Sans filtre (« Tous ») : l'essentiel national + la section « Captées » (N1) + l'agenda.
 export default function Home({ ed, onOpen, feed = [], triage = [], onOpenEvent, onRefresh, refreshing, seed, onSeedApplied, follows = [], isFollowing, onToggleFollow }) {
-  const [filter, setFilter] = useState({ type: 'all' });   // {type:'all'|'axis'|'sector'|'divers'|'follow', key}
+  const [filterBrut, setFilter] = useState({ type: 'all' });   // {type:'all'|'axis'|'sector'|'divers'|'follow', key}
   // RS1-19/20 : applique un filtre semé par un lien croisé (item→axe/secteur), puis le consomme (one-shot).
   useEffect(() => { if (seed && seed.filter) { setFilter(seed.filter); onSeedApplied && onSeedApplied(); } }, [seed]);
+
+  // LOT-H — la soupape « Divers » est INSTRUMENTÉE avant d'être affichée : on sait combien y tombe, d'où
+  // ça vient et pourquoi. `visible` pilote À LA FOIS l'offre (la pastille) et le rendu (la vue) : UN SEUL
+  // prédicat, pour ne pas recréer le défaut F2 (offrir une rubrique que la vue ne saura pas remplir).
+  const divers = useMemo(() => instrumenterDivers(triage, { urlSure: isSafeUrl }), [triage]);
+  const filter = filtreEffectif(filterBrut, divers.visible);
+
+  // PORTE PRT_SOUPA — l'observation de la soupape est ENREGISTRÉE (localement, sans compte ni réseau),
+  // édition par édition. Sans trace, « 14 éditions consécutives observées » resterait une phrase
+  // invérifiable. On ne note QUE l'édition la plus récente : sur une archive, `triage` arrive vide par
+  // construction (App.js) et enregistrerait un faux « zéro ».
+  useEffect(() => {
+    if (ed && ed.date && ed.date === latestDate()) noterSoupape(ed.date, divers.total);
+  }, [ed && ed.date, divers.total]);
+
   const sector = filter.type === 'sector' ? SECTORS.find((s) => s.key === filter.key) : null;
 
   const items = filter.type === 'axis'
@@ -176,7 +191,7 @@ export default function Home({ ed, onOpen, feed = [], triage = [], onOpenEvent, 
   const header = filter.type === 'sector'
     ? { eyebrow: 'Votre Une', title: sector ? sector.label : 'Secteur', subtitle: 'les faits qui comptent aujourd’hui', sector: true }
     : filter.type === 'divers'
-      ? { eyebrow: 'Votre Une', title: 'Divers', subtitle: 'actualités du jour captées à trier PESTEL' }
+      ? { eyebrow: 'Votre Une', title: 'Divers', subtitle: 'captées que le moteur n’a pas classées' }
       : filter.type === 'follow'
         ? { eyebrow: 'Votre Une', title: 'Pour vous', subtitle: 'les axes, rubriques, et secteurs que vous suivez' }
         : filter.type === 'axis'
@@ -211,7 +226,12 @@ export default function Home({ ed, onOpen, feed = [], triage = [], onOpenEvent, 
         {RUBRIQUES.map((k) => (
           <Pill key={k} label={AX_SHORT[k]} axis={k} active={filter.type === 'axis' && filter.key === k} onPress={() => setFilter(filter.type === 'axis' && filter.key === k ? { type: 'all' } : { type: 'axis', key: k })} />
         ))}
-        <Pill label="Divers" icon="triage" active={filter.type === 'divers'} onPress={() => setFilter(filter.type === 'divers' ? { type: 'all' } : { type: 'divers' })} />
+        {/* LOT-H : « Divers » n'est offerte que lorsqu'elle a réellement du contenu. Une pastille qui
+            ouvre sur « Rien pour l'instant » est une promesse non tenue — et, répétée, elle apprend au
+            lecteur à ne plus la toucher, ce qui est exactement la mort silencieuse d'une soupape. */}
+        {divers.visible ? (
+          <Pill label={`Divers · ${divers.total}`} icon="triage" active={filter.type === 'divers'} onPress={() => setFilter(filter.type === 'divers' ? { type: 'all' } : { type: 'divers' })} />
+        ) : null}
       </FilterRow>
       <FilterRow label="SECTEURS TRANSVERSAUX">
         {SECTORS.map((s) => (
@@ -239,9 +259,16 @@ export default function Home({ ed, onOpen, feed = [], triage = [], onOpenEvent, 
       {filter.type === 'follow' ? (
         <FilteredList items={followedItems(ed, follows)} emptyLabel={'Aucun article de vos sujets suivis dans cette édition.'} isRubrique={false} onOpen={onOpen} ed={ed} />
       ) : filter.type === 'divers' ? (
-        <DiversList items={triage} />
+        <DiversList items={triage} stats={divers} />
       ) : isEvents ? (
         <EventsView onOpenEvent={onOpenEvent} />
+      ) : filter.type === 'axis' ? (
+        <>
+          <FilteredList items={items} emptyLabel={`Aucun item « ${activeLabel} » dans cette édition.`} isRubrique={isRubrique} onOpen={onOpen} ed={ed} />
+          {/* LOT-F — sous les faits RÉDIGÉS de l'axe, les captées N1 du MÊME axe. Deux étages, deux
+              traitements visuels : le lecteur voit ce qui a été travaillé et ce qui n'a été que trié. */}
+          <CapteesAxe feed={feed} axe={filter.key} label={activeLabel} />
+        </>
       ) : filter.type !== 'all' ? (
         <FilteredList items={items} emptyLabel={`Aucun item « ${activeLabel} » dans cette édition.`} isRubrique={isRubrique} onOpen={onOpen} ed={ed} />
       ) : (
@@ -252,7 +279,7 @@ export default function Home({ ed, onOpen, feed = [], triage = [], onOpenEvent, 
               source={primarySource(ed, findItem(ed, h.code) || h)} onPress={() => onOpen(h.code)} titleLines={3} />
           ))}
 
-          <ToTreatSection feed={feed} />
+          <CapteesSection feed={feed} />
 
           {ed.agenda && ed.agenda.length > 0 && (
             <View style={{ marginTop: SP.gutter }}>

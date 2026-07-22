@@ -74,6 +74,37 @@ describe('RS1-07 contraste WCAG — jetons GRAPHIQUES ≥ 3:1 (point/pastille, c
   }
 });
 
+// LOT-F — CARTE N1 (« captee · non redigee »). Elle est posee sur C.panel2 (surface EN RETRAIT, le plan
+// de travail), une surface qu AUCUN test de contraste ne couvrait jusqu ici : les tests ci-dessus ne
+// verifiaient que bg et panel. Un jeton peut etre AA sur panel et echouer sur panel2 — le verifier
+// « par analogie » serait exactement le raisonnement que ce depot s interdit.
+describe('LOT-F contraste — carte N1 sur la surface en retrait (panel2)', () => {
+  const THEMES = [{ n: 'clair', P: LIGHT, AXT: AXT_L }, { n: 'sombre', P: DARK, AXT: AXT_D }];
+  for (const t of THEMES) {
+    it(`${t.n} : ink/inkDim/inkMut/goldText/cobalt sur panel2 >= 4,5:1`, () => {
+      for (const tok of ['ink', 'inkDim', 'inkMut', 'goldText', 'cobalt']) {
+        expect(ratio(t.P[tok], t.P.panel2)).toBeGreaterThanOrEqual(4.5);
+      }
+    });
+    it(`${t.n} : AXT[axe] (mention d axe de la carte N1) sur panel2 NU >= 4,5:1`, () => {
+      for (const k of AXES) expect(ratio(t.AXT[k], t.P.panel2)).toBeGreaterThanOrEqual(4.5);
+    });
+    it(`${t.n} : pastille « CAPTEE » = inkMut sur C.bg (fond en creux) >= 4,5:1`, () => {
+      expect(ratio(t.P.inkMut, t.P.bg)).toBeGreaterThanOrEqual(4.5);
+    });
+    // ANCRE DE DECISION (meme role que l ancre « tint 0.14 sur bg » ci-dessous) : la carte N1 n a PAS de
+    // pastille d axe teintee, et ce n est pas un choix esthetique. MESURE : sur panel2, un texte AXT pose
+    // sur tint(AX, 0.14) tombe a 4,16-4,49:1 en theme clair — SOUS l AA, pour les 9 axes.
+    it(`${t.n} : AXT sur tint(AX,0.14)/panel2 ECHOUE en clair — pourquoi la mention est du texte nu`, () => {
+      const rr = AXES.map((k) => {
+        const f = over(tint(AX[k], 0.14), t.P.panel2);
+        return ratio(t.AXT[k], `rgba(${f[0]},${f[1]},${f[2]},1)`);
+      });
+      if (t.n === 'clair') expect(Math.max(...rr)).toBeLessThan(4.5);
+    });
+  }
+});
+
 // v1.3 — CALENDRIER de selection d'edition. Le jour PORTEUR de donnee est du texte cobalt sur tint(cobalt, 0.1)
 // pose sur le fond de la feuille (C.bg) ; le jour AFFICHE est onAction sur actionFill ; le jour sans edition
 // est inkMut sur bg. MESURE, jamais juge a l'oeil : sur C.bg en theme CLAIR, tint 0.14 donne 4,47:1 — il rate
