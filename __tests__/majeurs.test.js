@@ -254,8 +254,15 @@ describe('LOT-I · PAR CONTENEUR — le plafond de 3 s’applique PAR axe, jamai
 });
 
 describe('LOT-I · MESURE SUR LE CORPUS RÉELLEMENT EMBARQUÉ', () => {
-  it('0 fait désigné sur les 18 éditions publiées — donc 0 majeur affiché, et c’est CORRECT', () => {
-    let items = 0, designes = 0, majeurs = 0, axes = 0;
+  // TCK-074 — CE TEST A ÉTÉ RE-POINTÉ, PAS ASSOUPLI.
+  // Il affirmait « 0 fait désigné », en commentant : « désigner est un acte éditorial de SKL_REDAC :
+  // il n'a pas eu lieu ». L'acte a EU LIEU (re-curation vague 1 + LOT-I) : la désignation est
+  // maintenant DANS le portail, donc dans le corpus embarqué. Un test qui épinglait une ABSENCE
+  // devenue fausse ne mesure plus rien — on lui fait mesurer la PRÉSENCE, avec au moins autant de
+  // contraintes qu'avant : comptage exact, plafond de 3, aucun écarté silencieux, et le STATUT.
+  it('104 faits désignés / 74 majeurs sur les 18 éditions — TOUS au statut « proposee », AUCUN validé', () => {
+    let items = 0, designes = 0, majeurs = 0, axes = 0, ecartes = 0;
+    const statuts = {};
     for (const ed of Object.values(EDITIONS)) {
       for (const a of (ed.axes || [])) {
         axes++;
@@ -263,16 +270,27 @@ describe('LOT-I · MESURE SUR LE CORPUS RÉELLEMENT EMBARQUÉ', () => {
         items += (a.items || []).length;
         designes += (a.items || []).filter((it) => lireDesignation(it).presente).length;
         majeurs += s.affiches.length;
+        ecartes += s.ecartes.length;
+        // Plafond D-11 : jamais plus de 3 affichés par conteneur, quoi que dise la donnée.
+        expect(s.affiches.length).toBeLessThanOrEqual(MAX_MAJEURS);
+        for (const it of (a.items || [])) {
+          const d = lireDesignation(it);
+          if (d.presente && d.majeur) statuts[d.statut] = (statuts[d.statut] || 0) + 1;
+        }
       }
     }
     expect(Object.keys(EDITIONS).length).toBe(18);
-    expect(items).toBe(248);
-    expect(designes).toBe(0);      // désigner est un acte éditorial de SKL_REDAC : il n'a pas eu lieu
-    expect(majeurs).toBe(0);       // le module n'invente donc RIEN — c'est le résultat attendu
-    expect(axes).toBeGreaterThan(0);
+    expect(items).toBe(248);            // D-2 : le périmètre n'a pas bougé
+    expect(axes).toBe(130);
+    expect(designes).toBe(104);         // faits PORTANT le champ designation
+    expect(majeurs).toBe(74);           // faits affichés comme majeurs (aucun n'est rattrapé par le plafond)
+    expect(ecartes).toBe(0);            // aucun majeur n'est écarté par le plafond : la rédaction a tenu 1-3
+    // LE POINT QUI COMPTE : D-11 est INSTRUIT, PAS TRANCHÉ. Ce qui part en ligne est une PROPOSITION.
+    // Si un jour une désignation passe « validee », ce test doit ÉCHOUER et forcer une décision explicite.
+    expect(statuts).toEqual({ proposee: 74 });
   });
 
-  it('aucune anomalie de désignation dans le corpus embarqué (le silence est propre)', () => {
+  it('aucune anomalie de désignation dans le corpus embarqué (ni rang manquant, ni doublon, ni illisible)', () => {
     for (const ed of Object.values(EDITIONS)) {
       for (const a of (ed.axes || [])) {
         const s = selectionnerMajeurs(a.items, { porteur: a });

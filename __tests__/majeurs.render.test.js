@@ -295,20 +295,36 @@ describe('LOT-I · THÈMES, ACCESSIBILITÉ ET CIBLES TACTILES', () => {
   });
 });
 
-describe('LOT-I · NON-RÉGRESSION — l’édition RÉELLE embarquée ne montre aucun majeur', () => {
+describe('LOT-I · NON-RÉGRESSION — l’édition RÉELLE embarquée MONTRE ses majeurs, et les avoue non validés', () => {
+  // TCK-074 — RE-POINTÉ, PAS ASSOUPLI. Ce test exigeait l'ABSENCE du libellé « SUJET MAJEUR » parce
+  // qu'aucune désignation n'existait dans le corpus. Elles existent : exiger encore l'absence
+  // reviendrait à interdire de publier ce qui vient d'être instruit. On garde la seule chose qui ne
+  // se périme pas — ça rend sans planter — et on AJOUTE la contrainte de sincérité D-11 : tout majeur
+  // affiché doit porter, à l'écran, la mention qu'il n'est qu'une PROPOSITION.
   const ed = getEdition(latestDate());
   for (const mode of ['light', 'dark']) {
-    it(`[${mode}] « À la une » et « Axes » rendent sans planter, et sans un seul sujet majeur`, () => {
+    it(`[${mode}] « À la une » et « Axes » rendent sans planter ; tout majeur affiché est dit NON VALIDÉ`, () => {
       applyTheme(mode);
+      let vus = 0;
       for (const el of [
         <Home ed={ed} onOpen={() => {}} feed={[]} triage={[]} {...semer({ type: 'axis', key: 'E' })} />,
         <Home ed={ed} onOpen={() => {}} feed={[]} triage={[]} {...semer({ type: 'sector', key: 'mines' })} />,
         <Axes ed={ed} onOpen={() => {}} triage={[]} />,
       ]) {
         const r = rendre(el);
-        expect(r.textes).not.toContain('SUJET MAJEUR');
         expect(r.textes.length).toBeGreaterThan(0);
+        const tout = r.textes;   // `rendre` renvoie DÉJÀ une chaîne (texte.join(' | '))
+        const majeurs = (tout.match(/SUJET MAJEUR/g) || []).length;
+        vus += majeurs;
+        if (majeurs) {
+          // Un majeur affiché SANS l'aveu « NON VALIDÉE » serait une hiérarchie présentée comme
+          // opposable alors qu'elle est encore une proposition. C'est cela qu'on interdit désormais.
+          expect(tout).toMatch(/NON\s+VALID(ÉE|EE)/i);
+        }
       }
+      // L'écran « Axes » de la dernière édition porte des majeurs : si ce compte tombait à 0, ce ne
+      // serait pas un progrès mais une perte d'affichage — le test le dirait.
+      expect(vus).toBeGreaterThan(0);
     });
   }
 });
