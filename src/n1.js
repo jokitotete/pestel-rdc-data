@@ -117,8 +117,14 @@ export function mentionN1(vm) {
     return v.candidat ? `${base} · autre piste : ${v.candidat.label}` : base;
   }
   // classé : la confiance est dite quand elle est transmise, et son ABSENCE est dite quand elle ne l'est pas.
-  // Le fil publié aujourd'hui par pestel-collector ne transmet ni confidence ni runnerUp (projection à 6
-  // champs dans publish.js) : cette mention rend ce trou VISIBLE au lieu de le combler par du silence.
+  // TCK-103 (2026-07-22) — le collecteur transmet DÉSORMAIS la qualification : `publish.js` ne projette plus
+  // six champs codés en dur mais un CONTRAT DÉCLARÉ (pestel-collector/lib/projection.js), contrôlé contre le
+  // schéma par un autocontrôle bloquant. Mesuré sur le flux réel conforme (pool du 22/07) : confidence,
+  // runnerUp, sourceGrade, level et statut transmis 100 % — contre 0 % avant.
+  // LA BRANCHE « non transmise » RESTE, et elle sert encore : le fil embarqué aujourd'hui vient des pools des
+  // 13 et 15/07, collectés AVANT le schéma du lot-E, qui ne portent eux-mêmes AUCUN de ces champs (0/30 au
+  // pool — ce n'est pas une perte de transport, c'est une absence à la collecte). Tant que ce fil n'a pas été
+  // recollecté, la carte doit continuer de DIRE le trou plutôt que de le combler par du silence.
   return c === null ? `${label} · confiance non transmise` : `${label} · confiance ${fmtConfiance(c)}`;
 }
 
