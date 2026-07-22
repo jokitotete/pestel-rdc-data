@@ -7,8 +7,15 @@ import { hostOf } from './safeUrl';
 
 // Fils de collecte (étage 1). Défensifs : fonctionnent que data/pestel.js exporte FEED/TRIAGE ou non
 // (avant/après régénération par build_data.js). Mutables → remplacés en place par applyRemote.
-export const FEED = [];      // « À traiter » : captées CLASSÉES et sélectionnées
-export const TRIAGE = [];    // « À trier » : captées NON classées (axe « ? »)
+// LOT-G — VOCABULAIRE. Ces deux fils s'appelaient « À traiter » et « À trier » : des noms de FILE DE
+// PRODUCTION, qui décrivaient une intention de la rédaction (« on va s'en occuper ») et non un état de
+// l'information. Ils désignent en réalité l'ÉTAGE N1 du moteur (capté et classé, jamais rédigé), et c'est
+// sous ce nom qu'ils paraissent au lecteur depuis le LOT-F (« Captées » / « Divers »).
+// Les IDENTIFIANTS `FEED`/`TRIAGE` ne sont PAS renommés : ce sont les clés `feed`/`triage` du contrat
+// distant (public/pestel-data.json, lu par les APK v1.4 déjà installés). Renommer le champ casserait ces
+// clients ; renommer le seul identifiant JS créerait un écart entre le code et le contrat qu'il applique.
+export const FEED = [];      // N1 CLASSÉES et sélectionnées   → section « Captées »
+export const TRIAGE = [];    // N1 NON classées (axe « ? »)    → rubrique « Divers » (soupape, lot-H)
 if (Array.isArray(DATA.FEED)) DATA.FEED.forEach((x) => FEED.push(x));
 if (Array.isArray(DATA.TRIAGE)) DATA.TRIAGE.forEach((x) => TRIAGE.push(x));
 export const getFeed = () => FEED;
@@ -213,7 +220,7 @@ export function applyRemote(d) {
     MANIFEST.push(...d.manifest);
     Object.keys(STATS).forEach((k) => delete STATS[k]);
     safeAssign(STATS, d.stats);
-    // Fils « À traiter » / « À trier » : l'en-ligne n'écrase QUE ce qu'il DÉCLARE. Clé absente (ancien
+    // Fils N1 (classées / non classées) : l'en-ligne n'écrase QUE ce qu'il DÉCLARE. Clé absente (ancien
     // format en ligne sans feed/triage) → on GARDE l'embarqué. Clé présente → autoritaire (même vide).
     if ('feed' in d) { FEED.length = 0; if (Array.isArray(d.feed)) d.feed.forEach((x) => FEED.push(x)); }
     if ('triage' in d) { TRIAGE.length = 0; if (Array.isArray(d.triage)) d.triage.forEach((x) => TRIAGE.push(x)); }

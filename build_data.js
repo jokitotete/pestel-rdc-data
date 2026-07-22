@@ -12,8 +12,10 @@ if (!fs.existsSync(dataDir)) {
   process.exit(1);
 }
 
-// Fil « À traiter » (collecte étage 1) — OPTIONNEL. On lit le feed.json produit par pestel-collector
-// (publish.js). Absent = pas de section « À traiter », l'app fonctionne comme avant.
+// Fil N1 (collecte étage 1) — OPTIONNEL. On lit le feed.json produit par pestel-collector (publish.js).
+// Absent = pas de section « Captées », l'app fonctionne comme avant.
+// LOT-G : ces fils s'appelaient « À traiter » / « À trier » — un vocabulaire de file de production qui
+// n'a plus cours nulle part, pas même dans les journaux du build.
 function readItems(file) {
   try {
     if (fs.existsSync(file)) {
@@ -25,8 +27,8 @@ function readItems(file) {
 }
 const FEED_JSON = process.env.FEED_JSON || "C:/dev/pestel-collector/collecte/feed.json";
 const TRIAGE_JSON = process.env.TRIAGE_JSON || "C:/dev/pestel-collector/collecte/triage.json";
-const FEED = readItems(FEED_JSON);        // « À traiter » (classées, sélectionnées)
-const TRIAGE = readItems(TRIAGE_JSON);    // « À trier » (captées, NON classées)
+const FEED = readItems(FEED_JSON);        // N1 classées et sélectionnées  → « Captées »
+const TRIAGE = readItems(TRIAGE_JSON);    // N1 NON classées (axe « ? »)   → « Divers »
 
 // Shim navigateur : les fichiers du portail s'auto-enregistrent dans window.PESTEL_*
 global.window = {};
@@ -108,7 +110,7 @@ console.log("✓ src/data/pestel.js : " + kb + " KB · " + editions.length + " �
   (W.PESTEL_STATS && W.PESTEL_STATS.themes ? W.PESTEL_STATS.themes.length : 0) + " thèmes stats");
 console.log("✓ src/data/provinces.js : " + gkb + " KB · " + geo.features.length + " provinces");
 console.log("✓ public/pestel-data.json : " + rkb + " KB (à héberger pour le fetch en ligne)");
-console.log("✓ fil « À traiter » : " + FEED.length + " classée(s) · « À trier » : " + TRIAGE.length + " non classée(s)");
+console.log("✓ fil N1 : " + FEED.length + " classée(s) → « Captées » · " + TRIAGE.length + " non classée(s) → « Divers »");
 console.log("✓ TCK-102 désignation : " + DES.portant + "/" + DES.faits + " fait(s) portent le champ · " +
   DES.majeurs + " majeur(s) (" + DES.valides + " validé[s], " + DES.proposes + " PROPOSÉ[s] non validé[s]) · " +
   DES.vacances + " vacance(s) d'axe déclarée(s)");

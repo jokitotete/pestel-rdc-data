@@ -8,6 +8,8 @@ import { confirmOpenURL, isSafeUrl } from '../safeUrl';
 import { DiversList } from './Triage';
 import { partitionnerN1, repartitionParAxe, instrumenterDivers, filtreEffectif, CAP_CAPTEES } from '../n1';
 import { noterSoupape } from '../prefs';
+import { NOTE_RUBRIQUE_VIDE, NOTE_EVENTS_VIDE } from '../copie';
+import { MajeursSection } from './Majeurs';
 
 // Groupe de filtres étiqueté (rangée horizontale de pastilles) — identique à « Axes ».
 const FilterRow = ({ label, children }) => (
@@ -100,12 +102,16 @@ function CapteesAxe({ feed, axe, label }) {
 }
 
 // Liste d'items filtrés (axe / rubrique / secteur) — cartes « langage vivant » (NewsCard).
+//
+// LOT-G · PORTE PRT_SINCE — la seconde ligne promettait « Rubrique couverte à partir des prochaines
+// veilles. » : un avenir qu'aucun composant de la chaîne ne peut tenir. Elle vit désormais dans src/copie.js
+// (un seul exemplaire pour les DEUX écrans qui l'affichaient — cf. classe F2).
 function FilteredList({ items, emptyLabel, isRubrique, onOpen, ed }) {
   if (!items.length) {
     return (
       <Text style={[TYPE.bodySm, { color: C.inkMut, paddingVertical: SP.xl, textAlign: 'center' }]}>
         {emptyLabel}
-        {isRubrique ? '\nRubrique couverte à partir des prochaines veilles.' : ''}
+        {isRubrique ? NOTE_RUBRIQUE_VIDE : ''}
       </Text>
     );
   }
@@ -122,13 +128,14 @@ function FilteredList({ items, emptyLabel, isRubrique, onOpen, ed }) {
 // (Bandeau « Votre Une · [secteur] » désormais rendu par le composant PARTAGÉ PageHeader — cf. ui.js.)
 
 // Vue « Events » (rubrique Ev) — rendez-vous à venir agrégés sur 3 semaines (agendas réels, sourcés).
+// LOT-G · PRT_SINCE : « alimentée par les agendas des prochaines veilles » → src/copie.js (cf. ci-dessus).
 function EventsView({ onOpenEvent }) {
   const events = upcomingEvents(21);
   const Ec = AX.Ev || C.cobalt;
   if (!events.length) {
     return (
       <Text style={[TYPE.bodySm, { color: C.inkMut, paddingVertical: SP.xl, textAlign: 'center' }]}>
-        Aucun rendez-vous daté sur les 3 prochaines semaines.{'\n'}Rubrique alimentée par les agendas des prochaines veilles.
+        {NOTE_EVENTS_VIDE}
       </Text>
     );
   }
@@ -270,13 +277,25 @@ export default function Home({ ed, onOpen, feed = [], triage = [], onOpenEvent, 
         <EventsView onOpenEvent={onOpenEvent} />
       ) : filter.type === 'axis' ? (
         <>
+          {/* LOT-I — EN TÊTE de l'axe/rubrique, les 1 à 3 sujets DÉSIGNÉS majeurs. La section ne rend
+              RIEN quand personne n'a désigné (état normal), et elle ne repêche JAMAIS un mineur pour
+              remplir. Le porteur est l'objet d'axe de l'édition : c'est lui qui peut déclarer une
+              VACANCE motivée (« 0 majeur » assumé). */}
+          <MajeursSection items={items} label={activeLabel} genre={isRubrique ? 'rubrique' : 'axe'}
+            porteur={ed.axes.find((a) => a.key === filter.key) || null} onOpen={onOpen} ed={ed} />
           <FilteredList items={items} emptyLabel={`Aucun item « ${activeLabel} » dans cette édition.`} isRubrique={isRubrique} onOpen={onOpen} ed={ed} />
           {/* LOT-F — sous les faits RÉDIGÉS de l'axe, les captées N1 du MÊME axe. Deux étages, deux
               traitements visuels : le lecteur voit ce qui a été travaillé et ce qui n'a été que trié. */}
           <CapteesAxe feed={feed} axe={filter.key} label={activeLabel} />
         </>
       ) : filter.type !== 'all' ? (
-        <FilteredList items={items} emptyLabel={`Aucun item « ${activeLabel} » dans cette édition.`} isRubrique={isRubrique} onOpen={onOpen} ed={ed} />
+        <>
+          {/* LOT-I — même règle pour un SECTEUR transversal. Pas de `porteur` : le schéma ne porte de
+              `designationVacance` que sur un AXE. Un secteur ne peut donc pas déclarer de vacance
+              motivée aujourd'hui — c'est une LIMITE DÉCLARÉE, pas un oubli de rendu. */}
+          <MajeursSection items={items} label={activeLabel} genre="secteur" onOpen={onOpen} ed={ed} />
+          <FilteredList items={items} emptyLabel={`Aucun item « ${activeLabel} » dans cette édition.`} isRubrique={isRubrique} onOpen={onOpen} ed={ed} />
+        </>
       ) : (
         <>
           {ed.headline.map((h, i) => (

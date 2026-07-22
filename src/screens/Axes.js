@@ -7,6 +7,8 @@ import { upcomingEvents, primarySource } from '../store';
 import { DiversList } from './Triage';
 import { instrumenterDivers, filtreEffectif } from '../n1';
 import { isSafeUrl } from '../safeUrl';
+import { NOTE_RUBRIQUE_VIDE, NOTE_EVENTS_VIDE } from '../copie';
+import { MajeursSection } from './Majeurs';
 
 // Groupe de filtres étiqueté (rangée horizontale de pastilles).
 const FilterRow = ({ label, children }) => (
@@ -92,7 +94,8 @@ export default function Axes({ ed, onOpen, triage = [], onOpenEvent, seed, onSee
       ) : total === 0 ? (
         <Text style={[TYPE.bodySm, { color: C.inkMut, paddingVertical: SP.xl, textAlign: 'center' }]}>
           {activeLabel ? `Aucun item « ${activeLabel} » dans cette édition.` : 'Aucun item.'}
-          {isRubrique ? '\nRubrique couverte à partir des prochaines veilles.' : ''}
+          {/* LOT-G · PRT_SINCE — promesse retirée, phrase partagée avec « À la une » (src/copie.js). */}
+          {isRubrique ? NOTE_RUBRIQUE_VIDE : ''}
         </Text>
       ) : axes.map((a) => {
         const c = pick(AX, a.key, C.cobalt);   // RS3 : prototype-safe (a.key vient de l'édition NON FIABLE)
@@ -110,6 +113,13 @@ export default function Axes({ ed, onOpen, triage = [], onOpenEvent, seed, onSee
                 <Text style={[TYPE.mono, { color: pick(AXT, a.key, C.ink) }]}>{a.items.length}</Text>
               </View>
             </View>
+
+            {/* LOT-I — les 1 à 3 sujets DÉSIGNÉS majeurs de CET axe, en tête de son bloc. `a` est le
+                porteur : c'est l'objet d'axe de l'édition qui peut déclarer une VACANCE motivée.
+                Rend `null` tant que personne n'a désigné — aucun bloc vide, aucun repêchage. */}
+            <MajeursSection items={a.items} label={a.short || a.name}
+              genre={RUBRIQUES.indexOf(a.key) >= 0 ? 'rubrique' : 'axe'}
+              porteur={a} onOpen={onOpen} ed={ed} compact />
 
             {a.items.map((it) => (
               <Card key={it.code} accent={c} onPress={() => onOpen(it.code)} style={{ padding: SP.md2, marginBottom: SP.sm }}>
@@ -147,7 +157,7 @@ function EventsList({ onOpenEvent }) {
       </View>
       {events.length === 0 ? (
         <Text style={[TYPE.bodySm, { color: C.inkMut, paddingVertical: SP.xl, textAlign: 'center' }]}>
-          Aucun rendez-vous daté sur les 3 prochaines semaines.{'\n'}Rubrique alimentée par les agendas des prochaines veilles.
+          {NOTE_EVENTS_VIDE}
         </Text>
       ) : (
         <Card style={{ paddingVertical: SP.xs }}>
