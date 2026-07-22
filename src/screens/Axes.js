@@ -121,7 +121,7 @@ export default function Axes({ ed, onOpen, triage = [], onOpenEvent, seed, onSee
                 n'a tranché. Aucun bloc vide, aucun repêchage, aucun message fabriqué. */}
             <MajeursSection items={a.items} label={a.short || a.name}
               genre={RUBRIQUES.indexOf(a.key) >= 0 ? 'rubrique' : 'axe'}
-              porteur={a} onOpen={onOpen} ed={ed} compact />
+              porteur={a} onOpen={onOpen} ed={ed} compact axeCle={a.key} />
 
             {a.items.map((it) => (
               <Card key={it.code} accent={c} onPress={() => onOpen(it.code)} style={{ padding: SP.md2, marginBottom: SP.sm }}>

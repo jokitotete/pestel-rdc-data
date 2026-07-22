@@ -11,14 +11,18 @@ import { Card, Icon } from '../ui';
 const VERSION = (Constants.expoConfig && Constants.expoConfig.version) || '1.4.0';
 const CONTACT = 'j.okitotete@2id.consulting';
 
+// ATTENTION — CETTE LISTE EST DATÉE PAR SON TITRE (« NOUVEAUTÉS · v » + VERSION, plus bas). Elle suit donc
+// AUTOMATIQUEMENT le numéro de version : la laisser en l'état lors d'une montée de version transforme un
+// changelog périmé en AFFIRMATION FAUSSE. C'est exactement ce qui s'est produit au passage 1.4.0 → 1.5.0
+// (les sept nouveautés de la v1.4 se sont retrouvées annoncées comme celles de la v1.5). Règle : toute
+// montée de version met cette liste à jour, et n'y inscrit QUE ce qui a été constaté à l'écran sur le
+// build livré — pas ce qui a été codé, pas ce qui est prévu.
 const NOUVEAUTES = [
-  '« Ntongo · RDC News » — nouvelle identité de marque.',
-  '« Votre Une » : le logo de l’axe, de la rubrique ou du secteur choisi s’affiche en tête.',
-  'Favoris regroupés par thème (Politique, Économie, Social…).',
-  'Axes : le sous-titre suit l’onglet actif (axe / rubrique / secteur).',
-  'L’édition affichée est nommée — fini le « Aujourd’hui » figé sur une autre date.',
-  'La version de l’application est visible (ici et à l’accueil).',
-  'Cette page « À propos ».',
+  'Les sujets désignés MAJEURS par la rédaction s’affichent en tête de chaque axe, rubrique et secteur, avec leur rang et le motif écrit de la désignation.',
+  'Une désignation que la rédaction n’a pas encore tranchée est marquée « proposée · non validée » — elle n’est pas présentée comme un arbitrage acquis.',
+  'Un axe sans sujet majeur affiche sa vacance motivée : le motif écrit remplace le blanc.',
+  'Vocabulaire : la section des informations triées par le moteur s’appelle « Captées » — « captée · non rédigée » décrit un état vérifiable, pas une intention de la rédaction.',
+  'Rubrique « Divers » : les informations captées que le moteur n’a pas classées, avec le compte de ce qui est affiché et de ce qui ne l’est pas.',
 ];
 
 const MENTIONS = [

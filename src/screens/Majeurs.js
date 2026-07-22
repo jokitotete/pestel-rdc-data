@@ -113,7 +113,13 @@ function VacanceMotivee({ vacance, label = '', genre = 'axe', compact = false })
  * @param {string} genre    « axe » | « rubrique » | « secteur » — pour écrire la bonne phrase
  * @param {func}   onOpen   ouverture du dossier
  */
-export function MajeursSection({ items = [], label = '', porteur = null, genre = 'axe', onOpen, ed, compact = false }) {
+// `axeCle` — REPLI D'IDENTITÉ D'AXE. Les faits ne portent `axis` que lorsqu'ils ont transité par
+// `allItems()` / `findItem()` de src/store.js, qui les décorent. L'écran « Axes » (src/screens/Axes.js)
+// itère au contraire sur `edition.axes[].items[]` BRUTS : mesuré sur les données publiées le 22/07/2026,
+// 248 faits sur 248 n'y portent AUCUN champ `axis`. La carte du sujet majeur y perdait donc son glyphe et
+// sa couleur d'axe (disque vide, numéro cobalt) alors que la même carte, rendue depuis « À la une »
+// filtrée, les affichait. Le conteneur CONNAÎT son axe : il le transmet, au lieu de le laisser déduire.
+export function MajeursSection({ items = [], label = '', porteur = null, genre = 'axe', onOpen, ed, compact = false, axeCle = null }) {
   const s = selectionnerMajeurs(items, { porteur });
 
   // ── LES TROIS ÉTATS, DISTINGUÉS ─────────────────────────────────────────────
@@ -155,7 +161,7 @@ export function MajeursSection({ items = [], label = '', porteur = null, genre =
             </View>
 
             <NewsCard
-              axis={it && it.axis}
+              axis={(it && it.axis) || axeCle}
               rank={m.rang === null || m.rang === undefined ? null : (m.rang < 10 ? '0' : '') + m.rang}
               title={it && it.title}
               text={it && it.text}
