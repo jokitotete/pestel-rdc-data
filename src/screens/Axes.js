@@ -116,7 +116,9 @@ export default function Axes({ ed, onOpen, triage = [], onOpenEvent, seed, onSee
 
             {/* LOT-I — les 1 à 3 sujets DÉSIGNÉS majeurs de CET axe, en tête de son bloc. `a` est le
                 porteur : c'est l'objet d'axe de l'édition qui peut déclarer une VACANCE motivée.
-                Rend `null` tant que personne n'a désigné — aucun bloc vide, aucun repêchage. */}
+                CORRECTION 2 — trois rendus possibles, jamais deux : les sujets désignés ; OU le bloc de
+                VACANCE MOTIVÉE avec son motif (décision éditoriale écrite) ; OU `null` quand personne
+                n'a tranché. Aucun bloc vide, aucun repêchage, aucun message fabriqué. */}
             <MajeursSection items={a.items} label={a.short || a.name}
               genre={RUBRIQUES.indexOf(a.key) >= 0 ? 'rubrique' : 'axe'}
               porteur={a} onOpen={onOpen} ed={ed} compact />

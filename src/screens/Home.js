@@ -277,10 +277,12 @@ export default function Home({ ed, onOpen, feed = [], triage = [], onOpenEvent, 
         <EventsView onOpenEvent={onOpenEvent} />
       ) : filter.type === 'axis' ? (
         <>
-          {/* LOT-I — EN TÊTE de l'axe/rubrique, les 1 à 3 sujets DÉSIGNÉS majeurs. La section ne rend
-              RIEN quand personne n'a désigné (état normal), et elle ne repêche JAMAIS un mineur pour
-              remplir. Le porteur est l'objet d'axe de l'édition : c'est lui qui peut déclarer une
-              VACANCE motivée (« 0 majeur » assumé). */}
+          {/* LOT-I — EN TÊTE de l'axe/rubrique, les 1 à 3 sujets DÉSIGNÉS majeurs. Elle ne repêche
+              JAMAIS un mineur pour remplir. Le porteur est l'objet d'axe de l'édition : c'est lui qui
+              peut déclarer une VACANCE motivée (« 0 majeur » assumé).
+              CORRECTION 2 — la vacance MOTIVÉE s'AFFICHE désormais, avec son motif : c'est une décision
+              éditoriale, donc de l'information. Seul l'état NON DÉSIGNÉ (personne n'a tranché) ne rend
+              rien du tout — et rien n'y est fabriqué pour combler. */}
           <MajeursSection items={items} label={activeLabel} genre={isRubrique ? 'rubrique' : 'axe'}
             porteur={ed.axes.find((a) => a.key === filter.key) || null} onOpen={onOpen} ed={ed} />
           <FilteredList items={items} emptyLabel={`Aucun item « ${activeLabel} » dans cette édition.`} isRubrique={isRubrique} onOpen={onOpen} ed={ed} />

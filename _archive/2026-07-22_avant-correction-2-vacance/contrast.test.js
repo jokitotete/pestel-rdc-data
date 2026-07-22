@@ -105,41 +105,6 @@ describe('LOT-F contraste — carte N1 sur la surface en retrait (panel2)', () =
   }
 });
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// CORRECTION 2 — BLOC « VACANCE MOTIVEE » (src/screens/Majeurs.js, VacanceMotivee)
-// ═══════════════════════════════════════════════════════════════════════════════
-// Le bloc introduit par la correction 2 pose des paires PRECISES, sur DEUX fonds distincts, et la porte
-// PRT_DSYST exige qu'elles soient CALCULEES et non jugees a l'oeil :
-//   · en-tete de section (SectionHead) : `ink` (titre) et `inkMut` (loupe) sur le fond d'ECRAN `bg` ;
-//   · carte (Card, fond `panel`)       : `goldText` (« VACANCE DESIGNEE » + mention de statut) et
-//                                        `inkDim` (ligne de motif).
-// Ces paires sont deja couvertes une a une par les blocs precedents ; ce bloc les REGROUPE sous le nom de
-// la surface qui les emploie, pour qu'un changement de jeton fasse tomber un test qui NOMME l'ecran touche
-// — la lecon d'About.js, oublie par un recensement « exhaustif » tenu a la main.
-describe('CORRECTION 2 contraste — bloc de VACANCE MOTIVEE (clair + sombre)', () => {
-  for (const t of [{ n: 'clair', P: LIGHT }, { n: 'sombre', P: DARK }]) {
-    it(`${t.n} : en-tete du bloc — ink (titre) et inkMut (loupe) sur bg >= 4,5:1`, () => {
-      for (const tok of ['ink', 'inkMut']) expect(ratio(t.P[tok], t.P.bg)).toBeGreaterThanOrEqual(4.5);
-    });
-    it(`${t.n} : carte du bloc — goldText (« VACANCE DESIGNEE », statut) sur panel >= 4,5:1`, () => {
-      expect(ratio(t.P.goldText, t.P.panel)).toBeGreaterThanOrEqual(4.5);
-    });
-    it(`${t.n} : carte du bloc — inkDim (ligne de motif) sur panel >= 4,5:1`, () => {
-      expect(ratio(t.P.inkDim, t.P.panel)).toBeGreaterThanOrEqual(4.5);
-    });
-    // ANCRE DE DECISION, pas un test de conformite : la bordure de la pastille de statut (C.border) est
-    // DECORATIVE. MESURE ci-dessous : elle est tres loin de 3:1 — c'est pourquoi l'information de statut
-    // n'est JAMAIS portee par le cadre, mais par le TEXTE qu'il entoure (WCAG 1.4.11 ne s'applique pas a
-    // un contour qui n'identifie aucun composant). Si un jour cette pastille devenait un CONTROLE, ce test
-    // devrait passer en assertion >= 3:1 — et il echouerait, ce qui est precisement le but de l'ancre.
-    it(`${t.n} : la bordure de la pastille de statut est DECORATIVE (mesuree < 3:1, le texte porte le sens)`, () => {
-      const compose = over(t.P.border, t.P.panel);
-      const r = ratio(`rgba(${compose[0]},${compose[1]},${compose[2]},1)`, t.P.panel);
-      expect(r).toBeLessThan(3);
-    });
-  }
-});
-
 // v1.3 — CALENDRIER de selection d'edition. Le jour PORTEUR de donnee est du texte cobalt sur tint(cobalt, 0.1)
 // pose sur le fond de la feuille (C.bg) ; le jour AFFICHE est onAction sur actionFill ; le jour sans edition
 // est inkMut sur bg. MESURE, jamais juge a l'oeil : sur C.bg en theme CLAIR, tint 0.14 donne 4,47:1 — il rate

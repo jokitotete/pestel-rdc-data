@@ -133,23 +133,11 @@ describe('LOT-I · AUCUN REPÊCHAGE À L’ÉCRAN — « JAMAIS un mineur »', (
     for (const autre of [1, 2, 4, 5, 6]) expect(r.textes).not.toContain('Titre du fait numéro ' + autre);
   });
 
-  // ══ ASSERTION RETOURNÉE PAR LA CORRECTION 2 ══════════════════════════════════════════════════════
-  // CE QUI ÉTAIT AFFIRMÉ ICI JUSQU'AU 22/07/2026 : « une VACANCE motivée n'affiche pas davantage qu'une
-  // absence : 0 majeur → RIEN » — `expect(r.json).toBeNull()`. Ce test était VERT et il VERROUILLAIT le
-  // défaut : il faisait de l'impossibilité d'afficher la vacance une propriété VOULUE du produit, alors
-  // que le mécanisme de vacance était par ailleurs présenté comme tenant la règle D-11 (« une vacance non
-  // expliquée est un orphelin »). Une vacance MOTIVÉE est une décision éditoriale écrite : la taire, c'est
-  // retirer de l'information au lecteur. Ce qui reste vrai, et qui est vérifié juste en dessous : elle
-  // n'affiche AUCUN sujet — ni un majeur, ni un mineur repêché pour faire nombre.
-  it('une VACANCE motivée s’AFFICHE (avec son motif) — mais n’affiche toujours AUCUN sujet', () => {
+  it('une VACANCE motivée n’affiche pas davantage qu’une absence : « 0 majeur → RIEN »', () => {
     const vac = { motif: 'Aucun fait de l’axe n’atteint le seuil de majeur sur la période couverte.', statut: 'validee' };
     const r = rendre(<MajeursSection items={faits(4)} label="Politique" porteur={{ designationVacance: vac }} onOpen={() => {}} />);
-    expect(r.json).not.toBeNull();
-    expect(r.textes).toContain('Aucun sujet majeur');
-    expect(r.textes).toContain(vac.motif);
-    // La règle produit tient toujours : zéro sujet montré, zéro repêchage.
-    expect(r.textes).not.toContain('SUJET MAJEUR ·');
-    for (const i of [1, 2, 3, 4]) expect(r.textes).not.toContain('Titre du fait numéro ' + i);
+    expect(r.json).toBeNull();
+    expect(r.textes).toBe('');
   });
 
   it('0 candidat → le composant rend `null`, pas un conteneur vide qui laisserait un blanc', () => {
