@@ -118,10 +118,14 @@ export const SourceLine = ({ source, style }) => {
   const nn = norm(name), hh = norm(host);
   const label = (name && host && nn && !hh.startsWith(nn) && !nn.startsWith(hh)) ? `${name} · ${host}` : (host || name);
   if (!label) return null;
+  // TCK-125 v2 — le Text interne prend `flex:1` : SANS lui, il rendait le nom complet à sa largeur
+  // naturelle et DÉBORDAIT de son conteneur, poussant « ouvrir » hors champ. C'était la vraie cause de
+  // « ouv… ». Donner flex:1 au conteneur EXTÉRIEUR (ancien code) ne servait à rien : c'est le Text
+  // INTÉRIEUR qui doit être borné pour ellipser au lieu de déborder.
   return (
-    <View style={[{ flexDirection: 'row', alignItems: 'center', gap: SP.xs2 }, style]}>
+    <View style={[{ flexDirection: 'row', alignItems: 'center', gap: SP.xs2, minWidth: 0 }, style]}>
       <Glyph name="link" size={12} color={C.inkMut} />
-      <Text style={[TYPE.caption, { color: C.inkMut }]} numberOfLines={1}>{label}</Text>
+      <Text style={[TYPE.caption, { color: C.inkMut, flex: 1 }]} numberOfLines={1}>{label}</Text>
     </View>
   );
 };
@@ -195,20 +199,18 @@ export const N1Card = ({ vue, onPress }) => {
         borderWidth: 1, borderColor: C.border, borderStyle: 'dashed',
         padding: SP.md2, marginBottom: SP.sm,
       }}>
-      {/* TCK-125 — La VRAIE cause de « CAPTÉE · NON RÉD… » n'était NI l'espace NI le flexShrink : c'était
-          la POLICE. `overline` est monospace (chasse fixe 0,6 em) AVEC letterSpacing 1,0 — chaque lettre
-          porte un espace ajouté. « CAPTÉE · NON RÉDIGÉE » = 20 caractères ainsi rendus est structurellement
-          PLUS LARGE que la carte, quel que soit le flexShrink. La preuve était sous nos yeux : « Approfondir »
-          (11 car., police `label` normale, sans espacement) tient sur la carte de la Une. Or cette étiquette
-          est un LIBELLÉ, pas une donnée chiffrée : rien ne justifiait le monospace espacé. Passée en `label`,
-          elle tient. On garde flexShrink 0 en ceinture-bretelles, mais ce n'est plus lui qui fait le travail. */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs2, marginBottom: SP.xs2 }}>
-        <View style={{ backgroundColor: C.bg, borderRadius: RADIUS.sm, paddingHorizontal: SP.sm, paddingVertical: SP.hair, flexShrink: 0 }}>
-          <Text style={[TYPE.label, { color: C.inkMut, fontSize: 10.5 }]} numberOfLines={1}>CAPTÉE · NON RÉDIGÉE</Text>
-        </View>
-        <View style={{ flex: 1 }} />
-        {v.date ? <Text style={[TYPE.caption, { color: C.inkMut }]} numberOfLines={1}>{v.date}</Text> : null}
-        {v.note ? <SrcDot rel={v.note} /> : null}
+      {/* TCK-125 v2 — MISE EN PAGE À L'ÉPREUVE DES BALLES. Diagnostic corrigé : ce n'était NI la police,
+          NI le flexShrink (qui, dans une rangée avec un View intercalaire `flex:1`, ne protège pas ce
+          qu'on croit). La règle robuste : UN SEUL élément flexible par rangée, c'est LUI qui absorbe le
+          reste et ellipse en dernier ; tout le reste est court et à taille NATURELLE. Ici le LIBELLÉ prend
+          `flex:1` (il a donc toute la largeur moins la date), et la date, courte, ne peut plus le comprimer.
+          Idem au pied : la SOURCE est flexible et cède la première, « ouvrir » garde sa taille naturelle. */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SP.xs2 }}>
+        <Text style={[TYPE.label, { color: C.inkMut, fontSize: 10.5, letterSpacing: 0.3, flex: 1 }]} numberOfLines={1}>CAPTÉE · NON RÉDIGÉE</Text>
+        {/* flexShrink 0 explicite : le libellé (flex:1) grandit, mais la date et la pastille — courtes et
+            NON négociables — gardent leur taille. Sans ça, « 23 juil. » tombait à « 23 … ». */}
+        {v.date ? <Text style={[TYPE.caption, { color: C.inkMut, marginLeft: SP.sm, flexShrink: 0 }]} numberOfLines={1}>{v.date}</Text> : null}
+        {v.note ? <View style={{ marginLeft: SP.xs, flexShrink: 0 }}><SrcDot rel={v.note} /></View> : null}
       </View>
       <Text style={[TYPE.cardTitle, { color: C.ink }]} numberOfLines={2}>{v.titre}</Text>
       {/* La MENTION remplace l'axe affirmé : « Économie · confiance 0,42 », « classé Économie ·
@@ -217,11 +219,13 @@ export const N1Card = ({ vue, onPress }) => {
         {v.statut === 'classe' && v.axe ? <AxisGlyph axis={v.axe} size={12} /> : null}
         <Text style={[TYPE.caption, { color: ct, flex: 1 }]} numberOfLines={2}>{v.mention}</Text>
       </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SP.sm, marginTop: SP.sm }}>
-        <SourceLine source={{ name: v.source, host: v.host }} style={{ flex: 1, minWidth: 0 }} />
-        {/* flexShrink 0 : un nom de source long comprimait ce mot jusqu'à « ouvri ». C'est l'ACTION
-            de la carte — la source peut être coupée, l'action jamais. */}
-        <Text style={[TYPE.label, { color: C.cobalt, flexShrink: 0 }]} numberOfLines={1}>ouvrir</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: SP.sm }}>
+        {/* La SOURCE est le SEUL élément flexible : elle cède la première. « ouvrir » n'a pas de flex,
+            donc il garde sa taille naturelle (6 caractères) et ne peut plus tomber à « ouv… ». */}
+        <View style={{ flex: 1, minWidth: 0, marginRight: SP.sm }}>
+          <SourceLine source={{ name: v.source, host: v.host }} />
+        </View>
+        <Text style={[TYPE.label, { color: C.cobalt }]} numberOfLines={1}>ouvrir</Text>
       </View>
     </TouchableOpacity>
   );
