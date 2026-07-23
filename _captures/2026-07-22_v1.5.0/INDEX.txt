@@ -1,0 +1,117 @@
+REVUE v1.5.0 — CE QUE MONTRE CHAQUE CAPTURE
+===========================================
+Appareil   : emulator-5554 (sdk_gphone16k_x86_64, 1080 × 2400)
+Build      : APK release ee0d064b3deb1f689c68dc6a68fd8e080b36b743a901729abed91de230d7e95e
+             (versionName 1.5.0, versionCode 5) — c'est l'APK LIVRÉ, extrait du
+             téléphone virtuel après installation et vérifié par empreinte.
+Prises le  : 22/07/2026, entre 19h44 et 19h48 (heure locale ; 18h44–18h48 sur l'appareil, GMT).
+Données    : édition du 21 juillet 2026, synchronisée EN LIGNE depuis le dépôt public.
+Numérotation: il n'y a pas de capture n° 05 (doublon retiré). Ce n'est pas un manque.
+
+01_accueil_welcome_version.png
+    Écran d'accueil animé au lancement à froid. Porte « version 1.5.0 » en pied
+    de page (affichage de la version, TCK-019, emplacement n°1).
+    Aucun figeage : l'écran s'affiche et cède la main (le splash managé n'a PAS
+    été réintroduit).
+
+02_une_haut_numerotation_01.png
+    Onglet « À la une », haut de page, thème clair. Bandeau « Aujourd'hui · À la
+    une », les trois rangées de filtres (axes PESTEL, rubriques, secteurs), et la
+    carte n°1. NUMÉROTATION : « 01 », pas « 0 » — la coquille corrigée en v1.4
+    n'est PAS revenue dans le bundle Hermes du build release. La carte n°2 est
+    visible en pied d'écran, numérotée « 02 ».
+
+03_une_captees_entete_repartition.png
+    Fin de la Une (carte « 03 », axe Légal) puis EN-TÊTE DE LA SECTION « CAPTÉES » :
+    « 30 informations captées et triées par le moteur · non rédigées », avec la
+    répartition par axe, ZÉROS ÉCRITS compris (Numérique 0, Légal 0, Sports 0),
+    et « non classées 2 ». Le mot « À traiter » n'apparaît nulle part.
+
+04_une_captees_carte_N1_et_plafond.png
+    Cartes N1 « CAPTÉE · NON RÉDIGÉE » (axe, « confiance non transmise », source
+    et date), puis la mention de troncature ASSUMÉE : « + 18 autres captées
+    aujourd'hui, non affichées ici (plafond d'écran : 12) », puis l'agenda
+    « À suivre ».
+
+06_axes_majeur_politique_glyphe_corrige.png
+    Onglet « Axes », bloc « Politique ». SUJET MAJEUR DÉSIGNÉ : en-tête « Sujet
+    majeur », mention « SUJET MAJEUR · RANG 1 » et badge « PROPOSÉE · NON
+    VALIDÉE ». La carte porte le glyphe et la couleur de l'axe (banque rouge,
+    « 01 » rouge) — c'est le rendu APRÈS la correction du défaut de glyphe
+    décrit dans le rapport.
+
+07_axes_majeur_social_motif.png
+    Onglet « Axes », bloc « Social ». Même structure, glyphe rose. En dessous, le
+    MOTIF DE LA DÉSIGNATION en toutes lettres, avec sa réserve affichée
+    (« fiabilité à confirmer »), et sa coupe marquée par « … ».
+    Montre aussi que le sujet majeur est RÉPÉTÉ juste en dessous comme premier
+    item de la liste de l'axe (observation reportée au rapport).
+
+08_pastille_divers_104.png
+    Rangée « RUBRIQUES » défilée : la pastille « Divers · 104 » est PRÉSENTE,
+    parce que la soupape a du contenu.
+
+09_rubrique_divers_soupape.png
+    Rubrique « Divers » ouverte. Encart « Soupape surveillée » : 104 captées,
+    « 31 affichées · 73 liens non sécurisés (http) », « POURQUOI ELLES SONT ICI :
+    motif non transmis 104 », « D'OÙ ELLES VIENNENT : MediaCongo 73, ACP 30,
+    Deskeco 1 ».
+
+10_une_filtre_politique_majeur.png
+    Onglet « À la une » filtré sur l'axe Politique : « Votre Une · Politique »,
+    et la section « Sujet majeur » avec rang, statut proposé et carte.
+
+11_vacance_motivee_numerique.png
+    Onglet « À la une » filtré sur l'axe Numérique : « AUCUN SUJET MAJEUR »,
+    « La rédaction l'a DÉCIDÉ et l'a motivé — ce n'est pas une absence de
+    désignation », puis « VACANCE DÉSIGNÉE · PROPOSÉE · NON VALIDÉE » et le motif.
+
+12_selecteur_edition_18_sans_20.png
+    Sélecteur d'édition : « 18 éditions ». Le 20 juillet 2026 n'est PAS
+    sélectionnable (D-4 : édition absente, jamais reconstituée). Le 21 est
+    l'édition affichée.
+
+13_vacance_motif_complet_et_captees_vide_assume.png
+    Suite de l'axe Numérique : fin du motif de vacance, l'unique fait rédigé de
+    l'axe, puis « Captées : 0 information captée et classée "Numérique" » avec
+    le bloc vide assumé « Cet axe affiche son vide : il n'emprunte rien à un autre ».
+
+14_detail_fait_sans_mention_reedition.png
+    Fiche complète d'un fait (« Dossier · édition du 21 juillet 2026 »), axe,
+    fiabilité « à confirmer », titre, texte, début de l'analyse.
+    AUCUNE MENTION DE RÉÉDITION n'y figure — c'est la capture qui documente
+    l'anomalie n°1 du rapport.
+
+15_detail_sources_cotees.png
+    Bas de la même fiche : fin de l'analyse (avec une hypothèse DÉCLARÉE comme
+    telle et réfutable), « Sources (3) » cotées B, B, C avec type, date et
+    domaine, puis « Explorer les liens ». Toujours aucune mention de réédition.
+
+16_onglet_carte_clair.png  ·  17_onglet_donnees_clair.png  ·  18_onglet_favoris_clair.png
+    Les onglets « Carte », « Données » et « Favoris » en thème CLAIR.
+    Carte : « 8 localisées / 11 · 3 nationales ». Données : indicateurs BCC
+    sourcés et datés. Favoris : état vide explicite.
+
+19_a_propos_version_1.5.0.png
+    Page « À propos » (icône « ? »). Affiche « version 1.5.0 » (TCK-019,
+    emplacement n°2) et les NOUVEAUTÉS de la v1.5.0 réécrites — elles décrivent
+    ce que cette version fait réellement, et non plus celles de la v1.4.
+
+20 à 24 — LES CINQ ONGLETS EN THÈME SOMBRE
+    20_onglet_une_sombre.png     : « À la une »
+    21_onglet_axes_sombre.png    : « Axes » (sujet majeur, rang, statut proposé,
+                                   glyphe d'axe correct en sombre aussi)
+    22_onglet_carte_sombre.png   : « Carte »
+    23_onglet_donnees_sombre.png : « Données »
+    24_onglet_favoris_sombre.png : « Favoris »
+
+CE QUI N'A PAS PU ÊTRE VÉRIFIÉ PAR CAPTURE, ET POURQUOI
+-------------------------------------------------------
+· « Divers masquée si vide » : sur les données publiées, la soupape contient 104
+  captées pour toutes les éditions. L'état VIDE n'est donc pas atteignable sur ce
+  jeu de données sans le modifier. Le prédicat unique est vérifié par les tests
+  (src/n1.js → instrumenterDivers().visible), pas par une capture.
+· La mention de réédition : elle n'est rendue par AUCUN écran — l'absence est
+  documentée par les captures 12, 14 et 15, pas par une capture qui la montrerait.
+
+Rien n'est « terminé » : cette revue est À VALIDER.

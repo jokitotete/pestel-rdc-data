@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "Ntongo · RDC News",
+    "slug": "pestel-rdc",
+    "version": "1.4.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#f4f1ea",
+    "icon": "./assets/ntongo/icon.png",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "consulting.twoid.pestelrdc"
+    },
+    "android": {
+      "package": "consulting.twoid.pestelrdc",
+      "versionCode": 4,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/ntongo/adaptive-icon.png",
+        "backgroundImage": "./assets/ntongo/adaptive-background.png",
+        "backgroundColor": "#1D3FC4"
+      }
+    },
+    "web": {
+      "favicon": "./assets/ntongo/favicon.png"
+    },
+    "plugins": [
+      "expo-font",
+      "expo-notifications"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "ffde5cee-bc82-465c-8a89-a4d05445e94b"
+      },
+      "dataUrl": "https://raw.githubusercontent.com/jokitotete/pestel-rdc-data/main/public/pestel-data.json"
+    }
+  }
+}
