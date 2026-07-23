@@ -195,15 +195,19 @@ export const N1Card = ({ vue, onPress }) => {
         borderWidth: 1, borderColor: C.border, borderStyle: 'dashed',
         padding: SP.md2, marginBottom: SP.sm,
       }}>
+      {/* TCK-125 — La VRAIE cause de « CAPTÉE · NON RÉD… » n'était NI l'espace NI le flexShrink : c'était
+          la POLICE. `overline` est monospace (chasse fixe 0,6 em) AVEC letterSpacing 1,0 — chaque lettre
+          porte un espace ajouté. « CAPTÉE · NON RÉDIGÉE » = 20 caractères ainsi rendus est structurellement
+          PLUS LARGE que la carte, quel que soit le flexShrink. La preuve était sous nos yeux : « Approfondir »
+          (11 car., police `label` normale, sans espacement) tient sur la carte de la Une. Or cette étiquette
+          est un LIBELLÉ, pas une donnée chiffrée : rien ne justifiait le monospace espacé. Passée en `label`,
+          elle tient. On garde flexShrink 0 en ceinture-bretelles, mais ce n'est plus lui qui fait le travail. */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs2, marginBottom: SP.xs2 }}>
-        {/* flexShrink 0 : sans lui, la date et la note de source (arrivées avec la qualification du
-            lot-D) compriment cette pastille et l'étiquette se lit « CAPTÉE · NON » — un libellé
-            tronqué qui ne veut plus rien dire. Le libellé est court et FIXE : il ne doit jamais céder. */}
         <View style={{ backgroundColor: C.bg, borderRadius: RADIUS.sm, paddingHorizontal: SP.sm, paddingVertical: SP.hair, flexShrink: 0 }}>
-          <Text style={[TYPE.overline, { color: C.inkMut }]} numberOfLines={1}>CAPTÉE · NON RÉDIGÉE</Text>
+          <Text style={[TYPE.label, { color: C.inkMut, fontSize: 10.5 }]} numberOfLines={1}>CAPTÉE · NON RÉDIGÉE</Text>
         </View>
         <View style={{ flex: 1 }} />
-        {v.date ? <Text style={[TYPE.caption, { color: C.inkMut }]}>{v.date}</Text> : null}
+        {v.date ? <Text style={[TYPE.caption, { color: C.inkMut }]} numberOfLines={1}>{v.date}</Text> : null}
         {v.note ? <SrcDot rel={v.note} /> : null}
       </View>
       <Text style={[TYPE.cardTitle, { color: C.ink }]} numberOfLines={2}>{v.titre}</Text>

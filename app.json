@@ -2,7 +2,7 @@
   "expo": {
     "name": "Ntongo · RDC News",
     "slug": "pestel-rdc",
-    "version": "1.5.3",
+    "version": "1.5.4",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "backgroundColor": "#f4f1ea",
@@ -16,7 +16,7 @@
     },
     "android": {
       "package": "consulting.twoid.pestelrdc",
-      "versionCode": 8,
+      "versionCode": 9,
       "adaptiveIcon": {
         "foregroundImage": "./assets/ntongo/adaptive-icon.png",
         "backgroundImage": "./assets/ntongo/adaptive-background.png",
