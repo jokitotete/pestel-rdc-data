@@ -16,6 +16,10 @@ import { fetchRemoteData } from './src/remote';
 import { confirmOpenURL, isSafeUrl } from './src/safeUrl';
 import { loadPrefs, savePrefs, MAX_FAVS, loadFollows, saveFollows } from './src/prefs';
 import { scheduleDailyBriefing, cancelDailyBriefing, isBriefingScheduled } from './src/notify';
+// TCK-122 — interrupteur unique du briefing matinal. À `true`, la cloche reparaît telle quelle.
+// Repasser à `true` suppose d'abord que l'heure soit RÉGLABLE par l'utilisateur : c'est le manque
+// qui a motivé le masquage, pas un défaut technique de la planification elle-même.
+export const SHOW_BRIEFING_BELL = false;
 import Home from './src/screens/Home';
 import Axes from './src/screens/Axes';
 import MapScreen from './src/screens/Map';
@@ -253,11 +257,24 @@ export default function App() {
             <Text style={[TYPE.wordmark, { color: C.ink, flex: 1 }]} numberOfLines={1} allowFontScaling={false}>
               Ntongo <Text style={{ color: C.cobalt }}>· RDC News</Text>
             </Text>
-            <TouchableOpacity activeOpacity={0.7} onPress={toggleNotif} hitSlop={HIT.sm}
-              accessibilityRole="button" accessibilityLabel={notifOn ? 'Briefing du matin activé' : 'Activer le briefing du matin'}
-              style={{ width: 36, height: 36, borderRadius: RADIUS.half(36), alignItems: 'center', justifyContent: 'center' }}>
-              <Icon name={notifOn ? 'bell-on' : 'bell'} size={19} color={notifOn ? C.cobalt : C.inkDim} />
-            </TouchableOpacity>
+            {/* TCK-122 — CLOCHE MASQUÉE, décision du commanditaire le 23/07/2026.
+                Motif, dans ses termes : « Le principe était en principe le choix d'une heure d'alarme.
+                Le choix de cette fonctionnalité n'est pas démontré. À masquer dans un premier temps. »
+                Le constat est exact et vérifié dans le code : l'heure du briefing est FIGÉE à 07h30
+                (notify.js, BRIEFING_HOUR/BRIEFING_MINUTE) et n'est réglable nulle part dans l'interface.
+                L'utilisateur activait donc une alarme dont il ne choisissait ni l'heure, ni ne voyait
+                l'effet — le seul retour était le bleu de la cloche. Une promesse non tenue à l'écran.
+                MASQUÉE, PAS SUPPRIMÉE : notify.js reste entier et testé, l'opt-in reste persisté, et la
+                planification déjà posée sur un appareil n'est PAS annulée par ce masquage (l'annuler
+                serait une décision de produit distincte). Rétablir = retirer ce commentaire, après avoir
+                rendu l'heure réglable. */}
+            {SHOW_BRIEFING_BELL ? (
+              <TouchableOpacity activeOpacity={0.7} onPress={toggleNotif} hitSlop={HIT.sm}
+                accessibilityRole="button" accessibilityLabel={notifOn ? 'Briefing du matin activé' : 'Activer le briefing du matin'}
+                style={{ width: 36, height: 36, borderRadius: RADIUS.half(36), alignItems: 'center', justifyContent: 'center' }}>
+                <Icon name={notifOn ? 'bell-on' : 'bell'} size={19} color={notifOn ? C.cobalt : C.inkDim} />
+              </TouchableOpacity>
+            ) : null}
             <TouchableOpacity activeOpacity={0.7} onPress={toggleTheme} hitSlop={HIT.sm}
               accessibilityRole="button" accessibilityLabel={mode === 'dark' ? 'Passer en thème clair' : 'Passer en thème sombre'}
               style={{ width: 36, height: 36, borderRadius: RADIUS.half(36), alignItems: 'center', justifyContent: 'center' }}>

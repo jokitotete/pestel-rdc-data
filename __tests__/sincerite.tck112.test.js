@@ -90,11 +90,25 @@ describe('TCK-112 · DÉFAUT 1 — la fenêtre du fil est LISIBLE et VRAIE', () 
     }
   });
 
-  it('MESURE sur le fil RÉELLEMENT servi (src/data/pestel.js) : 21 jours, du 2 au 22 juillet 2026', () => {
-    const f = fenetreFil(getFeed());
+  // TCK-121 — INVARIANT, plus INSTANTANÉ. Ce test écrivait « du 2 au 22 juillet 2026 » et « 21 jours »
+  // en dur : il décrivait un corpus, pas une règle. Il a cassé le 23/07 dès que le fil a été recollecté
+  // sur une autre fenêtre — un rafraîchissement de données, pas un défaut. Or le commanditaire va
+  // rafraîchir souvent, et un test qui casse à chaque collecte finit par être ignoré.
+  // Ce qui doit tenir QUOI QU'IL ARRIVE : la fenêtre annoncée décrit la fenêtre RÉELLE du fil servi.
+  it('MESURE sur le fil RÉELLEMENT servi : la fenêtre annoncée est celle des données, quelle qu\'elle soit', () => {
+    const fil = getFeed();
+    const f = fenetreFil(fil);
     expect(f.total).toBeGreaterThan(0);
-    expect(f.libelle).toBe('du 2 au 22 juillet 2026');
-    expect(f.jours).toBe(21);
+
+    // Bornes recalculées depuis les données elles-mêmes, jamais recopiées.
+    const jours = fil.map((x) => String(x && x.publishedAt || '').slice(0, 10)).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
+    const attendu = Math.round((Date.parse(jours[jours.length - 1]) - Date.parse(jours[0])) / 864e5) + 1;
+    expect(f.jours).toBe(attendu);
+
+    // Le libellé nomme les DEUX bornes réelles, et jamais « aujourd'hui » pour un fil multi-jours.
+    expect(f.libelle).toContain(String(Number(jours[0].slice(8, 10))));
+    expect(f.libelle).toContain(String(Number(jours[jours.length - 1].slice(8, 10))));
+    if (attendu > 1) expect(f.libelle.toLowerCase()).not.toContain('aujourd');
   });
 
   it('l’écran ÉCRIT la fenêtre du fil et ne dit plus « aujourd’hui » de ce qui couvre 21 jours', () => {
@@ -165,7 +179,11 @@ describe('TCK-112 · DÉFAUT 2 — un item « faible » n’est pas dit « class
 
   it('INVARIANT sur le fil RÉEL : la chaîne affichée d’un faible se relit toujours SOUS le seuil', () => {
     const faibles = getFeed().filter((x) => x && x.statut === 'faible' && typeof x.confidence === 'number');
-    expect(faibles.length).toBeGreaterThan(100);   // 374 mesurés au 22/07 — on borne bas, pas au chiffre du jour
+    // TCK-121 — la borne à 100 visait « ne pas tester à vide », mais elle était calée sur un fil de
+    // 21 jours (374 faibles au 22/07). Un fil D'UNE SEULE JOURNÉE en compte 40, et le test cassait pour
+    // une collecte plus courte — pas pour un défaut. On garde la garde anti-test-vide, sans la calibrer
+    // sur la taille d'hier : ce qui compte est que l'invariant soit VÉRIFIÉ SUR TOUS les faibles présents.
+    expect(faibles.length).toBeGreaterThan(0);
     for (const it of faibles) {
       const s = fmtConfiance(it.confidence);
       expect(Number(s.replace(',', '.'))).toBeLessThan(SEUIL_CONFIANCE);

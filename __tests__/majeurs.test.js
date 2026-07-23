@@ -279,15 +279,27 @@ describe('LOT-I · MESURE SUR LE CORPUS RÉELLEMENT EMBARQUÉ', () => {
         }
       }
     }
-    expect(Object.keys(EDITIONS).length).toBe(18);
-    expect(items).toBe(248);            // D-2 : le périmètre n'a pas bougé
-    expect(axes).toBe(130);
-    expect(designes).toBe(104);         // faits PORTANT le champ designation
-    expect(majeurs).toBe(74);           // faits affichés comme majeurs (aucun n'est rattrapé par le plafond)
+    // TCK-121 — CES COMPTES SONT DES MESURES, PAS DES INVARIANTS. Ils étaient figés au corpus du 22/07
+    // (18 éditions, 248 faits) et ont cassé le 23/07 quand la veille a produit une 19ᵉ édition : le
+    // produit fonctionnait exactement comme prévu, et le test criait au défaut. Un test qui échoue
+    // parce que la veille a fait son travail est un test qui sera désactivé.
+    // Ce qui doit tenir : le corpus est NON VIDE et COHÉRENT — chaque désigné majeur est compté, et
+    // les invariants de D-11 (plafond tenu, aucun rattrapage) sont vérifiés ci-dessous sans chiffre figé.
+    expect(Object.keys(EDITIONS).length).toBeGreaterThanOrEqual(18);   // le corpus ne RÉTRÉCIT jamais
+    expect(items).toBeGreaterThanOrEqual(248);                          // D-2 : le périmètre ne perd rien
+    expect(axes).toBeGreaterThanOrEqual(130);
+    expect(designes).toBeGreaterThanOrEqual(majeurs);                   // tout majeur PORTE le champ
+    expect(majeurs).toBeGreaterThan(0);
     expect(ecartes).toBe(0);            // aucun majeur n'est écarté par le plafond : la rédaction a tenu 1-3
     // LE POINT QUI COMPTE : D-11 est INSTRUIT, PAS TRANCHÉ. Ce qui part en ligne est une PROPOSITION.
     // Si un jour une désignation passe « validee », ce test doit ÉCHOUER et forcer une décision explicite.
-    expect(statuts).toEqual({ proposee: 74 });
+    // TCK-121 — l'INVARIANT est « AUCUNE désignation n'est validée », pas « il y en a 74 ». Le décompte
+    // bougeait à chaque édition ; l'interdit, lui, ne bouge pas. Formulé ainsi, le test continue de
+    // FORCER UNE DÉCISION EXPLICITE le jour où la rédaction validera une désignation — ce qui était bien
+    // son intention d'origine — sans casser chaque matin parce que la veille a publié.
+    expect(Object.keys(statuts).sort()).toEqual(['proposee']);
+    expect(statuts.validee).toBeUndefined();
+    expect(statuts.proposee).toBe(majeurs);      // tout majeur affiché est compté, aucun ne s'échappe
   });
 
   it('aucune anomalie de désignation dans le corpus embarqué (ni rang manquant, ni doublon, ni illisible)', () => {

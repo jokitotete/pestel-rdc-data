@@ -2,7 +2,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { sanitizeFavs, MAX_FAVS, loadPrefs, savePrefs, loadFollows, saveFollows, loadRecent, pushRecent, loadSoupape, noterSoupape } from '../src/prefs';
+import { sanitizeFavs, MAX_FAVS, MAX_FAV, loadPrefs, savePrefs, loadFollows, saveFollows, loadRecent, pushRecent, loadSoupape, noterSoupape } from '../src/prefs';
 
 // (Tests de persistance du secteur retirés — QA v1.2 : loadSector/saveSector étaient orphelins depuis le
 // remplacement de la « Lentille » par le filtre explicite. Ils testaient du code que plus personne n'appelait.)
@@ -47,8 +47,14 @@ describe('prefs.sanitizeFavs — frontière de stockage (fail-closed)', () => {
       id: huge, code: huge, edDate: huge, axisName: huge, title: huge, text: huge,
       reliability: huge, source: { name: huge, host: huge, url: 'https://a.cd/x' },
     }]);
-    expect(f.title.length).toBe(200);
-    expect(f.text.length).toBe(600);
+    // TCK-121 — on asserte la BORNE EN VIGUEUR (importée), pas un nombre recopié. Ce test avait cassé
+    // le 23/07 quand `text` est passé de 600 à 1 400 sur décision produit : il testait la valeur d'hier
+    // au lieu de tester la troncature. L'INVARIANT est « une chaîne de 50 000 caractères est ramenée à
+    // la borne », et il tient quelle que soit la borne. Le garde-fou anti-DoS est prouvé par le rapport
+    // 50 000 → borne, pas par la valeur de la borne.
+    expect(f.title.length).toBe(MAX_FAV.title);
+    expect(f.text.length).toBe(MAX_FAV.text);
+    expect(f.text.length).toBeLessThan(huge.length);        // la troncature a bien EU LIEU
     expect(f.id.length).toBe(64);
     expect(f.code.length).toBe(32);
     expect(f.edDate.length).toBe(16);

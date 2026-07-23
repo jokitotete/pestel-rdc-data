@@ -196,8 +196,11 @@ export const N1Card = ({ vue, onPress }) => {
         padding: SP.md2, marginBottom: SP.sm,
       }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs2, marginBottom: SP.xs2 }}>
-        <View style={{ backgroundColor: C.bg, borderRadius: RADIUS.sm, paddingHorizontal: SP.sm, paddingVertical: SP.hair }}>
-          <Text style={[TYPE.overline, { color: C.inkMut }]}>CAPTÉE · NON RÉDIGÉE</Text>
+        {/* flexShrink 0 : sans lui, la date et la note de source (arrivées avec la qualification du
+            lot-D) compriment cette pastille et l'étiquette se lit « CAPTÉE · NON » — un libellé
+            tronqué qui ne veut plus rien dire. Le libellé est court et FIXE : il ne doit jamais céder. */}
+        <View style={{ backgroundColor: C.bg, borderRadius: RADIUS.sm, paddingHorizontal: SP.sm, paddingVertical: SP.hair, flexShrink: 0 }}>
+          <Text style={[TYPE.overline, { color: C.inkMut }]} numberOfLines={1}>CAPTÉE · NON RÉDIGÉE</Text>
         </View>
         <View style={{ flex: 1 }} />
         {v.date ? <Text style={[TYPE.caption, { color: C.inkMut }]}>{v.date}</Text> : null}
@@ -211,8 +214,10 @@ export const N1Card = ({ vue, onPress }) => {
         <Text style={[TYPE.caption, { color: ct, flex: 1 }]} numberOfLines={2}>{v.mention}</Text>
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SP.sm, marginTop: SP.sm }}>
-        <SourceLine source={{ name: v.source, host: v.host }} style={{ flex: 1 }} />
-        <Text style={[TYPE.label, { color: C.cobalt }]}>ouvrir</Text>
+        <SourceLine source={{ name: v.source, host: v.host }} style={{ flex: 1, minWidth: 0 }} />
+        {/* flexShrink 0 : un nom de source long comprimait ce mot jusqu'à « ouvri ». C'est l'ACTION
+            de la carte — la source peut être coupée, l'action jamais. */}
+        <Text style={[TYPE.label, { color: C.cobalt, flexShrink: 0 }]} numberOfLines={1}>ouvrir</Text>
       </View>
     </TouchableOpacity>
   );

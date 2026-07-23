@@ -19,7 +19,18 @@ export const MAX_FAVS = 200;
 // Bornes de LONGUEUR des chaînes relues (symétriques à MAX_RECENT_LEN) : un favori est RENDU (NewsCard) →
 // un titre/texte géant planté dans le stockage ferait mesurer un nœud de plusieurs Mo à Yoga = gel de l'écran.
 // Plafonner le NOMBRE (MAX_FAVS) ne suffit pas : il faut aussi plafonner chaque chaîne.
-const MAX_FAV = { id: 64, code: 32, edDate: 16, axisName: 64, title: 200, text: 600, name: 120, host: 120, rel: 32 };
+// TCK-121 — LE RÉSUMÉ DOIT ÊTRE IDENTIQUE DANS TOUTES LES FENÊTRES, FAVORIS COMPRIS (décision du 23/07).
+// `text` valait 600 : une borne choisie quand la médiane du corpus valait 533. La norme éditoriale porte
+// désormais les faits majeurs jusqu'à 1 200 caractères, et la MESURE du 23/07 sur les données servies
+// montrait 141 textes sur 422 (33 %) tronqués en silence — un favori affichait donc un résumé amputé de
+// moitié, sans ellipse ni compteur. Porté à 1 400 : au-dessus du maximum RÉELLEMENT observé (1 297) avec
+// marge, tout en gardant une borne dure. Le garde-fou d'origine reste entier — il protège d'une chaîne de
+// plusieurs Mo plantée dans le stockage local, pas d'un résumé de 1 200 signes.
+// `title` reste à 200 : MESURÉ, le titre le plus long du corpus fait 163 caractères, aucun n'est tronqué.
+// EXPORTÉ pour que le test assertent la BORNE EN VIGUEUR et non un nombre recopié. Un test qui écrit
+// « 600 » en dur ne teste plus la troncature le jour où la borne change : il teste la valeur d'hier,
+// et il casse pour une décision produit au lieu d'un défaut. Il doit suivre la source, pas la doubler.
+export const MAX_FAV = { id: 64, code: 32, edDate: 16, axisName: 64, title: 200, text: 1400, name: 120, host: 120, rel: 32 };
 const isObj = (o) => o && typeof o === 'object' && !Array.isArray(o);
 const cut = (x, n) => (typeof x === 'string' ? x.slice(0, n) : '');
 // RS3 (défense en profondeur) : l'axis ne peut être qu'une clé d'axe/rubrique CONNUE (ou '?') — cela
