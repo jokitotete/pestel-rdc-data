@@ -18,7 +18,7 @@ const CONTACT = 'j.okitotete@2id.consulting';
 // montée de version met cette liste à jour, et n'y inscrit QUE ce qui a été constaté à l'écran sur le
 // build livré — pas ce qui a été codé, pas ce qui est prévu.
 const NOUVEAUTES = [
-  'La section « Captées » écrit désormais la FENÊTRE du fil (« fil du 2 au 22 juillet 2026 · 21 jours couverts ») : la portée de ce que vous lisez est lisible, et les captées non affichées ne sont plus annoncées comme datant d’« aujourd’hui ».',
+  'La section « Captées » devient « Repéré ce jour » : elle liste, en langage clair, les informations repérées mais pas encore rédigées — bornées à l’édition affichée. Le décompte technique (« jours couverts », « sans date ») a quitté cette surface pour rester un diagnostic interne.',
   '« Aujourd’hui » ne s’écrit plus que le jour même. Une édition qui est la plus récente sans être celle du jour est présentée comme « Dernière édition », avec sa date.',
   'Une information que le moteur n’a pas su trancher n’est plus dite « classée » : la carte écrit « le moteur penche vers <axe> · pas assez sûr pour trancher ».',
   'La confiance affichée ne peut plus s’arrondir jusqu’à la valeur du seuil : une information sous le seuil se lit toujours sous le seuil.',

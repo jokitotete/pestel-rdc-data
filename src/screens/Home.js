@@ -44,21 +44,13 @@ function CapteesSection({ feed }) {
   if (!p.sains) return null;
   return (
     <View style={{ marginTop: SP.xl2 }}>
-      <SectionHead title="Captées" icon="triage"
-        lens={`${p.sains} information${p.sains > 1 ? 's' : ''} captée${p.sains > 1 ? 's' : ''} et triée${p.sains > 1 ? 's' : ''} par le moteur · non rédigée${p.sains > 1 ? 's' : ''}`} />
+      <SectionHead title="Repéré ce jour" icon="triage"
+        lens={`${p.sains} information${p.sains > 1 ? 's' : ''} repérée${p.sains > 1 ? 's' : ''}, pas encore rédigée${p.sains > 1 ? 's' : ''}`} />
 
-      {/* L'ENVELOPPE TEMPORELLE — la portée de ce que le lecteur a sous les yeux. Sans elle, un fil de
-          21 jours se lisait comme la moisson du matin. Rien n'est écrit si le fil ne porte aucune date :
-          on ne suppose pas une fenêtre, on se tait (et les items sans date sont comptés à côté). */}
-      {fen.libelle ? (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs, marginBottom: SP.md }}>
-          <Icon name="calendar" size={12} color={C.inkMut} />
-          <Text style={[TYPE.caption, { color: C.inkMut, flex: 1 }]}>
-            {`fil ${fen.libelle} · ${fen.jours} jour${fen.jours > 1 ? 's' : ''} couvert${fen.jours > 1 ? 's' : ''}`}
-            {fen.sansDate ? ` · ${fen.sansDate} sans date` : ''}
-          </Text>
-        </View>
-      ) : null}
+      {/* Option A (reframe skills, 25/07) — la FENÊTRE technique (« X jours couverts · N sans date ») est
+          RETIRÉE de la surface lecteur : le fil est désormais BORNÉ à l'édition (build_data.scopeAuxEditions),
+          donc « du jour » est implicite et l'ancien « 3 jours couverts » ne peut plus mentir. Le diagnostic
+          de portée (fenêtre, sans-date) vit dans l'écran « À propos ». `fen` reste calculé pour le pied. */}
 
       {/* Répartition par axe des captées AFFICHÉES — les zéros sont ÉCRITS, pas effacés. */}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SP.xs2, marginBottom: SP.md }}>

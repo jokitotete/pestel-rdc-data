@@ -43,6 +43,23 @@ require(path.join(dataDir, "provinces.js"));
 
 const W = global.window;
 
+// ── COHÉRENCE PÉRIMÈTRE — le fil des captées est BORNÉ aux éditions publiées ────
+// Le fil N1 (feed/triage) est un flux ROULANT du collecteur ; il peut couvrir plusieurs jours alors
+// qu'une seule édition est chargée. Sans bornage, l'app affiche « fil du 23 au 25 juillet · 3 jours
+// couverts » pour une base mono-édition (25/07) : la fenêtre MENT sur la portée réelle. On retire donc
+// les captées DATÉES hors de la fenêtre des éditions. Les items SANS date sont CONSERVÉS (« zéro
+// orphelin » : rien de capté n'est effacé en silence) et restent comptés à part par l'app.
+const editionDates = new Set((W.PESTEL_MANIFEST || []).map((m) => m && m.date).filter(Boolean));
+function scopeAuxEditions(items) {
+  if (!editionDates.size) return items;
+  return items.filter((it) => {
+    const iso = (it && typeof it.publishedAt === "string") ? it.publishedAt.slice(0, 10) : "";
+    return iso ? editionDates.has(iso) : true;   // daté hors fenêtre → retiré ; sans date → conservé
+  });
+}
+const FEED_SCOPED = scopeAuxEditions(FEED);
+const TRIAGE_SCOPED = scopeAuxEditions(TRIAGE);
+
 // ── TCK-102 · DÉSIGNATION DE « FAIT MAJEUR » — TRANSPORT ET COMPTAGE ────────
 // Le portail est la source de vérité : ce script ne DÉCIDE rien, il transporte.
 // Le champ `designation` traverse donc la chaîne par la sérialisation JSON, sans
@@ -78,8 +95,8 @@ const out =
   "export const EDITIONS = " + JSON.stringify(W.PESTEL_DATA || {}) + ";\n\n" +
   "export const MANIFEST = " + JSON.stringify(W.PESTEL_MANIFEST || []) + ";\n\n" +
   "export const STATS = " + JSON.stringify(W.PESTEL_STATS || {}) + ";\n\n" +
-  "export const FEED = " + JSON.stringify(FEED) + ";\n\n" +
-  "export const TRIAGE = " + JSON.stringify(TRIAGE) + ";\n";
+  "export const FEED = " + JSON.stringify(FEED_SCOPED) + ";\n\n" +
+  "export const TRIAGE = " + JSON.stringify(TRIAGE_SCOPED) + ";\n";
 
 fs.mkdirSync(path.join(__dirname, "src", "data"), { recursive: true });
 fs.writeFileSync(path.join(__dirname, "src", "data", "pestel.js"), out);
@@ -97,8 +114,8 @@ const remote = JSON.stringify({
   editions: W.PESTEL_DATA || {},
   manifest: W.PESTEL_MANIFEST || [],
   stats: W.PESTEL_STATS || {},
-  feed: FEED,
-  triage: TRIAGE,
+  feed: FEED_SCOPED,
+  triage: TRIAGE_SCOPED,
   generatedAt: (W.PESTEL_MANIFEST && W.PESTEL_MANIFEST[0] && W.PESTEL_MANIFEST[0].date) || "",
 });
 fs.writeFileSync(path.join(__dirname, "public", "pestel-data.json"), remote);
@@ -110,7 +127,9 @@ console.log("✓ src/data/pestel.js : " + kb + " KB · " + editions.length + " �
   (W.PESTEL_STATS && W.PESTEL_STATS.themes ? W.PESTEL_STATS.themes.length : 0) + " thèmes stats");
 console.log("✓ src/data/provinces.js : " + gkb + " KB · " + geo.features.length + " provinces");
 console.log("✓ public/pestel-data.json : " + rkb + " KB (à héberger pour le fetch en ligne)");
-console.log("✓ fil N1 : " + FEED.length + " classée(s) → « Captées » · " + TRIAGE.length + " non classée(s) → « Divers »");
+console.log("✓ fil N1 (borné aux éditions) : " + FEED_SCOPED.length + "/" + FEED.length + " classée(s) → « Captées » · " +
+  TRIAGE_SCOPED.length + "/" + TRIAGE.length + " non classée(s) → « Divers » (retirées hors fenêtre : " +
+  ((FEED.length - FEED_SCOPED.length) + (TRIAGE.length - TRIAGE_SCOPED.length)) + ")");
 console.log("✓ TCK-102 désignation : " + DES.portant + "/" + DES.faits + " fait(s) portent le champ · " +
   DES.majeurs + " majeur(s) (" + DES.valides + " validé[s], " + DES.proposes + " PROPOSÉ[s] non validé[s]) · " +
   DES.vacances + " vacance(s) d'axe déclarée(s)");
