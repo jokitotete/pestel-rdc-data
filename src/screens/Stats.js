@@ -51,7 +51,12 @@ export default function Stats() {
                     </View>
                     <Text style={[TYPE.label, { color: C.ink, marginTop: SP.xs }]}>{ind.label}</Text>
                     {/* QA v1.2 : rôle de PROSE (noteSm, sans) — `caption` (mono) coupait ~31 % de la note. */}
-                    {ind.note ? <Text style={[TYPE.noteSm, { color: C.inkMut, marginTop: SP.xs }]} numberOfLines={2}>{ind.note}</Text> : null}
+                    {/* TCK-126 (26/07) — `numberOfLines={2}` coupait la note EN PLEIN MILLÉSIME
+                        (« inchangé depuis le 09/04/202… ») : le lecteur ne pouvait plus distinguer
+                        2025 de 2026 sur un indicateur monétaire. Une troncature qui détruit le sens
+                        n'est pas un raccourci, c'est une information fausse — même famille que
+                        « ouv… ». On donne la place nécessaire (4 lignes) plutôt que de rogner. */}
+                    {ind.note ? <Text style={[TYPE.noteSm, { color: C.inkMut, marginTop: SP.xs }]} numberOfLines={4}>{ind.note}</Text> : null}
                     {ind.src && ind.src.u ? (
                       <TouchableOpacity onPress={() => confirmOpenURL(ind.src.u)} accessibilityRole="link"
                         style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs, marginTop: SP.xs2 }}>

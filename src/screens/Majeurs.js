@@ -78,8 +78,10 @@ function VacanceMotivee({ vacance, label = '', genre = 'axe', compact = false })
   // voix haute est exactement ce qui est affiché (cf. LOT-G, où une promesse cachée dans un
   // accessibilityLabel aurait été la pire des deux).
   const titre = 'Aucun sujet majeur';
-  const explique = `Aucun sujet ${ou} « ${label} » n’a été désigné majeur. La rédaction l’a DÉCIDÉ et l’a motivé — ce n’est pas une absence de désignation.`;
-  const ligneMotif = `Motif de la vacance : ${vacance.motif}`;
+  // REFRAME 26/07 — même traitement que la section « Repéré ce jour » : on garde la GARANTIE (le vide
+  // est décidé et motivé, jamais subi) mais on la dit en langage de lecteur, sans capitales de méthode.
+  const explique = `Rien ${ou} « ${label} » ne s’impose aujourd’hui — et c’est un choix, pas un oubli.`;
+  const ligneMotif = `Pourquoi : ${vacance.motif}`;
   return (
     <View
       style={{ marginBottom: compact ? SP.md : SP.xl }}
@@ -136,9 +138,12 @@ export function MajeursSection({ items = [], label = '', porteur = null, genre =
       <SectionHead
         title={n > 1 ? 'Sujets majeurs' : 'Sujet majeur'}
         icon="star"
-        lens={`${n} sujet${n > 1 ? 's' : ''} désigné${n > 1 ? 's' : ''} majeur${n > 1 ? 's' : ''} ${
-          genre === 'secteur' ? 'du secteur' : genre === 'rubrique' ? 'de la rubrique' : 'de l’axe'
-        } « ${label} » · désigné${n > 1 ? 's' : ''} par la rédaction, jamais déduit${n > 1 ? 's' : ''} d’un classement`}
+        {/* REFRAME 26/07 — le sous-titre s'adressait au relecteur (« désigné par la rédaction, jamais
+            déduit d'un classement » = défense de méthode), pas au lecteur. La garantie reste VRAIE et
+            reste écrite : elle vit dans « À propos », pas en tête de section. */}
+        lens={`${n} sujet${n > 1 ? 's' : ''} retenu${n > 1 ? 's' : ''} par la rédaction ${
+          genre === 'secteur' ? 'dans le secteur' : genre === 'rubrique' ? 'dans la rubrique' : 'sur l’axe'
+        } « ${label} »`}
       />
 
       {s.affiches.map((m, i) => {
@@ -155,7 +160,7 @@ export function MajeursSection({ items = [], label = '', porteur = null, genre =
                   (la cacher serait une omission muette), elle est QUALIFIÉE. */}
               {!m.validee ? (
                 <View style={{ borderWidth: 1, borderColor: C.border, borderRadius: RADIUS.sm, paddingHorizontal: SP.sm, paddingVertical: SP.hair }}>
-                  <Text style={[TYPE.overline, { color: C.goldText }]}>PROPOSÉE · NON VALIDÉE</Text>
+                  <Text style={[TYPE.overline, { color: C.goldText }]}>À VALIDER</Text>
                 </View>
               ) : null}
             </View>
@@ -178,7 +183,7 @@ export function MajeursSection({ items = [], label = '', porteur = null, genre =
             <View style={{ flexDirection: 'row', gap: SP.sm, marginTop: -SP.xs, paddingLeft: SP.md2 }}>
               <View style={{ width: 2, backgroundColor: C.border2, borderRadius: RADIUS.xs }} />
               <Text style={[TYPE.caption, { color: m.motif ? C.inkMut : C.goldText, flex: 1 }]}>
-                {m.motif ? `Motif de la désignation : ${m.motif}` : 'Motif de la désignation non transmis.'}
+                {m.motif ? `Pourquoi ce sujet : ${m.motif}` : 'Aucune raison transmise pour ce choix.'}
               </Text>
             </View>
           </View>

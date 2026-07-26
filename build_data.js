@@ -49,12 +49,19 @@ const W = global.window;
 // couverts » pour une base mono-édition (25/07) : la fenêtre MENT sur la portée réelle. On retire donc
 // les captées DATÉES hors de la fenêtre des éditions. Les items SANS date sont CONSERVÉS (« zéro
 // orphelin » : rien de capté n'est effacé en silence) et restent comptés à part par l'app.
-const editionDates = new Set((W.PESTEL_MANIFEST || []).map((m) => m && m.date).filter(Boolean));
+// RÈGLE CORRIGÉE (26/07) — v1 bornait le fil aux SEULES dates d'édition. Trop rigide : le moteur collecte
+// CHAQUE JOUR alors que l'édition rédigée arrive plus tard, si bien qu'un fil du 26/07 se faisait écarter
+// en entier tant que l'édition du 26 n'existait pas — on jetait le PLUS FRAIS. La règle juste est
+// asymétrique : on écarte ce qui est PÉRIMÉ (antérieur à la plus ancienne édition affichée), jamais ce qui
+// est plus RÉCENT qu'elle. Les items sans date restent conservés (« zéro orphelin »), et chaque carte porte
+// sa propre date à l'écran — c'est elle, et non un libellé de fenêtre, qui ancre le lecteur.
+const editionDates = (W.PESTEL_MANIFEST || []).map((m) => m && m.date).filter(Boolean).sort();
+const plusAncienneEdition = editionDates[0] || null;
 function scopeAuxEditions(items) {
-  if (!editionDates.size) return items;
+  if (!plusAncienneEdition) return items;
   return items.filter((it) => {
     const iso = (it && typeof it.publishedAt === "string") ? it.publishedAt.slice(0, 10) : "";
-    return iso ? editionDates.has(iso) : true;   // daté hors fenêtre → retiré ; sans date → conservé
+    return iso ? iso >= plusAncienneEdition : true;   // comparaison ISO lexicale (pas de fuseau)
   });
 }
 const FEED_SCOPED = scopeAuxEditions(FEED);

@@ -18,6 +18,9 @@ const CONTACT = 'j.okitotete@2id.consulting';
 // montée de version met cette liste à jour, et n'y inscrit QUE ce qui a été constaté à l'écran sur le
 // build livré — pas ce qui a été codé, pas ce qui est prévu.
 const NOUVEAUTES = [
+  'Les sujets MAJEURS sont de retour : la rédaction retient de 1 à 3 sujets par axe, chacun accompagné de la raison de ce choix — et lorsqu’aucun ne s’impose, l’axe le dit au lieu de se remplir. Un choix non encore arbitré porte la mention « à valider ».',
+  'Les chiffres de l’écran « Données » ne sont plus coupés en plein millésime : une note comme « inchangé depuis le 09/04/2026 » s’affiche désormais en entier, année comprise.',
+  'Le vocabulaire de fabrication quitte les écrans : « motif de la désignation » devient « pourquoi ce sujet », et les mentions de méthode destinées aux relecteurs ne s’affichent plus dans le fil de lecture.',
   'La section « Captées » devient « Repéré ce jour » : elle liste, en langage clair, les informations repérées mais pas encore rédigées — bornées à l’édition affichée. Le décompte technique (« jours couverts », « sans date ») a quitté cette surface pour rester un diagnostic interne.',
   '« Aujourd’hui » ne s’écrit plus que le jour même. Une édition qui est la plus récente sans être celle du jour est présentée comme « Dernière édition », avec sa date.',
   'Une information que le moteur n’a pas su trancher n’est plus dite « classée » : la carte écrit « le moteur penche vers <axe> · pas assez sûr pour trancher ».',
