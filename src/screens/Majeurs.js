@@ -133,14 +133,15 @@ export function MajeursSection({ items = [], label = '', porteur = null, genre =
   if (s.etat !== 'designe') return null;
 
   const n = s.affiches.length;
+  // REFRAME 26/07 — le sous-titre s'adressait au RELECTEUR (« désignés par la rédaction, jamais déduits
+  // d'un classement » = défense de méthode), pas au lecteur. La garantie reste VRAIE et reste écrite :
+  // elle vit dans « À propos ». Ici on nomme le fait, pas la méthode.
+  // (Un commentaire JSX entre deux attributs est une erreur de syntaxe — il vit ici, jamais dans le tag.)
   return (
     <View style={{ marginBottom: compact ? SP.md : SP.xl }}>
       <SectionHead
         title={n > 1 ? 'Sujets majeurs' : 'Sujet majeur'}
         icon="star"
-        {/* REFRAME 26/07 — le sous-titre s'adressait au relecteur (« désigné par la rédaction, jamais
-            déduit d'un classement » = défense de méthode), pas au lecteur. La garantie reste VRAIE et
-            reste écrite : elle vit dans « À propos », pas en tête de section. */}
         lens={`${n} sujet${n > 1 ? 's' : ''} retenu${n > 1 ? 's' : ''} par la rédaction ${
           genre === 'secteur' ? 'dans le secteur' : genre === 'rubrique' ? 'dans la rubrique' : 'sur l’axe'
         } « ${label} »`}
